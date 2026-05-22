@@ -31,6 +31,15 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     sourceSets {
+        commonMain.dependencies {
+            // compose-resources is needed in commonMain because the resource-collector
+            // code is generated into the commonMain source set (under
+            // build/generated/compose/resourceGenerator/.../commonMainResourceCollectors/).
+            // Without this dep, generated `import org.jetbrains.compose.resources.*`
+            // statements fail to resolve at compileCommonMainKotlinMetadata time.
+            implementation(compose.components.resources)
+        }
+
         val jsWasmMain by creating {
             dependsOn(commonMain.get())
             dependencies {
@@ -64,4 +73,5 @@ kotlin {
 compose.resources {
     publicResClass = true
     generateResClass = always
+    packageOfResClass = "cmp.web.generated.resources"
 }

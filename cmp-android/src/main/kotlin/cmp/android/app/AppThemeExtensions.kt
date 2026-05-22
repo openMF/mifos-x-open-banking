@@ -9,7 +9,7 @@
  */
 package cmp.android.app
 
-import org.mifosx.openbankingx.openbanking.core.model.user.DarkThemeConfig
+import org.mifosx.openbanking.core.model.user.DarkThemeConfig
 
 fun DarkThemeConfig.isDarkMode(
     isSystemDarkMode: Boolean,

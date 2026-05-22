@@ -126,9 +126,9 @@ include(":core-base:security")
 include(":core-base:store")
 include(":core-base:ui")
 
-check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
     """
-    This project requires JDK 17+ but it is currently using JDK ${JavaVersion.current()}.
+    This project requires JDK 21+ but it is currently using JDK ${JavaVersion.current()}.
     Java Home: [${System.getProperty("java.home")}]
     https://developer.android.com/build/jdks#jdk-config-in-studio
     """.trimIndent()
