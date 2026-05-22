@@ -111,3 +111,5 @@ vendor/
 *.key
 *.pem
 .mifos-secure/
+# Added by code-review-graph
+.code-review-graph/
