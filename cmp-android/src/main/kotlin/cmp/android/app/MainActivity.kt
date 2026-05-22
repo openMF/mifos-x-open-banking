@@ -9,10 +9,12 @@
  */
 package cmp.android.app
 
+import android.content.res.Resources
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.getValue
 import androidx.core.os.LocaleListCompat
@@ -22,13 +24,13 @@ import cmp.shared.SharedApp
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 import org.koin.android.ext.android.inject
-import org.mifos.core.data.repository.NetworkMonitor
-import org.mifos.core.data.repository.UserDataRepository
+import org.mifos.core.data.infra.NetworkMonitor
+import org.mifos.core.data.user.UserDataRepository
 import template.core.base.analytics.AnalyticsHelper
 import template.core.base.analytics.lifecycleTracker
 import template.core.base.platform.update.AppUpdateManager
 import template.core.base.platform.update.AppUpdateManagerImpl
-import template.core.base.ui.ShareUtils
+import template.core.base.ui.util.ShareUtils
 import java.util.Locale
 
 /**
@@ -39,7 +41,7 @@ import java.util.Locale
  * @see ComponentActivity
  */
 @Suppress("UnusedPrivateProperty")
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var appUpdateManager: AppUpdateManager
 
@@ -81,12 +83,28 @@ class MainActivity : ComponentActivity() {
                 handleThemeMode = {
                     AppCompatDelegate.setDefaultNightMode(it)
                 },
-                handleAppLocale = {
-                    it?.let {
-                        AppCompatDelegate.setApplicationLocales(
-                            LocaleListCompat.forLanguageTags(it),
-                        )
-                        Locale.setDefault(Locale(it))
+                handleAppLocale = { localeTag ->
+                    val currentLocales = AppCompatDelegate.getApplicationLocales()
+                    val newLocales = if (localeTag != null) {
+                        LocaleListCompat.forLanguageTags(localeTag)
+                    } else {
+                        // System Default: clear app-specific locale
+                        LocaleListCompat.getEmptyLocaleList()
+                    }
+
+                    // Only update if the locale has actually changed
+                    if (currentLocales != newLocales) {
+                        AppCompatDelegate.setApplicationLocales(newLocales)
+                        // Update Locale.setDefault for non-UI formatting
+                        if (localeTag != null) {
+                            // Use forLanguageTag to properly parse locales like "en-GB", "pt-BR"
+                            Locale.setDefault(Locale.forLanguageTag(localeTag))
+                        } else {
+                            // Reset to true system default locale from device configuration
+                            // Use Resources.getSystem() to get device locale unaffected by app overrides
+                            val systemLocale = Resources.getSystem().configuration.locales[0]
+                            Locale.setDefault(systemLocale)
+                        }
                     }
                 },
                 onSplashScreenRemoved = {

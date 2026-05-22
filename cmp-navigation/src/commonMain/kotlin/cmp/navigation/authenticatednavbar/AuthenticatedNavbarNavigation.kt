@@ -15,7 +15,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import kotlinx.serialization.Serializable
-import template.core.base.ui.composableWithStayTransitions
+import template.core.base.ui.nav.composableWithStayTransitions
 
 @Serializable
 data object AuthenticatedNavbarRoute
@@ -26,10 +26,18 @@ internal fun NavController.navigateToAuthenticatedNavBar(navOptions: NavOptions?
 
 internal fun NavGraphBuilder.authenticatedNavbarGraph(
     navigateToSettingsScreen: () -> Unit,
+    navigateToRates: () -> Unit,
+    navigateToHistory: () -> Unit,
+    navigateToCrypto: () -> Unit,
+    navigateToEmi: () -> Unit,
 ) {
     composableWithStayTransitions<AuthenticatedNavbarRoute> {
         AuthenticatedNavbarNavigationScreen(
             navigateToSettingsScreen = navigateToSettingsScreen,
+            navigateToRates = navigateToRates,
+            navigateToHistory = navigateToHistory,
+            navigateToCrypto = navigateToCrypto,
+            navigateToEmi = navigateToEmi,
         )
     }
 }

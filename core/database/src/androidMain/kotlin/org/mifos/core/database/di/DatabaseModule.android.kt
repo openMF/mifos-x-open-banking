@@ -9,25 +9,27 @@
  */
 package org.mifos.core.database.di
 
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import org.mifos.core.database.AppDatabase
+import org.mifos.core.database.currency.converter.ChargeTypeConverters
 import template.core.base.database.AppDatabaseFactory
-import kotlin.coroutines.CoroutineContext
+import template.core.base.security.FieldEncryptor
 
 actual val platformModule: Module = module {
     single {
-        AppDatabaseFactory(
-            androidApplication(),
-        )
-            .createDatabase(
-                databaseClass = AppDatabase::class.java,
+        ChargeTypeConverters.install(get<FieldEncryptor>())
+        AppDatabaseFactory(androidApplication())
+            .createDatabase<AppDatabase>(
                 databaseName = AppDatabase.DATABASE_NAME,
             )
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .fallbackToDestructiveMigrationOnDowngrade(false)
-            .setQueryCoroutineContext(Dispatchers.IO as CoroutineContext)
+            .setDriver(BundledSQLiteDriver())
+            .setQueryCoroutineContext(Dispatchers.IO)
             .build()
     }
 }

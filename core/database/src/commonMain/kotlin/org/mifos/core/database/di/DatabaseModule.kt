@@ -13,10 +13,31 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 import org.mifos.core.database.AppDatabase
 
+/**
+ * Koin module that provides the [AppDatabase] instance and all DAO singletons.
+ *
+ * Delegates platform-specific database construction to [platformModule], which each
+ * source set (`androidMain`, `desktopMain`, `nativeMain`, `jsMain`, `wasmJsMain`)
+ * implements using the appropriate [AppDatabaseFactory][template.core.base.database.AppDatabaseFactory]
+ * and SQLite driver.
+ */
 val DatabaseModule = module {
     includes(platformModule)
     single { get<AppDatabase>().sampleDao }
+    single { get<AppDatabase>().exchangeRatesDao }
+    single { get<AppDatabase>().coinMarketDao }
+    single { get<AppDatabase>().coinDetailDao }
+    single { get<AppDatabase>().rateHistoryDao }
+    single { get<AppDatabase>().bookkeeperDao }
 }
 
-@Suppress("NO_ACTUAL_FOR_EXPECT")
+/**
+ * Platform-specific Koin module that provides the [AppDatabase] singleton.
+ *
+ * Each platform actual configures the database builder with the correct
+ * [SQLiteDriver][androidx.sqlite.SQLiteDriver] and [CoroutineDispatcher][kotlinx.coroutines.CoroutineDispatcher]:
+ * - **Android/Desktop**: [BundledSQLiteDriver][androidx.sqlite.driver.bundled.BundledSQLiteDriver] + `Dispatchers.IO`
+ * - **Native (iOS)**: [BundledSQLiteDriver][androidx.sqlite.driver.bundled.BundledSQLiteDriver] + `Dispatchers.Default`
+ * - **JS/WasmJS**: SQLiteWeb driver (OPFS-backed) + `Dispatchers.Default`
+ */
 expect val platformModule: Module

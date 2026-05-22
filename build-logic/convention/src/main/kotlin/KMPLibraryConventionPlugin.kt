@@ -1,6 +1,5 @@
 
 import com.android.build.gradle.LibraryExtension
-import org.convention.configureFlavors
 import org.convention.configureKotlinAndroid
 import org.convention.configureKotlinMultiplatform
 import org.convention.libs
@@ -18,9 +17,11 @@ class KMPLibraryConventionPlugin: Plugin<Project> {
             with(pluginManager) {
                 apply("com.android.library")
                 apply("org.jetbrains.kotlin.multiplatform")
+                apply("org.convention.kmp.flavors")
                 apply("org.convention.kmp.koin")
                 apply("org.convention.detekt.plugin")
                 apply("org.convention.spotless.plugin")
+                apply("org.convention.kover.plugin")
                 apply("org.jetbrains.kotlin.plugin.serialization")
                 apply("org.jetbrains.kotlin.plugin.parcelize")
             }
@@ -30,7 +31,6 @@ class KMPLibraryConventionPlugin: Plugin<Project> {
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
                 defaultConfig.targetSdk = 36
-                configureFlavors(this)
                 // The resource prefix is derived from the module name,
                 // so resources inside ":core:module1" must be prefixed with "core_module1_"
                 resourcePrefix = path

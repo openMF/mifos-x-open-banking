@@ -8,6 +8,8 @@
  * See https://github.com/openMF/kmp-project-template/blob/main/LICENSE
  */
 
+import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+
 plugins {
     alias(libs.plugins.kmp.library.convention)
     alias(libs.plugins.cmp.feature.convention)
@@ -23,7 +25,9 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
-            optimized = true
+            // KGP rejects debuggable=true + optimized=true on the same binary
+            // (kotlin:kgp:misconfiguration:incompatible-binary-configuration).
+            optimized = buildType == NativeBuildType.RELEASE
         }
     }
 
@@ -48,7 +52,7 @@ kotlin {
     cocoapods {
         summary = "KMP Shared Module"
         homepage = "https://github.com/openMF/kmp-project-template"
-        version = "1.0"
+        version = project.version.toString().substringBefore("-").substringBefore("+")
         ios.deploymentTarget = "16.0"
         podfile = project.file("../cmp-ios/Podfile")
 

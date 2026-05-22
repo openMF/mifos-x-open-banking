@@ -1,6 +1,45 @@
+// ── Workspace Library Linker (managed by /lib-integrate) ──────────────────
+// Edit lib-integrate.properties to add/remove libraries. Never edit this block.
+// Path-existence guard: if library not cloned locally → silently uses Maven Central.
+// Groups libraries by path so multiple modules from same build use one includeBuild.
+val libProps = java.util.Properties().apply {
+    file("lib-integrate.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+data class LibEntry(val artifact: String, val module: String)
+val pathToEntries = mutableMapOf<String, MutableList<LibEntry>>()
+libProps.stringPropertyNames()
+    .filter { it.endsWith(".local") && libProps[it] == "true" }
+    .forEach { key ->
+        val lib      = key.removeSuffix(".local")
+        val path     = libProps["$lib.path"]     as? String ?: return@forEach
+        val module   = libProps["$lib.module"]   as? String ?: return@forEach
+        val artifact = libProps["$lib.artifact"] as? String ?: return@forEach
+        // Normalize ".." segments before existence check -- Java's File.exists()
+        // doesn't collapse ".." past filesystem root on Windows, so the bare
+        // file() check can spuriously pass on CI runners.
+        val resolved = settingsDir.toPath().resolve(path).normalize().toFile()
+        if (!resolved.isDirectory) {
+            println("\uD83D\uDCE6 [lib-integrate] $lib \u2192 Maven Central (source not found at $path)")
+            return@forEach
+        }
+        println("\u26A1 [lib-integrate] $lib \u2192 local source ($path)")
+        pathToEntries.getOrPut(path) { mutableListOf() }.add(LibEntry(artifact, module))
+    }
+pathToEntries.forEach { (path, entries) ->
+    includeBuild(path) {
+        dependencySubstitution {
+            entries.forEach { (artifact, module) ->
+                substitute(module(artifact)).using(project(module))
+            }
+        }
+    }
+}
+// ── End lib-integrate managed block ───────────────────────────────────────
+
 pluginManagement {
     includeBuild("build-logic")
     repositories {
+        mavenLocal()
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -16,6 +55,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.PREFER_PROJECT
     repositories {
+        mavenLocal()
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -68,18 +108,25 @@ include(":core:designsystem")
 include(":core:domain")
 include(":core:model")
 include(":core:network")
+include(":core:store")
 include(":core:ui")
 
 include(":feature:home")
 include(":feature:profile")
 include(":feature:settings")
+include(":feature:crypto")
+include(":feature:currency-rates")
+include(":feature:emi-calculator")
 
 include(":core-base:analytics")
 include(":core-base:common")
 include(":core-base:database")
+include(":core-base:datastore")
 include(":core-base:designsystem")
 include(":core-base:network")
 include(":core-base:platform")
+include(":core-base:security")
+include(":core-base:store")
 include(":core-base:ui")
 
 check(JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {

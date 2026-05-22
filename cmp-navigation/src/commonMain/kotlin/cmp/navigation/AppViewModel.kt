@@ -12,16 +12,17 @@ package cmp.navigation
 import androidx.lifecycle.viewModelScope
 import cmp.navigation.AppAction.Internal.DynamicColorsUpdate
 import cmp.navigation.AppAction.Internal.ScreenCaptureUpdate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.mifos.core.data.repository.UserDataRepository
-import org.mifos.core.model.DarkThemeConfig
-import org.mifos.core.model.LanguageConfig
+import org.mifos.core.data.user.UserDataRepository
+import org.mifos.core.model.user.DarkThemeConfig
+import org.mifos.core.model.user.LanguageConfig
 import template.core.base.platform.garbage.GarbageCollectionManager
-import template.core.base.ui.BaseViewModel
+import template.core.base.ui.viewmodel.BaseViewModel
 
 class AppViewModel(
     private val settingsRepository: UserDataRepository,
@@ -52,6 +53,7 @@ class AppViewModel(
 
         settingsRepository
             .observeLanguage
+            .distinctUntilChanged()
             .map { AppEvent.UpdateAppLocale(it.localeName) }
             .onEach(::sendEvent)
             .launchIn(viewModelScope)

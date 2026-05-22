@@ -19,6 +19,7 @@ kotlin {
         commonMain.dependencies {
             // Core Modules
             implementation(projects.core.data)
+            implementation(projects.core.database)
             implementation(projects.core.model)
             implementation(projects.core.common)
             implementation(projects.core.datastore)
@@ -26,8 +27,12 @@ kotlin {
             implementation(projects.core.datastore)
             implementation(projects.coreBase.common)
             implementation(projects.coreBase.platform)
+            implementation(projects.coreBase.security)
 
             implementation(projects.feature.home)
+            implementation(projects.feature.crypto)
+            implementation(projects.feature.currencyRates)
+            implementation(projects.feature.emiCalculator)
             implementation(projects.feature.profile)
             implementation(projects.feature.settings)
 

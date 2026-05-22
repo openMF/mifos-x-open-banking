@@ -32,20 +32,8 @@ dependencies {
     compileOnly(libs.androidx.room.gradle.plugin)
     compileOnly(libs.firebase.crashlytics.gradlePlugin)
     compileOnly(libs.firebase.performance.gradlePlugin)
-    
-    // Keystore management dependencies
-    implementation(libs.github.api)
-    implementation(libs.okhttp)
-    implementation(libs.jackson.core)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.module.kotlin)
-    implementation(libs.commons.codec)
-    
-    // Test dependencies for keystore management
-    testImplementation(libs.junit.jupiter.api)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.jupiter.params)
-    testRuntimeOnly(libs.platform.junit.platform.launcher)
+    compileOnly(libs.kover.gradlePlugin)
+    implementation(libs.kmp.product.flavors.plugin)
 }
 
 tasks {
@@ -53,7 +41,7 @@ tasks {
         enableStricterValidation = true
         failOnWarning = true
     }
-    
+
     // Configure JUnit 5 for testing keystore management functionality
     test {
         useJUnitPlatform()
@@ -75,9 +63,9 @@ gradlePlugin {
             implementationClass = "AndroidApplicationConventionPlugin"
         }
 
-        register("androidFlavors") {
-            id = "org.convention.android.application.flavors"
-            implementationClass = "AndroidApplicationFlavorsConventionPlugin"
+        register("kmpFlavors") {
+            id = "org.convention.kmp.flavors"
+            implementationClass = "KMPFlavorsConventionPlugin"
         }
 
         register("androidFirebase") {
@@ -105,6 +93,11 @@ gradlePlugin {
             implementationClass = "KMPLibraryConventionPlugin"
         }
 
+        register("kmpCoreBaseLibrary") {
+            id = "org.convention.kmp.core.base.library"
+            implementationClass = "KMPCoreBaseLibraryConventionPlugin"
+        }
+
         // Static Analysis & Formatting Plugins
         register("detekt") {
             id = "org.convention.detekt.plugin"
@@ -121,25 +114,22 @@ gradlePlugin {
             implementationClass = "KtlintConventionPlugin"
             description = "Configures kotlinter for the project"
         }
+        register("kover") {
+            id = "org.convention.kover.plugin"
+            implementationClass = "KoverConventionPlugin"
+            description = "Applies the kover code-coverage plugin to a module. Chained from base convention plugins (Android/KMP/CMP)."
+        }
         register("gitHooks") {
             id = "org.convention.git.hooks"
             implementationClass = "GitHooksConventionPlugin"
             description = "Installs git hooks for the project"
         }
 
-//        Room Plugin
+        //  Room Plugin
         register("KMPRoom"){
             id = "mifos.kmp.room"
             implementationClass = "KMPRoomConventionPlugin"
             description = "Configures Room for the project"
-        }
-
-        // NEW ===============================
-
-        register("keystoreManagement") {
-            id = "org.convention.keystore.management"
-            implementationClass = "KeystoreManagementConventionPlugin"
-            description = "Configures keystore management tasks for the project"
         }
 
     }

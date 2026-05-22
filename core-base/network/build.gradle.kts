@@ -8,8 +8,7 @@
  * See https://github.com/openMF/kmp-project-template/blob/main/LICENSE
  */
 plugins {
-    alias(libs.plugins.kmp.library.convention)
-    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kmp.core.base.library.convention)
 }
 
 android {
@@ -26,6 +25,7 @@ kotlin {
             api(libs.ktor.client.auth)
             api(libs.ktorfit.lib)
             api(libs.kermit.logging)
+            implementation(projects.coreBase.security)
         }
 
         androidMain.dependencies {

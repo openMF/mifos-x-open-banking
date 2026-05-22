@@ -15,6 +15,12 @@ buildscript {
         classpath(libs.google.oss.licenses.plugin) {
             exclude(group = "com.google.protobuf")
         }
+        // Pin R8 to a version that understands Kotlin 2.3 metadata. The R8 bundled
+        // with AGP 8.12.3 reads up to Kotlin metadata 2.1 only, so every release-mode
+        // build with Kotlin 2.3.20 emits "R8: An error occurred when parsing kotlin
+        // metadata" warnings for almost every class. Override it with R8 9.1.x stable.
+        // Compatibility matrix: https://developer.android.com/studio/build/kotlin-d8-r8-versions
+        classpath("com.android.tools:r8:9.1.31")
     }
 }
 
@@ -31,7 +37,6 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.spotless) apply false
-    alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.moduleGraph) apply true
     alias(libs.plugins.firebase.crashlytics) apply false
     alias(libs.plugins.firebase.perf) apply false
@@ -45,6 +50,27 @@ plugins {
     alias(libs.plugins.ktrofit) apply false
 
     alias(libs.plugins.room) apply false
+
+    // Kover — root-level aggregation.
+    //
+    // Per-module kover application happens via `org.convention.kover.plugin`
+    // chained from base convention plugins (AndroidApplication / KMPLibrary /
+    // KMPCoreBaseLibrary). cmp-desktop applies it directly.
+    //
+    // Aggregation list (below) is auto-discovered from `subprojects` — any new
+    // module under :feature:*, :core:*, or :core-base:* is picked up with zero
+    // manual maintenance.
+    //
+    // Filter/verify config (further below) stays inline at root because moving
+    // it into a build-logic convention plugin would require kover-gradle-plugin
+    // on build-logic's runtime classpath, which transitively conflicts with
+    // AGP's kotlin-gradle-plugin (kover issue #135, confirmed by trial). Kover's
+    // own multi-module KMP guide recommends root-level config for the same
+    // reason: https://kotlin.github.io/kotlinx-kover/gradle-plugin/#multi-module-kotlin-multiplatform-project
+    //
+    // Tasks: ./gradlew koverHtmlReport | koverXmlReport | koverVerify
+    alias(libs.plugins.kover) apply false
+    alias(libs.plugins.kover.convention)
 }
 
 object DynamicVersion {
@@ -67,6 +93,32 @@ tasks.register("printModulePaths") {
         if (subprojects.isEmpty()) {
             println(this.path)
         }
+    }
+}
+
+// Force consistent versions across all subprojects to fix KLIB resolver duplicate warnings
+// The conflict is between org.jetbrains.androidx.* (CMP) and androidx.* (Google) transitive deps
+subprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            // Replace Google androidx.lifecycle with JetBrains fork for non-Android targets
+            if (requested.group == "org.jetbrains.androidx.lifecycle") {
+                useVersion("2.9.6")
+            }
+            if (requested.group == "org.jetbrains.androidx.savedstate") {
+                useVersion("1.3.6")
+            }
+        }
+    }
+
+    // Gradle 9+ defaults Test.failOnNoDiscoveredTests to true. AGP unit-test
+    // tasks (testDemoDebugUnitTest, testProdReleaseUnitTest, etc.) then fail
+    // on KMP `androidUnitTest` source sets that contain expect/actual TEST
+    // HELPERS but no @Test classes — those test classes legitimately live in
+    // `commonTest` or `desktopTest`. Disabling per-task unblocks the kover
+    // coverage gate without weakening real-test signal.
+    tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+        failOnNoDiscoveredTests = false
     }
 }
 
