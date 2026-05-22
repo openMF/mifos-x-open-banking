@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
-import org.mifos.core.data.user.UserDataRepository
-import org.mifos.core.model.user.AuthState
-import org.mifos.core.model.user.UserData
+import org.mifosx.openbanking.core.data.user.UserDataRepository
+import org.mifosx.openbanking.core.model.user.AuthState
+import org.mifosx.openbanking.core.model.user.UserData
 import template.core.base.ui.viewmodel.BaseViewModel
 
 class RootNavViewModel(

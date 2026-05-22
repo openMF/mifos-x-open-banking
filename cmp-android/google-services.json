@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:728434912738:android:3902eb3363b0938f1a1dbb",
         "android_client_info": {
-          "package_name": "cmp.android.app"
+          "package_name": "org.mifosx.openbanking"
         }
       },
       "oauth_client": [
@@ -38,7 +38,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:728434912738:android:3902eb3363b0938f1a1dbb",
         "android_client_info": {
-          "package_name": "cmp.android.app.debug"
+          "package_name": "org.mifosx.openbanking.debug"
         }
       },
       "oauth_client": [
@@ -67,7 +67,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:728434912738:android:4e72c77e967965ce1a1dbb",
         "android_client_info": {
-          "package_name": "cmp.android.app.demo"
+          "package_name": "org.mifosx.openbanking.demo"
         }
       },
       "oauth_client": [
@@ -96,7 +96,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:728434912738:android:4e72c77e967965ce1a1dbb",
         "android_client_info": {
-          "package_name": "cmp.android.app.demo.debug"
+          "package_name": "org.mifosx.openbanking.demo.debug"
         }
       },
       "oauth_client": [

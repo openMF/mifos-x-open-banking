@@ -17,7 +17,7 @@ android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    namespace = "org.mifos.core.designsystem"
+    namespace = "org.mifosx.openbanking.core.designsystem"
 }
 
 kotlin {
@@ -51,5 +51,5 @@ kotlin {
 compose.resources {
     publicResClass = true
     generateResClass = always
-    packageOfResClass = "org.mifos.core.designsystem.generated.resources"
+    packageOfResClass = "org.mifosx.openbanking.core.designsystem.generated.resources"
 }

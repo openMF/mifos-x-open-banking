@@ -385,8 +385,20 @@ process_module_dirs() {
         fi
     done
 
-    find "$module_path" -type f -name "*.kt" -exec sed -i.bak "s/import org\.mifos/import $PACKAGE/g" {} \;
-    find "$module_path" -type f -name "*.kt" -exec sed -i.bak "s/package org\.mifos/package $PACKAGE/g" {} \;
+    # Module-wide sed for files OUTSIDE $SUBDIR (e.g. cmp-android, cmp-navigation —
+    # modules with `org.mifos` imports but without an `org/mifos/` source dir, so the
+    # inline sed above didn't run on them).
+    #
+    # The `-not -path "*/$SUBDIR/*"` exclusion is critical. Without it, files just
+    # rewritten by the inline sed get rewritten AGAIN here. When $PACKAGE starts with
+    # "org.mifos." (e.g. org.mifosx.openbanking), the pattern `org\.mifos` matches
+    # the already-rewritten prefix of `org.mifosx.openbanking` (the literal substring
+    # "org.mifos" sits at position 0 of "org.mifosx"), so:
+    #   package org.mifosx.openbanking.core.database
+    # becomes:
+    #   package org.mifosx.openbankingx.openbanking.core.database
+    find "$module_path" -type f -name "*.kt" -not -path "*/$SUBDIR/*" -exec sed -i.bak "s/import org\.mifos/import $PACKAGE/g" {} \;
+    find "$module_path" -type f -name "*.kt" -not -path "*/$SUBDIR/*" -exec sed -i.bak "s/package org\.mifos/package $PACKAGE/g" {} \;
 }
 
 process_module_content() {

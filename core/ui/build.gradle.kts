@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "org.mifos.core.ui"
+    namespace = "org.mifosx.openbanking.core.ui"
 }
 
 kotlin {
@@ -57,5 +57,5 @@ dependencies {
 compose.resources {
     publicResClass = true
     generateResClass = always
-    packageOfResClass = "org.mifos.core.ui.generated.resources"
+    packageOfResClass = "org.mifosx.openbanking.core.ui.generated.resources"
 }

@@ -15,7 +15,7 @@ plugins {
 }
 
 android {
-    namespace = "org.mifos.core.store"
+    namespace = "org.mifosx.openbanking.core.store"
 }
 
 kotlin {

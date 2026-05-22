@@ -45,10 +45,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import org.mifos.core.ui.bottombar.KptBottomBar
-import org.mifos.core.ui.bottombar.KptNavigationRail
-import org.mifos.core.ui.scaffold.KptPullToRefreshState
-import org.mifos.core.ui.scaffold.rememberKptPullToRefreshState
+import org.mifosx.openbanking.core.ui.bottombar.KptBottomBar
+import org.mifosx.openbanking.core.ui.bottombar.KptNavigationRail
+import org.mifosx.openbanking.core.ui.scaffold.KptPullToRefreshState
+import org.mifosx.openbanking.core.ui.scaffold.rememberKptPullToRefreshState
 import template.core.base.designsystem.theme.KptTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)

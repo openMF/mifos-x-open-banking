@@ -10,15 +10,15 @@ module FastlaneConfig
     # ============================================================================
     # Core Project Information
     # ============================================================================
-    PROJECT_NAME = "kmp-project-template"
-    ORGANIZATION_NAME = "Mifos Initiative"
+    PROJECT_NAME = "MifosXOpenBanking"
+    ORGANIZATION_NAME = "MifosXOpenBanking"
 
     # ============================================================================
     # Android Configuration
     # ============================================================================
     ANDROID = {
       # Package name for Android app
-      package_name: "cmp.android.app",
+      package_name: "org.mifosx.openbanking",
 
       # Play Store credentials file path
       play_store_json_key: "secrets/playStorePublishServiceCredentialsFile.json",
@@ -51,7 +51,7 @@ module FastlaneConfig
     # ============================================================================
     IOS = {
       # Bundle identifier (CHANGE THIS FOR EACH APP)
-      app_identifier: "org.mifos.kmp.template",
+      app_identifier: "org.mifosx.openbanking",
 
       # Firebase App Distribution (CHANGE THIS FOR EACH APP)
       firebase: {

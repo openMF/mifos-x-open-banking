@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.mifos.core.data.user.UserDataRepository
-import org.mifos.core.model.user.DarkThemeConfig
-import org.mifos.core.model.user.LanguageConfig
+import org.mifosx.openbanking.core.data.user.UserDataRepository
+import org.mifosx.openbanking.core.model.user.DarkThemeConfig
+import org.mifosx.openbanking.core.model.user.LanguageConfig
 import template.core.base.platform.garbage.GarbageCollectionManager
 import template.core.base.ui.viewmodel.BaseViewModel
 

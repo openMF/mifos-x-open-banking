@@ -15,11 +15,11 @@ import cmp.navigation.generated.resources.home
 import cmp.navigation.generated.resources.profile
 import cmp.navigation.utils.toObjectNavigationRoute
 import org.jetbrains.compose.resources.StringResource
-import org.mifos.core.designsystem.icon.AppIcons
-import org.mifos.core.ui.NavigationItem
-import org.mifos.feature.home.HomeDestination
-import org.mifos.feature.home.HomeRoute
-import org.mifos.feature.profile.ProfileRoute
+import org.mifosx.openbanking.core.designsystem.icon.AppIcons
+import org.mifosx.openbanking.core.ui.NavigationItem
+import org.mifosx.openbanking.feature.home.HomeDestination
+import org.mifosx.openbanking.feature.home.HomeRoute
+import org.mifosx.openbanking.feature.profile.ProfileRoute
 
 sealed class AuthenticatedNavBarTabItem : NavigationItem {
 

@@ -12,7 +12,7 @@ plugins {
 }
 
 android {
-    namespace = "org.mifos.core.data"
+    namespace = "org.mifosx.openbanking.core.data"
     testOptions {
         unitTests {
             isIncludeAndroidResources = true

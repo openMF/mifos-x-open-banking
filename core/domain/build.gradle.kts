@@ -12,7 +12,7 @@ plugins {
 }
 
 android {
-    namespace = "org.mifos.core.domain"
+    namespace = "org.mifosx.openbanking.core.domain"
 }
 
 kotlin {
