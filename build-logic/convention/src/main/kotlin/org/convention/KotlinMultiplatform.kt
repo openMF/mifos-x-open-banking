@@ -20,7 +20,7 @@ internal fun Project.configureKotlinMultiplatform() {
         jvm("desktop")
         androidTarget()
         iosSimulatorArm64()
-        iosX64()
+        // iosX64()  // disabled 2026-05-22: ios_x64 variant resolution fails for cmp-navigation deps
         iosArm64()
         js(IR) {
             this.nodejs()

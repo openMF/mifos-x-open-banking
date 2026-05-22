@@ -18,7 +18,7 @@ plugins {
 
 kotlin {
     listOf(
-        iosX64(),
+        // iosX64(),  // disabled 2026-05-22: ios_x64 variant resolution fails
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->

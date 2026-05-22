@@ -68,7 +68,7 @@ dependencies {
     add("kspJs", libs.ktorfit.ksp)
     add("kspWasmJs", libs.ktorfit.ksp)
     add("kspDesktop", libs.ktorfit.ksp)
-    add("kspIosX64", libs.ktorfit.ksp)
+    // add("kspIosX64", libs.ktorfit.ksp)  // disabled 2026-05-22: ios_x64 target disabled
     add("kspIosArm64", libs.ktorfit.ksp)
     add("kspIosSimulatorArm64", libs.ktorfit.ksp)
 }

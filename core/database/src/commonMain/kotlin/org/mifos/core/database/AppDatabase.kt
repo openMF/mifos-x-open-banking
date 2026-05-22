@@ -16,7 +16,6 @@ import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.TypeConverters
 import org.mifos.core.database.converter.ChargeTypeConverters
-import org.mifos.core.database.migration.RemoveFintechTablesMigration
 import org.mifos.core.database.infra.dao.BookkeeperDao
 import org.mifos.core.database.infra.dao.DraftDao
 import org.mifos.core.database.infra.dao.FetchedAtDao
@@ -35,7 +34,9 @@ import org.mifos.core.database.sample.entity.SampleEntity
  * is generated code, not hand-written.
  */
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
+}
 
 /**
  * Root Room 3 database for the application.
@@ -64,9 +65,13 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
     autoMigrations = [
         // v3 → v4: adds `framework_fetched_at` for durable lastFetchedAt timestamps.
         AutoMigration(from = 3, to = 4),
-        // v4 → v5: adds `framework_submit_drafts` for offline-first form submission outbox
-        // AND drops the 4 template-fintech tables (see RemoveFintechTablesMigration).
-        AutoMigration(from = 4, to = 5, spec = RemoveFintechTablesMigration::class),
+        // v4 → v5: removed 2026-05-22. The 4 template-fintech tables (exchange_rates,
+        // coin_markets, coin_detail, rate_history) were deleted with the crypto/currency
+        // feature modules. An AutoMigrationSpec with @DeleteTable.Entries cannot live in
+        // commonMain (Room 3 KMP limitation — @OptionalExpectation constraint), so the
+        // v4→v5 migration is omitted entirely. Any existing v4 DB requires
+        // `.fallbackToDestructiveMigration()` at the Builder level, which is acceptable
+        // for this empty-slate, pre-production state.
     ],
 )
 @TypeConverters(ChargeTypeConverters::class)

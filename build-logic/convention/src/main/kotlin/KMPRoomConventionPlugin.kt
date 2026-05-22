@@ -32,7 +32,7 @@ class KMPRoomConventionPlugin : Plugin<Project> {
                     "kspAndroid",
                     "kspDesktop",
                     "kspIosArm64",
-                    "kspIosX64",
+                    // "kspIosX64",  // disabled 2026-05-22: ios_x64 target disabled
                     "kspIosSimulatorArm64",
                     "kspJs",
                     "kspWasmJs",
