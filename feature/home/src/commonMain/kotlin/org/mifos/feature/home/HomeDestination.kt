@@ -28,10 +28,6 @@ fun NavController.navigateToHome(navOptions: NavOptions? = null) {
 
 fun NavGraphBuilder.homeGraph(
     onSettingsClick: () -> Unit,
-    onNavigateToRates: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToCrypto: () -> Unit,
-    onNavigateToEmi: () -> Unit,
 ) {
     navigation<HomeDestination>(
         startDestination = HomeRoute,
@@ -39,10 +35,6 @@ fun NavGraphBuilder.homeGraph(
         composableWithStayTransitions<HomeRoute> {
             HomeScreen(
                 onSettingsClick = onSettingsClick,
-                onNavigateToRates = onNavigateToRates,
-                onNavigateToHistory = onNavigateToHistory,
-                onNavigateToCrypto = onNavigateToCrypto,
-                onNavigateToEmi = onNavigateToEmi,
             )
         }
     }

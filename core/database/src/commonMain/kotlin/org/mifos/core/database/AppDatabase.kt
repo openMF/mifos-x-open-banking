@@ -15,16 +15,8 @@ import androidx.room3.Database
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.TypeConverters
-import org.mifos.core.database.crypto.converter.FintechTypeConverters
-import org.mifos.core.database.crypto.dao.CoinDetailDao
-import org.mifos.core.database.crypto.dao.CoinMarketDao
-import org.mifos.core.database.crypto.entity.CoinDetailEntity
-import org.mifos.core.database.crypto.entity.CoinMarketEntity
-import org.mifos.core.database.currency.converter.ChargeTypeConverters
-import org.mifos.core.database.currency.dao.ExchangeRatesDao
-import org.mifos.core.database.currency.dao.RateHistoryDao
-import org.mifos.core.database.currency.entity.ExchangeRatesEntity
-import org.mifos.core.database.currency.entity.RateHistoryEntity
+import org.mifos.core.database.converter.ChargeTypeConverters
+import org.mifos.core.database.migration.RemoveFintechTablesMigration
 import org.mifos.core.database.infra.dao.BookkeeperDao
 import org.mifos.core.database.infra.dao.DraftDao
 import org.mifos.core.database.infra.dao.FetchedAtDao
@@ -63,10 +55,6 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
 @Database(
     entities = [
         SampleEntity::class,
-        ExchangeRatesEntity::class,
-        CoinMarketEntity::class,
-        CoinDetailEntity::class,
-        RateHistoryEntity::class,
         BookkeeperEntity::class,
         FetchedAtEntity::class,
         DraftEntity::class,
@@ -76,19 +64,16 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
     autoMigrations = [
         // v3 → v4: adds `framework_fetched_at` for durable lastFetchedAt timestamps.
         AutoMigration(from = 3, to = 4),
-        // v4 → v5: adds `framework_submit_drafts` for offline-first form submission outbox.
-        AutoMigration(from = 4, to = 5),
+        // v4 → v5: adds `framework_submit_drafts` for offline-first form submission outbox
+        // AND drops the 4 template-fintech tables (see RemoveFintechTablesMigration).
+        AutoMigration(from = 4, to = 5, spec = RemoveFintechTablesMigration::class),
     ],
 )
-@TypeConverters(ChargeTypeConverters::class, FintechTypeConverters::class)
+@TypeConverters(ChargeTypeConverters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract val sampleDao: SampleDao
-    abstract val exchangeRatesDao: ExchangeRatesDao
-    abstract val coinMarketDao: CoinMarketDao
-    abstract val coinDetailDao: CoinDetailDao
-    abstract val rateHistoryDao: RateHistoryDao
     abstract val bookkeeperDao: BookkeeperDao
     abstract val fetchedAtDao: FetchedAtDao
     abstract val draftDao: DraftDao

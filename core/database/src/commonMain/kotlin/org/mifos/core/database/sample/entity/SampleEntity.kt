@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
  *
  * Uses Room 3 annotations from `androidx.room3` — works on all KMP targets.
  * The class is also [@Serializable][Serializable] so it can be used with
- * [ChargeTypeConverters][org.mifos.core.database.currency.converter.ChargeTypeConverters]
+ * [ChargeTypeConverters][org.mifos.core.database.converter.ChargeTypeConverters]
  * for JSON serialization in type-converter columns.
  *
  * @property id Auto-generated primary key.

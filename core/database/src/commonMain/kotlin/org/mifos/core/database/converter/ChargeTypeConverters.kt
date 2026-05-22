@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/kmp-project-template/blob/main/LICENSE
  */
-package org.mifos.core.database.currency.converter
+package org.mifos.core.database.converter
 
 import androidx.room3.TypeConverter
 import co.touchlab.kermit.Logger

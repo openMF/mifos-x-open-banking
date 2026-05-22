@@ -18,13 +18,6 @@ import androidx.navigation.navigation
 import cmp.navigation.authenticatednavbar.AuthenticatedNavbarRoute
 import cmp.navigation.authenticatednavbar.authenticatedNavbarGraph
 import kotlinx.serialization.Serializable
-import org.mifos.feature.crypto.navigation.cryptoGraph
-import org.mifos.feature.crypto.navigation.navigateToCrypto
-import org.mifos.feature.currencyrates.navigation.currencyRatesGraph
-import org.mifos.feature.currencyrates.navigation.navigateToCurrencyRates
-import org.mifos.feature.currencyrates.navigation.navigateToRateHistory
-import org.mifos.feature.emicalculator.navigation.emiCalculatorDestination
-import org.mifos.feature.emicalculator.navigation.navigateToEmiCalculator
 import org.mifos.feature.settings.navigateToSettings
 import org.mifos.feature.settings.notificationDestination
 import org.mifos.feature.settings.settingsDestination
@@ -44,10 +37,6 @@ internal fun NavGraphBuilder.authenticatedGraph(
     ) {
         authenticatedNavbarGraph(
             navigateToSettingsScreen = navController::navigateToSettings,
-            navigateToRates = { navController.navigateToCurrencyRates() },
-            navigateToHistory = { navController.navigateToRateHistory() },
-            navigateToCrypto = { navController.navigateToCrypto() },
-            navigateToEmi = { navController.navigateToEmiCalculator() },
         )
 
         notificationDestination(
@@ -57,10 +46,5 @@ internal fun NavGraphBuilder.authenticatedGraph(
         settingsDestination(
             onBackClick = navController::popBackStack,
         )
-
-        // Fintech feature graphs
-        cryptoGraph(navController)
-        currencyRatesGraph(navController)
-        emiCalculatorDestination(onBackClick = navController::popBackStack)
     }
 }

@@ -10,20 +10,12 @@
 package org.mifos.core.data.di
 
 import template.core.base.store.infra.StoreRegistry
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
-object ApplicationStoreRegistry : StoreRegistry() {
-    val ExchangeRates = store("exchangeRates")
-    val RateHistory = store("rateHistory")
-    val CoinMarkets = store("coinMarkets")
-    val CoinDetail = store("coinDetail")
-
-    /** TTL durations — financial data has different freshness requirements. */
-    object Ttl {
-        val EXCHANGE_RATES = 5.minutes
-        val RATE_HISTORY = 1.hours
-        val COIN_MARKETS = 2.minutes
-        val COIN_DETAIL = 5.minutes
-    }
-}
+/**
+ * Application-wide Store5 registry.
+ *
+ * Currently empty after removal of the template's Frankfurter + CoinGecko
+ * stores (template residue, 2026-05-22). Re-populate with `val MyStore = store("myStore")`
+ * declarations + a `Ttl` companion as real Store5-backed features land.
+ */
+object ApplicationStoreRegistry : StoreRegistry()

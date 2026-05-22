@@ -53,10 +53,6 @@ import template.core.base.ui.util.RootTransitionProviders
 @Composable
 internal fun AuthenticatedNavbarNavigationScreen(
     navigateToSettingsScreen: () -> Unit,
-    navigateToRates: () -> Unit,
-    navigateToHistory: () -> Unit,
-    navigateToCrypto: () -> Unit,
-    navigateToEmi: () -> Unit,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberKptNavController(
         name = "AuthenticatedNavbarScreen",
@@ -105,10 +101,6 @@ internal fun AuthenticatedNavbarNavigationScreen(
         snackbarHostState = snackbarHostState,
         modifier = modifier,
         navigateToSettingsScreen = navigateToSettingsScreen,
-        navigateToRates = navigateToRates,
-        navigateToHistory = navigateToHistory,
-        navigateToCrypto = navigateToCrypto,
-        navigateToEmi = navigateToEmi,
         onAction = remember(viewModel) {
             { viewModel.trySendAction(it) }
         },
@@ -119,10 +111,6 @@ internal fun AuthenticatedNavbarNavigationScreen(
 internal fun AuthenticatedNavbarNavigationScreenContent(
     navController: NavHostController,
     navigateToSettingsScreen: () -> Unit,
-    navigateToRates: () -> Unit,
-    navigateToHistory: () -> Unit,
-    navigateToCrypto: () -> Unit,
-    navigateToEmi: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onAction: (AuthenticatedNavBarAction) -> Unit,
@@ -174,10 +162,6 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             // TOP LEVEL DESTINATIONS
             homeGraph(
                 onSettingsClick = navigateToSettingsScreen,
-                onNavigateToRates = navigateToRates,
-                onNavigateToHistory = navigateToHistory,
-                onNavigateToCrypto = navigateToCrypto,
-                onNavigateToEmi = navigateToEmi,
             )
 
             profileDestination()

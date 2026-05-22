@@ -14,14 +14,6 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import org.mifos.core.data.crypto.CryptoRepository
-import org.mifos.core.data.crypto.impl.CryptoRepositoryImpl
-import org.mifos.core.data.crypto.impl.provideCoinDetailStore
-import org.mifos.core.data.crypto.impl.provideCoinMarketsStore
-import org.mifos.core.data.currency.CurrencyRepository
-import org.mifos.core.data.currency.impl.CurrencyRepositoryImpl
-import org.mifos.core.data.currency.impl.provideExchangeRatesStore
-import org.mifos.core.data.currency.impl.provideRateHistoryStore
 import org.mifos.core.data.infra.NetworkMonitor
 import org.mifos.core.data.infra.StoreCacheManager
 import org.mifos.core.data.infra.impl.RoomFetchedAtRepository
@@ -59,39 +51,6 @@ val DataModule = module {
     }
 
     single<UserLogoutManager> { UserLogoutManagerImpl(get(), get(), get()) }
-
-    // Fintech Stores (internal — exposed only through repositories)
-    single(ApplicationStoreRegistry.ExchangeRates) { provideExchangeRatesStore(get(), get(), get()) }
-    single(ApplicationStoreRegistry.RateHistory) { provideRateHistoryStore(get(), get(), get()) }
-    single(ApplicationStoreRegistry.CoinMarkets) { provideCoinMarketsStore(get(), get(), get()) }
-    single(ApplicationStoreRegistry.CoinDetail) { provideCoinDetailStore(get(), get(), get()) }
-
-    // Register fintech feature stores for logout cache clearing
-    single(createdAtStart = true) {
-        val mgr = get<StoreCacheManager>() as StoreCacheManagerImpl
-        mgr.register(get(ApplicationStoreRegistry.ExchangeRates))
-        mgr.register(get(ApplicationStoreRegistry.RateHistory))
-        mgr.register(get(ApplicationStoreRegistry.CoinMarkets))
-        mgr.register(get(ApplicationStoreRegistry.CoinDetail))
-    }
-
-    // Fintech Repositories
-    single<CurrencyRepository> {
-        CurrencyRepositoryImpl(
-            exchangeRatesStore = get(ApplicationStoreRegistry.ExchangeRates),
-            rateHistoryStore = get(ApplicationStoreRegistry.RateHistory),
-            networkMonitor = get(),
-            fetchedAtRepository = get(),
-        )
-    }
-    single<CryptoRepository> {
-        CryptoRepositoryImpl(
-            coinMarketsStore = get(ApplicationStoreRegistry.CoinMarkets),
-            coinDetailStore = get(ApplicationStoreRegistry.CoinDetail),
-            networkMonitor = get(),
-            fetchedAtRepository = get(),
-        )
-    }
 }
 
 expect val platformModule: Module
