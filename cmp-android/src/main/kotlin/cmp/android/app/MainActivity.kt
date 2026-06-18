@@ -21,10 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 import org.koin.android.ext.android.inject
-import androidx.lifecycle.lifecycleScope
 import org.mifosx.openbanking.SharedApp
 import org.mifosx.openbanking.core.data.auth.OidcCallbackBus
 import org.mifosx.openbanking.core.data.infra.NetworkMonitor

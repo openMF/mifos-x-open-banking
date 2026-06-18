@@ -250,12 +250,14 @@ com.google.code.findbugs:jsr305:3.0.2
 com.google.code.gson:gson:2.10.1
 com.google.crypto.tink:tink-android:1.8.0
 com.google.errorprone:error_prone_annotations:2.26.0
+com.google.firebase:firebase-abt:21.1.1
 com.google.firebase:firebase-analytics:23.0.0
 com.google.firebase:firebase-annotations:17.0.0
 com.google.firebase:firebase-bom:34.7.0
 com.google.firebase:firebase-common:22.0.1
 com.google.firebase:firebase-components:19.0.0
 com.google.firebase:firebase-config-interop:16.0.1
+com.google.firebase:firebase-config:23.0.1
 com.google.firebase:firebase-crashlytics:20.0.3
 com.google.firebase:firebase-datatransport:19.0.0
 com.google.firebase:firebase-encoders-json:18.0.1
