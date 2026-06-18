@@ -201,6 +201,8 @@ private class FakeUserPreferencesRepository(
     override suspend fun setDefaultAccountId(accountId: String) {
         _userData.value = _userData.value.copy(defaultAccountId = accountId)
     }
+    override val consumerKey: String = ""
+    override suspend fun setConsumerKey(key: String) { }
     override suspend fun clearUserData() = TODO()
 }
 

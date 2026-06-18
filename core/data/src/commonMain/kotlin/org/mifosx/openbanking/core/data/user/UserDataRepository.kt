@@ -77,5 +77,11 @@ interface UserDataRepository {
 
     suspend fun setPasscode(passcode: String)
 
+    /** The OBP consumer key from encrypted storage. Empty when not yet configured. */
+    val consumerKey: String
+
+    /** Persists the OBP consumer key to encrypted storage. */
+    suspend fun setConsumerKey(key: String)
+
     suspend fun clearUserData()
 }

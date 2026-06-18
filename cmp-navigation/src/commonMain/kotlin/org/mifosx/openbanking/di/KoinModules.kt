@@ -34,7 +34,6 @@ import org.mifosx.openbanking.feature.settings.SettingsModule
 import org.mifosx.openbanking.feature.standingorders.di.StandingOrdersModule
 import org.mifosx.openbanking.feature.transactions.di.TransactionsModule
 import org.mifosx.openbanking.rootnav.RootNavViewModel
-import org.openmf.kmptemplate.BuildKonfig
 import template.core.base.analytics.di.analyticsModule
 import template.core.base.common.di.CommonModule
 import template.core.base.platform.di.platformModule
@@ -90,12 +89,9 @@ object KoinModules {
     )
 
     /**
-     * Koin properties injected at startup. The OBP consumer_key originates in the
-     * gitignored local.properties → BuildKonfig (generated only in flavor-aware app
-     * modules like this one) → consumed by core:network's ObpConfig via getProperty,
-     * so no other module needs to depend on BuildKonfig.
+     * Koin properties injected at startup. The OBP consumer key is now read from platform
+     * encrypted storage at runtime (via core:network's ObpConfig), so it is never baked
+     * into the APK — not even for dev builds.
      */
-    val koinProperties: Map<String, Any> = mapOf(
-        "obp_consumer_key" to BuildKonfig.OBP_CONSUMER_KEY,
-    )
+    val koinProperties: Map<String, Any> = emptyMap()
 }

@@ -274,6 +274,18 @@ private fun LoginCard(
                 shape = RoundedCornerShape(4.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
+            OutlinedTextField(
+                value = state.consumerKey,
+                onValueChange = { onAction(LoginAction.ConsumerKeyChanged(it)) },
+                label = { Text("Consumer Key") },
+                placeholder = { Text("OBP consumer key (prod builds fetch this automatically)") },
+                singleLine = true,
+                enabled = !state.isLoading,
+                visualTransformation = PasswordVisualTransformation(),
+                colors = fieldColors,
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = state.rememberMe,

@@ -106,6 +106,8 @@ private class SettingsFakeUserPreferencesRepository(
     override suspend fun setScreenCapturePreference(isScreenCaptureEnabled: Boolean) = TODO()
     override suspend fun setAuthToken(token: String?) = TODO()
     override suspend fun setDefaultAccountId(accountId: String) = TODO()
+    override val consumerKey: String = ""
+    override suspend fun setConsumerKey(key: String) { }
     override suspend fun clearUserData() = TODO()
 }
 

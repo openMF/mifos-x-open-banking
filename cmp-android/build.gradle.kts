@@ -132,6 +132,8 @@ dependencies {
     implementation(libs.filekit.dialog.compose)
     implementation(libs.filekit.coil)
 
+    implementation(projects.core.network)
+
     runtimeOnly(libs.androidx.compose.runtime)
     debugImplementation(libs.androidx.compose.ui.tooling)
 

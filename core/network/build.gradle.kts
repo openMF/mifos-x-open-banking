@@ -36,6 +36,8 @@ kotlin {
 
             implementation(projects.core.datastore)
 
+            implementation(libs.multiplatform.settings)
+
             implementation(libs.kotlinx.serialization.json)
 
             implementation(libs.ktor.client.core)

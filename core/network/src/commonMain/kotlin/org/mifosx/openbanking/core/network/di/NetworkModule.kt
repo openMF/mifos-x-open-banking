@@ -9,6 +9,7 @@
  */
 package org.mifosx.openbanking.core.network.di
 
+import com.russhwolf.settings.Settings
 import de.jensklingenberg.ktorfit.Ktorfit
 import io.ktor.client.HttpClient
 import org.koin.core.qualifier.named
@@ -71,7 +72,10 @@ import org.mifosx.openbanking.core.network.obp.oidcHttpClient
  * OBP endpoint group. New OBP services are registered here as their APIs are added.
  */
 val NetworkModule = module {
-    single { ObpConfig(consumerKey = getProperty("obp_consumer_key", "")) }
+    single {
+        val secureSettings: Settings = get(named("secure"))
+        ObpConfig(consumerKey = secureSettings.getStringOrNull("obp_consumer_key").orEmpty())
+    }
     single(named("isSandbox")) { get<ObpConfig>().isSandbox }
     single<ObpTokenProvider> { PersistentObpTokenProvider(preferences = get()) }
     single<HttpClient> { obpHttpClient(config = get(), tokenProvider = get()) }

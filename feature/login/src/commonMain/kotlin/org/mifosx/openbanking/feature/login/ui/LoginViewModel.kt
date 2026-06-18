@@ -16,6 +16,7 @@ import org.mifosx.openbanking.core.data.auth.ObpAuthRepository
 import org.mifosx.openbanking.core.data.auth.OidcCallbackBus
 import org.mifosx.openbanking.core.data.user.UserDataRepository
 import org.mifosx.openbanking.core.model.obp.ObpException
+import org.mifosx.openbanking.core.network.obp.ObpConfig
 import template.core.base.ui.viewmodel.BaseViewModel
 
 /**
@@ -36,7 +37,10 @@ class LoginViewModel(
     private val authRepository: ObpAuthRepository,
     private val userDataRepository: UserDataRepository,
     private val oidcCallbackBus: OidcCallbackBus,
-) : BaseViewModel<LoginState, LoginEvent, LoginAction>(initialState = LoginState()) {
+    private val obpConfig: ObpConfig,
+) : BaseViewModel<LoginState, LoginEvent, LoginAction>(
+    initialState = LoginState(),
+) {
 
     init {
         viewModelScope.launch {
@@ -59,6 +63,9 @@ class LoginViewModel(
 
             LoginAction.PasswordVisibilityToggled ->
                 updateState { copy(isPasswordVisible = !isPasswordVisible) }
+
+            is LoginAction.ConsumerKeyChanged ->
+                updateState { copy(consumerKey = action.value) }
 
             LoginAction.DirectLoginClicked -> onDirectLoginClicked()
 
@@ -84,6 +91,11 @@ class LoginViewModel(
             copy(isLoading = true, errorMessage = null, authMethod = AuthMethod.DIRECT_LOGIN)
         }
         viewModelScope.launch {
+            val key = current.consumerKey.trim()
+            if (key.isNotBlank()) {
+                obpConfig.consumerKey = key
+                userDataRepository.setConsumerKey(key)
+            }
             val result = authRepository.login(current.username.trim(), current.password)
             sendAction(LoginAction.Internal.DirectLoginResultReceive(result))
         }
@@ -166,6 +178,7 @@ private fun Throwable.toLoginErrorMessage(method: AuthMethod): String =
 data class LoginState(
     val username: String = "",
     val password: String = "",
+    val consumerKey: String = "",
     val rememberMe: Boolean = false,
     val isPasswordVisible: Boolean = false,
     val errorMessage: String? = null,
@@ -196,6 +209,7 @@ sealed interface LoginEvent {
 sealed interface LoginAction {
     data class UsernameChanged(val value: String) : LoginAction
     data class PasswordChanged(val value: String) : LoginAction
+    data class ConsumerKeyChanged(val value: String) : LoginAction
     data object RememberMeToggled : LoginAction
     data object PasswordVisibilityToggled : LoginAction
     data object DirectLoginClicked : LoginAction

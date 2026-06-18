@@ -89,5 +89,10 @@ class UserDataRepositoryImpl(
 
     override suspend fun setPasscode(passcode: String) = preferencesRepository.setPasscode(passcode)
 
+    override val consumerKey: String
+        get() = preferencesRepository.consumerKey
+
+    override suspend fun setConsumerKey(key: String) = preferencesRepository.setConsumerKey(key)
+
     override suspend fun clearUserData() = preferencesRepository.clearUserData()
 }

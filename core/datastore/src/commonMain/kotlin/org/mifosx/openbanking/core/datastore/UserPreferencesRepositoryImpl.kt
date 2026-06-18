@@ -30,6 +30,7 @@ import template.core.base.common.manager.DispatcherManager
 
 private const val USER_DATA_KEY = "user_data_key"
 private const val SECURE_DATA_KEY = "secure_data_key"
+private const val OBP_CONSUMER_KEY = "obp_consumer_key"
 
 /**
  * Splits user data storage between plain (UI preferences) and secure
@@ -192,6 +193,15 @@ class UserPreferencesRepositoryImpl(
 
     override suspend fun setDefaultAccountId(accountId: String) =
         updatePreference { it.copy(defaultAccountId = accountId) }
+
+    override val consumerKey: String
+        get() = secureSettings.getString(OBP_CONSUMER_KEY, "")
+
+    override suspend fun setConsumerKey(key: String) {
+        withContext(dispatcher.io) {
+            secureSettings.putString(OBP_CONSUMER_KEY, key)
+        }
+    }
 
     override suspend fun clearUserData() {
         setIsAuthenticated(false)

@@ -98,6 +98,9 @@ private class FakeUserDataRepository(
     override suspend fun setPasscode(passcode: String) {
         _userData.value = _userData.value.copy(passcode = passcode)
     }
+    private var _consumerKey: String = ""
+    override val consumerKey: String get() = _consumerKey
+    override suspend fun setConsumerKey(key: String) { _consumerKey = key }
     override suspend fun clearUserData() {
         _userData.value = UserData.DEFAULT
     }

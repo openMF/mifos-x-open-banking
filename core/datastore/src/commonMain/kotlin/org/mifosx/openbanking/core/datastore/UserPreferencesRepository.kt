@@ -84,5 +84,11 @@ interface UserPreferencesRepository {
     /** Persists (or clears, when null) the OBP DirectLogin session token in secure storage. */
     suspend fun setAuthToken(token: String?)
 
+    /** The OBP consumer key stored in encrypted platform storage. Empty when not yet configured. */
+    val consumerKey: String
+
+    /** Persists the OBP consumer key to encrypted platform storage. */
+    suspend fun setConsumerKey(key: String)
+
     suspend fun clearUserData()
 }

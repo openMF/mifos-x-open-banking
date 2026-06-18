@@ -10,14 +10,18 @@
 package org.mifosx.openbanking.core.network.obp
 
 /**
- * Static OBP connection settings. [baseUrl] + [bankId] default to the OBP sandbox;
- * Phase 7 binds `backend.environments` (local vs production) per flavor/build-type
- * and injects [consumerKey] from secure storage (never hardcoded — CREDS-LIFECYCLE).
+ * OBP connection settings. [baseUrl] + [bankId] default to the OBP sandbox;
+ * Phase 7 binds `backend.environments` (local vs production) per flavor/build-type.
+ *
+ * [consumerKey] is read from platform encrypted storage at Koin startup and can be
+ * updated at runtime when the user enters a new key in Settings. It is never baked
+ * into the APK — not even for dev builds.
  */
 data class ObpConfig(
     val baseUrl: String = "https://apisandbox.openbankproject.com/obp/",
     val bankId: String = "ac.bank.uk",
-    val consumerKey: String = "",
+    /** Set at Koin startup from encrypted storage; updated at runtime when the user saves a new key. */
+    var consumerKey: String = "",
 ) {
     /**
      * True when pointed at an OBP sandbox. Gates the sandbox-only SANDBOX_TAN payment rail, whose

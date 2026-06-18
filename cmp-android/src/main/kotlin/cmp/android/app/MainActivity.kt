@@ -24,10 +24,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 import org.koin.android.ext.android.inject
+import androidx.lifecycle.lifecycleScope
 import org.mifosx.openbanking.SharedApp
 import org.mifosx.openbanking.core.data.auth.OidcCallbackBus
 import org.mifosx.openbanking.core.data.infra.NetworkMonitor
 import org.mifosx.openbanking.core.data.user.UserDataRepository
+import org.mifosx.openbanking.core.network.obp.ObpConfig
 import template.core.base.analytics.AnalyticsHelper
 import template.core.base.analytics.lifecycleTracker
 import template.core.base.platform.update.AppUpdateManager
@@ -48,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appUpdateManager: AppUpdateManager
 
     private val userPreferencesRepository: UserDataRepository by inject()
+
+    private val obpConfig: ObpConfig by inject()
 
     private val networkMonitor: NetworkMonitor by inject()
 
@@ -71,6 +75,8 @@ class MainActivity : AppCompatActivity() {
 
         ShareUtils.setActivityProvider { return@setActivityProvider this }
         FileKit.init(this)
+
+        FirebaseConsumerKeyProvider.fetch(lifecycleScope, obpConfig, userPreferencesRepository)
 
         analyticsHelper.setUserId(deviceData)
 
