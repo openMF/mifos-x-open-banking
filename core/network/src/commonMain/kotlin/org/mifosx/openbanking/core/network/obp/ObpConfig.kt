@@ -11,7 +11,6 @@ package org.mifosx.openbanking.core.network.obp
 
 /**
  * OBP connection settings. [baseUrl] + [bankId] default to the OBP sandbox;
- * Phase 7 binds `backend.environments` (local vs production) per flavor/build-type.
  *
  * [consumerKey] is read from platform encrypted storage at Koin startup and can be
  * updated at runtime when the user enters a new key in Settings. It is never baked
