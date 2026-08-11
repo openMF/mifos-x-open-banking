@@ -34,4 +34,16 @@ data class Data(
     val scaSupportData: SCASupportData? = null,
     @SerialName("DomesticScheduledPaymentId")
     val domesticScheduledPaymentId: String? = null,
+    /**
+     * The charges the bank applies. Present from consent staging onwards on this rail.
+     *
+     * `ExpectedSettlementDateTime` is deliberately NOT modelled: the sandbox returns it equal to
+     * `CreationDateTime` — today — not the requested execution date, so mapping it would render a
+     * payment due next week as settled today. The only truthful date is
+     * [Initiation.requestedExecutionDateTime].
+     */
+    @SerialName("Charges")
+    val charges: List<Charge>? = null,
+    @SerialName("ExpectedExecutionDateTime")
+    val expectedExecutionDateTime: String? = null,
 )

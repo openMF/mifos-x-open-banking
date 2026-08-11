@@ -20,7 +20,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.feature.paymentstatus.FakePaymentHistoryRepository
-import org.mifosx.openbanking.feature.paymentstatus.FakePaymentInitiationRepository
+import org.mifosx.openbanking.feature.paymentstatus.FakePaymentStatusRepository
 import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusFixtures
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -56,7 +56,7 @@ class PaymentStatusViewModelTest {
     private val clock = FixedClock(Instant.parse("2026-08-03T14:25:00Z"))
 
     private fun viewModel(
-        repository: FakePaymentInitiationRepository = FakePaymentInitiationRepository(),
+        repository: FakePaymentStatusRepository = FakePaymentStatusRepository(),
         history: FakePaymentHistoryRepository = FakePaymentHistoryRepository(),
         paymentId: String = PaymentStatusFixtures.PAYMENT_ID,
     ) = PaymentStatusViewModel(
@@ -76,7 +76,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun readsTheStatusForTheRoutesPaymentId() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
 
         viewModel(repository)
 
@@ -101,7 +101,7 @@ class PaymentStatusViewModelTest {
      */
     @Test
     fun submittedComesFromCreationTimeNotTheStatusUpdateTime() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receiptWithDistinctTimestamps(),
         )
 
@@ -123,7 +123,7 @@ class PaymentStatusViewModelTest {
     /** No charge is not the same claim as a zero charge, so nothing is invented to fill the gap. */
     @Test
     fun aPaymentWithNoChargesCarriesNone() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt(charges = emptyList()),
         )
 
@@ -132,7 +132,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun aMissingSettlementTimeLeavesTheRowEmptyRatherThanFormattingNothing() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt().copy(settlementDateTime = ""),
         )
 
@@ -145,7 +145,7 @@ class PaymentStatusViewModelTest {
      */
     @Test
     fun refreshingUpdatesLastCheckedEvenWhenTheStatusHasNotMoved() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
         assertEquals("14:25", content(vm).lastCheckedAt)
 
@@ -160,7 +160,7 @@ class PaymentStatusViewModelTest {
     /** And when it has moved, both the status and the stamp advance. */
     @Test
     fun aSettledReadUpdatesBothTheStatusAndTheStamp() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         repository.receiptReturns(
@@ -198,7 +198,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun reportsASettledPaymentAsTerminalSuccess() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(
             NetworkResult.Success(
                 PaymentStatusFixtures.receipt(status = PaymentStatus.AcceptedSettlementCompleted),
@@ -212,7 +212,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun reportsARejectedPaymentAsTerminalFailure() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(
             NetworkResult.Success(PaymentStatusFixtures.receipt(status = PaymentStatus.Rejected)),
         )
@@ -222,7 +222,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun refreshingReReadsTheStatus() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         vm.trySendAction(PaymentStatusAction.RefreshStatus)
@@ -233,7 +233,7 @@ class PaymentStatusViewModelTest {
     /** Replacing a known answer with a skeleton reads as losing it. */
     @Test
     fun refreshingKeepsTheCurrentStatusOnScreen() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         vm.trySendAction(PaymentStatusAction.RefreshStatus)
@@ -244,7 +244,7 @@ class PaymentStatusViewModelTest {
     /** A payment id that resolves to nothing is a failure to explain, not an empty set. */
     @Test
     fun anUnknownPaymentIsAnErrorRatherThanAnEmptyState() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(NetworkResult.Error(NetworkError.Client.NotFound(null)))
 
         val state = assertIs<PaymentStatusUiState.Error>(viewModel(repository).stateFlow.value.uiState)
@@ -253,7 +253,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun anExpiredTokenIsReportedAsSuch() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(NetworkResult.Error(NetworkError.Client.Unauthorized(null)))
 
         val state = assertIs<PaymentStatusUiState.Error>(viewModel(repository).stateFlow.value.uiState)
@@ -262,7 +262,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun aTransportFailureIsReportedAsANetworkError() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(
             NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))),
         )
@@ -274,7 +274,7 @@ class PaymentStatusViewModelTest {
     /** Retry from the error state is the same read, so a recovered payment renders normally. */
     @Test
     fun retryingAfterAFailureRecoversTheContent() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(
             NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))),
         )
@@ -296,7 +296,7 @@ class PaymentStatusViewModelTest {
      */
     @Test
     fun aFailedRefreshKeepsTheContentOnScreen() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         repository.statusReturns(
@@ -311,7 +311,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun aFailedRefreshSurfacesTheFailureAndStopsSpinning() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         repository.statusReturns(NetworkResult.Error(NetworkError.Client.Unauthorized(null)))
@@ -325,7 +325,7 @@ class PaymentStatusViewModelTest {
     /** The stamp must not advance on a read that never landed, or it would claim a check happened. */
     @Test
     fun aFailedRefreshLeavesLastCheckedWhereItWas() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
 
         repository.statusReturns(
@@ -339,7 +339,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun aRecoveredRefreshClearsTheFailureNotice() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         val vm = viewModel(repository)
         repository.statusReturns(
             NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))),
@@ -356,7 +356,7 @@ class PaymentStatusViewModelTest {
     /** With nothing to preserve, the first load's failure is still the error page. */
     @Test
     fun aFailedFirstLoadIsStillTheErrorPage() = runTest {
-        val repository = FakePaymentInitiationRepository()
+        val repository = FakePaymentStatusRepository()
         repository.statusReturns(NetworkResult.Error(NetworkError.Client.NotFound(null)))
 
         assertIs<PaymentStatusUiState.Error>(viewModel(repository).stateFlow.value.uiState)
@@ -421,7 +421,7 @@ class PaymentStatusViewModelTest {
     /** The dated stages must never run backwards against the newest-first order they are drawn in. */
     @Test
     fun theDatedStagesRunNewestFirst() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receiptWithDistinctTimestamps()
                 .copy(status = PaymentStatus.AcceptedCreditSettlementCompleted),
         )
@@ -487,7 +487,7 @@ class PaymentStatusViewModelTest {
      */
     @Test
     fun aMerelyReceivedPaymentLeavesTheFinalStagePending() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt(status = PaymentStatus.Received),
         )
 
@@ -499,7 +499,7 @@ class PaymentStatusViewModelTest {
     /** An unrecognised status is the same refusal to guess: pending, not settling. */
     @Test
     fun anUnrecognisedStatusLeavesTheFinalStagePending() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt(status = PaymentStatus.Unknown),
         )
 
@@ -511,7 +511,7 @@ class PaymentStatusViewModelTest {
 
     @Test
     fun aSettledPaymentCompletesTheFinalStageWithTheSettlementTime() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receiptWithDistinctTimestamps()
                 .copy(status = PaymentStatus.AcceptedCreditSettlementCompleted),
         )
@@ -525,7 +525,7 @@ class PaymentStatusViewModelTest {
     /** Everything up to the bank's refusal did happen, so only the last stage fails. */
     @Test
     fun aRejectedPaymentFailsOnlyItsFinalStage() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt(status = PaymentStatus.Rejected),
         )
 
@@ -540,7 +540,7 @@ class PaymentStatusViewModelTest {
     /** The rejection is dated from the bank's own status-update time, not from anything invented. */
     @Test
     fun aRejectedPaymentDatesItsFailureFromTheStatusUpdate() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receiptWithDistinctTimestamps()
                 .copy(status = PaymentStatus.Rejected),
         )
@@ -560,7 +560,7 @@ class PaymentStatusViewModelTest {
      */
     @Test
     fun aBlankStatusUpdateTimeLeavesTheRowEmptyRatherThanFormattingNothing() = runTest {
-        val repository = FakePaymentInitiationRepository(
+        val repository = FakePaymentStatusRepository(
             receipt = PaymentStatusFixtures.receipt().copy(statusUpdateDateTime = ""),
         )
 

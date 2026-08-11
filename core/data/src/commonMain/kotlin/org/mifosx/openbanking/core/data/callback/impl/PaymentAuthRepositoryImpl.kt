@@ -9,7 +9,9 @@
  */
 package org.mifosx.openbanking.core.data.callback.impl
 
+import org.mifosx.openbanking.core.data.banking.mapper.intlScheduledStatusOrEmpty
 import org.mifosx.openbanking.core.data.banking.mapper.intlStatusOrEmpty
+import org.mifosx.openbanking.core.data.banking.mapper.scheduledStatusOrEmpty
 import org.mifosx.openbanking.core.data.banking.mapper.statusOrEmpty
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
@@ -101,7 +103,9 @@ internal class PaymentAuthRepositoryImpl(
      * `90a7ee30`; the consent was missed, and `getInternationalPaymentConsent` had no production
      * caller at all despite being proven correct by `PispTest`.
      */
-    @Suppress("ReturnCount")
+    // Four products, each with its own endpoint and its own success/error unwrap — the complexity is
+    // the product count, not tangled logic, and collapsing it would hide which endpoint serves which.
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
     override suspend fun consentStatus(consentId: String): NetworkResult<String, NetworkError> {
         val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
             is NetworkResult.Success -> result.data.accessToken
@@ -123,6 +127,18 @@ internal class PaymentAuthRepositoryImpl(
             ConsentType.InternationalSinglePayment ->
                 when (val result = pisp.getInternationalPaymentConsent(token, consentId)) {
                     is NetworkResult.Success -> NetworkResult.Success(result.data.intlStatusOrEmpty())
+                    is NetworkResult.Error -> result
+                }
+
+            ConsentType.DomesticScheduledPayment ->
+                when (val result = pisp.getDomesticScheduledPaymentConsent(token, consentId)) {
+                    is NetworkResult.Success -> NetworkResult.Success(result.data.scheduledStatusOrEmpty())
+                    is NetworkResult.Error -> result
+                }
+
+            ConsentType.InternationalScheduledPayment ->
+                when (val result = pisp.getInternationalScheduledPaymentConsent(token, consentId)) {
+                    is NetworkResult.Success -> NetworkResult.Success(result.data.intlScheduledStatusOrEmpty())
                     is NetworkResult.Error -> result
                 }
         }

@@ -56,6 +56,13 @@ data class PaymentHistoryEntity(
     val settlementDateTime: String?,
     val chargeBearer: String? = null,
     val currencyOfTransfer: String? = null,
+    /**
+     * The date a scheduled payment is due, or null on an immediate one.
+     *
+     * Nullable rather than defaulted to the creation date: an immediate payment has no such date,
+     * and writing one would make the hub claim a payment is due later than it was made.
+     */
+    val requestedExecutionDateTime: String? = null,
     val paymentType: String,
     val syncedAt: String?,
 )

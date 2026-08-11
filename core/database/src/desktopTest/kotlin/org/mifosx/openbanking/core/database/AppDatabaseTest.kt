@@ -55,7 +55,7 @@ class AppDatabaseTest {
         // fields — and is the first version reached by a real migration rather than a table drop;
         // 6 added accounts.description, without which a Global Money wallet reads back as a plain
         // current account and is offered as a payer the bank refuses.
-        assertEquals(6, AppDatabase.VERSION)
+        assertEquals(7, AppDatabase.VERSION)
     }
 
     /**

@@ -21,6 +21,7 @@ import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
 import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.user.DarkThemeConfig
 import org.mifosx.openbanking.core.model.user.LanguageConfig
 import org.mifosx.openbanking.core.model.user.ThemeBrand
@@ -249,6 +250,8 @@ private class RecordingPaymentAuthSession : PaymentAuthSession {
     override fun savePaymentToken(tokens: PsuTokenResponse) = Unit
     override fun saveDraft(draft: PaymentDraft) = Unit
     override fun draft(): PaymentDraft? = null
+    override fun saveScheduledDraft(draft: ScheduledPaymentDraft) = Unit
+    override fun scheduledDraft(): ScheduledPaymentDraft? = null
     override fun saveApprovedAt(instant: String) = Unit
     override fun approvedAt(): String? = null
 

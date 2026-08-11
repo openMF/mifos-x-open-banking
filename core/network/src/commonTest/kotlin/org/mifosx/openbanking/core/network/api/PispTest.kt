@@ -22,6 +22,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.mifosx.openbanking.core.network.TestSigningKey
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.CreditorAccount
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Data
@@ -32,8 +33,12 @@ import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.In
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.InstructedAmount
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.RemittanceInformation
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Risk
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentRequest
 import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_FINANCIAL_ID
 import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_INTERACTION_ID
 import org.mifosx.openbanking.core.network.pisp.HEADER_IDEMPOTENCY_KEY
@@ -47,12 +52,22 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.CreditorAccount as SchedCreditorAccount
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.Data as SchedData
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.Initiation as SchedInitiation
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.InstructedAmount as SchedInstructedAmount
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.Risk as SchedRisk
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.CreditorAccount as IntlCreditorAccount
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.Data as IntlData
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.DebtorAccount as IntlDebtorAccount
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.Initiation as IntlInitiation
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InstructedAmount as IntlInstructedAmount
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.Risk as IntlRisk
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.CreditorAccount as IntlSchedCreditorAccount
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.Data as IntlSchedData
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.Initiation as IntlSchedInitiation
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InstructedAmount as IntlSchedInstructedAmount
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.Risk as IntlSchedRisk
 
 private const val KID = "test-kid-1"
 private const val SIGNING_ISSUER = "mifos_init_00000/0000000000000000000000"
@@ -480,4 +495,184 @@ class PispTest {
 
         assertIs<NetworkResult.Success<*>>(result)
     }
+
+    // region — Scheduled payment endpoints
+
+    private fun schedConsentRequest(): DomesticScheduledPaymentConsentRequest =
+        DomesticScheduledPaymentConsentRequest(
+            data = SchedData(
+                permission = "Create",
+                initiation = SchedInitiation(
+                    instructionIdentification = "MFX20260811T1000000001",
+                    endToEndIdentification = "E2E-SCHED-202608",
+                    requestedExecutionDateTime = "2026-08-14T00:00:00+00:00",
+                    instructedAmount = SchedInstructedAmount(amount = "250.00", currency = "GBP"),
+                    creditorAccount = SchedCreditorAccount(
+                        schemeName = "UK.OBIE.SortCodeAccountNumber",
+                        identification = "80200110203350",
+                        name = "Mr Dharani C",
+                    ),
+                ),
+            ),
+            risk = SchedRisk(paymentContextCode = "TransferToThirdParty"),
+        )
+
+    private fun intlSchedConsentRequest(): InternationalScheduledPaymentConsentRequest =
+        InternationalScheduledPaymentConsentRequest(
+            data = IntlSchedData(
+                permission = "Create",
+                initiation = IntlSchedInitiation(
+                    instructionIdentification = "MFX20260811T1000000002",
+                    endToEndIdentification = "E2E-INTLSCHED-202608",
+                    requestedExecutionDateTime = "2026-08-14T00:00:00+00:00",
+                    currencyOfTransfer = "EUR",
+                    chargeBearer = "BorneByCreditor",
+                    instructedAmount = IntlSchedInstructedAmount(amount = "250.00", currency = "GBP"),
+                    creditorAccount = IntlSchedCreditorAccount(
+                        schemeName = "UK.OBIE.IBAN",
+                        identification = "DE89370400440532013000",
+                        name = "Klara Weiss",
+                    ),
+                ),
+            ),
+            risk = IntlSchedRisk(categoryPurposeCode = "EPAY"),
+        )
+
+    @Test
+    fun `stages a domestic scheduled consent on the payments-scope token`() = runTest {
+        pisp().createDomesticScheduledPaymentConsent("cc-payments-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+
+        val request = captured.single()
+        assertEquals("/v4.0/pisp/domestic-scheduled-payment-consents", request.path)
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("Bearer cc-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
+        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
+    }
+
+    @Test
+    fun `stages an international scheduled consent on the payments-scope token`() = runTest {
+        pisp().createInternationalScheduledPaymentConsent(
+            "cc-payments-token",
+            intlSchedConsentRequest(),
+            IDEMPOTENCY_KEY,
+        )
+
+        val request = captured.single()
+        assertEquals("/v4.0/pisp/international-scheduled-payment-consents", request.path)
+        assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
+        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
+    }
+
+    @Test
+    fun `creates a domestic scheduled payment on the psu token`() = runTest {
+        pisp().createDomesticScheduledPayment(
+            psuAccessToken = "psu-payments-token",
+            request = DomesticScheduledPaymentRequest(
+                data = SchedData(consentId = "45149", initiation = schedConsentRequest().data?.initiation),
+                risk = SchedRisk(paymentContextCode = "TransferToThirdParty"),
+            ),
+            idempotencyKey = IDEMPOTENCY_KEY,
+        )
+
+        val request = captured.single()
+        assertEquals("/v4.0/pisp/domestic-scheduled-payments", request.path)
+        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
+    }
+
+    @Test
+    fun `creates an international scheduled payment on the psu token`() = runTest {
+        pisp().createInternationalScheduledPayment(
+            psuAccessToken = "psu-payments-token",
+            request = InternationalScheduledPaymentRequest(
+                data = IntlSchedData(consentId = "45157", initiation = intlSchedConsentRequest().data?.initiation),
+                risk = IntlSchedRisk(categoryPurposeCode = "EPAY"),
+            ),
+            idempotencyKey = IDEMPOTENCY_KEY,
+        )
+
+        val request = captured.single()
+        assertEquals("/v4.0/pisp/international-scheduled-payments", request.path)
+        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+    }
+
+    /**
+     * The four reads are pure GETs. Neither header belongs on them, and asserting their **absence**
+     * is the point: a JWS over an empty body, or a replayed idempotency key on a read, would both be
+     * accepted by the client and meaningless to the bank.
+     */
+    @Test
+    fun `scheduled reads carry neither an idempotency key nor a signature`() = runTest {
+        val client = pisp(responseBody = "{}", status = HttpStatusCode.OK)
+
+        client.getDomesticScheduledPaymentConsent("cc-token", "45149")
+        client.getDomesticScheduledPayment("cc-token", "19919")
+        client.getInternationalScheduledPaymentConsent("cc-token", "45157")
+        client.getInternationalScheduledPayment("cc-token", "19921")
+
+        assertEquals(4, captured.size)
+        captured.forEach { request ->
+            assertEquals(HttpMethod.Get, request.method)
+            assertNull(request.headers[HEADER_IDEMPOTENCY_KEY], "a read must not carry an idempotency key")
+            assertNull(request.headers[HEADER_JWS_SIGNATURE], "a read must not carry a signature")
+        }
+        assertEquals(
+            listOf(
+                "/v4.0/pisp/domestic-scheduled-payment-consents/45149",
+                "/v4.0/pisp/domestic-scheduled-payments/19919",
+                "/v4.0/pisp/international-scheduled-payment-consents/45157",
+                "/v4.0/pisp/international-scheduled-payments/19921",
+            ),
+            captured.map { it.path },
+        )
+    }
+
+    /**
+     * The body must be the canonical serialization of the request, because that same object is what
+     * the detached JWS is computed over. Any re-serialisation between signing and sending would
+     * invalidate a signature that is arithmetically correct.
+     */
+    @Test
+    fun `transmits the exact scheduled bytes that were signed`() = runTest {
+        val request = schedConsentRequest()
+
+        pisp().createDomesticScheduledPaymentConsent("cc-token", request, IDEMPOTENCY_KEY)
+
+        assertEquals(
+            obieBody(DomesticScheduledPaymentConsentRequest.serializer(), request).toString(),
+            captured.single().body,
+        )
+    }
+
+    /**
+     * `Permission` is mandatory on a scheduled consent and refused `400 U004` when missing — a field
+     * the immediate rails have no equivalent of, so it is easy to omit by copying them.
+     */
+    @Test
+    fun `the scheduled consent body carries the create permission`() = runTest {
+        pisp().createDomesticScheduledPaymentConsent("cc-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+
+        val data = Json.parseToJsonElement(captured.single().body).jsonObject.getValue("Data").jsonObject
+        assertEquals("Create", data.getValue("Permission").jsonPrimitive.content)
+    }
+
+    /**
+     * Neither scheduled rail sends `LocalInstrument`. The proven sandbox consents carry no such key,
+     * and this rail's only observed `U005` triggers are fields it did not expect.
+     */
+    @Test
+    fun `the scheduled consent body sends no local instrument`() = runTest {
+        pisp().createDomesticScheduledPaymentConsent("cc-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+
+        val initiation = Json.parseToJsonElement(captured.single().body)
+            .jsonObject.getValue("Data").jsonObject.getValue("Initiation").jsonObject
+        assertTrue("LocalInstrument" !in initiation.keys)
+        assertEquals(
+            "2026-08-14T00:00:00+00:00",
+            initiation.getValue("RequestedExecutionDateTime").jsonPrimitive.content,
+        )
+    }
+
+    // endregion
 }

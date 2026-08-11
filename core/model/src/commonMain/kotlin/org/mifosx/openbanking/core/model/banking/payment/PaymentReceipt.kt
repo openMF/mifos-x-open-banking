@@ -36,7 +36,13 @@ data class PaymentCharge(
  * @property statusUpdateDateTime When [status] last moved. HSBC returns this unchanged from
  *   [creationDateTime] even on a settled payment, so it is reported, not relied upon.
  * @property settlementDateTime When the funds are expected to settle, or empty when the bank did not
- *   say.
+ *   say. **Always empty on the scheduled rails**: they do return an `ExpectedSettlementDateTime`, but
+ *   the sandbox sets it equal to `CreationDateTime` — today — rather than to the requested date, so
+ *   mapping it would report a payment due next week as settling now. Read
+ *   [requestedExecutionDateTime] instead for those.
+ * @property requestedExecutionDateTime The date a scheduled payment is due, echoed from the
+ *   `Initiation`. Empty on an immediate payment, which has no such date. This is the only date on a
+ *   scheduled payment the bank states truthfully.
  * @property amountLabel The instructed amount echoed by the bank, formatted for display.
  * @property creditorName Who was paid, echoed from the submitted `Initiation`.
  * @property reference The remittance reference, or empty when the payment carried none.
@@ -55,6 +61,7 @@ data class PaymentReceipt(
     val amountLabel: String,
     val creditorName: String,
     val settlementDateTime: String = "",
+    val requestedExecutionDateTime: String = "",
     val reference: String = "",
     val debtorIdentification: String = "",
     val charges: List<PaymentCharge> = emptyList(),

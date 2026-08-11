@@ -17,7 +17,7 @@ import org.mifosx.openbanking.core.common.formatDateTime
 import org.mifosx.openbanking.core.common.formatSortCode
 import org.mifosx.openbanking.core.common.formatTimeOfDay
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
@@ -44,7 +44,7 @@ private const val SORT_CODE_DIGITS = 6
  */
 class PaymentStatusViewModel(
     savedStateHandle: SavedStateHandle,
-    private val repository: PaymentInitiationRepository,
+    private val repository: PaymentStatusRepository,
     private val paymentHistoryRepository: PaymentHistoryRepository,
     private val clock: Clock = Clock.System,
     private val timeZone: TimeZone = TimeZone.currentSystemDefault(),

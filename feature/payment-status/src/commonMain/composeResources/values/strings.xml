@@ -25,6 +25,9 @@
     <string name="feature_payment_status_detail_pending">Pending at your bank</string>
     <string name="feature_payment_status_detail_acsp">Accepted — settlement in process</string>
     <string name="feature_payment_status_detail_actc">Accepted — technical validation passed</string>
+    <!-- A scheduled payment that is set up and waiting for its date. It is not "in process": nothing
+         happens until the execution date, which may be up to a year away. -->
+    <string name="feature_payment_status_detail_inco">Set up — waiting for its payment date</string>
     <string name="feature_payment_status_detail_acsc">Accepted — settlement completed</string>
     <string name="feature_payment_status_detail_accc">Accepted — credit settled</string>
     <string name="feature_payment_status_detail_acwp">Accepted without posting</string>

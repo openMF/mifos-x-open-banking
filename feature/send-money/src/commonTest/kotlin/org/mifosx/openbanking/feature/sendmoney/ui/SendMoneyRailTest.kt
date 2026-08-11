@@ -20,7 +20,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeBeneficiariesRepository
-import org.mifosx.openbanking.feature.sendmoney.FakePaymentInitiationRepository
+import org.mifosx.openbanking.feature.sendmoney.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyFixtures
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -53,7 +53,7 @@ class SendMoneyRailTest {
     private val registry = FakeAccountCapabilityRegistry()
 
     private fun viewModel(
-        payments: FakePaymentInitiationRepository = FakePaymentInitiationRepository(),
+        payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
     ) = SendMoneyViewModel(
         FakeAccountsOverviewRepository(),
         FakeBeneficiariesRepository(),
@@ -150,7 +150,7 @@ class SendMoneyRailTest {
      */
     @Test
     fun anInternationalDraftInstructsInTheChosenCurrency() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.trySendAction(SendMoneyAction.SelectDebtorAccount(SendMoneyFixtures.CURRENT_ACCOUNT_ID))
@@ -176,7 +176,7 @@ class SendMoneyRailTest {
      */
     @Test
     fun anInternationalDraftsTransferCurrencyEqualsItsInstructedCurrency() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.trySendAction(SendMoneyAction.SelectDebtorAccount(SendMoneyFixtures.CURRENT_ACCOUNT_ID))
@@ -197,14 +197,14 @@ class SendMoneyRailTest {
     /**
      * And it stays **null** domestically, which is not a formatting detail.
      *
-     * `PaymentInitiationRepositoryImpl.isInternational()` routes staging and submission on this
+     * `SinglePaymentInitiationRepositoryImpl.isInternational()` routes staging and submission on this
      * field being non-null, and `PaymentHistoryMapper.paymentType()` persists the same test so the
      * status read-back hits the matching endpoint. Deriving it from the instructed currency without
      * this guard would send every domestic payment down the international rail.
      */
     @Test
     fun aDomesticDraftCarriesNoCurrencyOfTransferEvenThoughItHasACurrency() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.completeForm()
@@ -252,7 +252,7 @@ class SendMoneyRailTest {
 
     @Test
     fun anInternationalDraftCarriesTheChargesAndCurrencyAndNoReference() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.trySendAction(SendMoneyAction.SelectDebtorAccount(SendMoneyFixtures.CURRENT_ACCOUNT_ID))
@@ -277,7 +277,7 @@ class SendMoneyRailTest {
 
     @Test
     fun aDomesticDraftCarriesTheReferenceAndNeitherInternationalField() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.completeForm()

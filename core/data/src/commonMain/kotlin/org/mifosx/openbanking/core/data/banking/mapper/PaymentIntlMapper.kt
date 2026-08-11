@@ -37,7 +37,8 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.reque
  * scheme-name helpers stay in [PaymentMapper.kt] and are used from here.
  */
 
-private const val RISK_CATEGORY_EPAY = "EPAY"
+/** Shared with [ScheduledPaymentInitiationIntlMapper.kt] — the international scheduled rail sends the same. */
+internal const val RISK_CATEGORY_EPAY = "EPAY"
 
 internal fun PaymentDraft.toIntlInitiation(): IntlInitiationReq = IntlInitiationReq(
     instructionIdentification = instructionIdentification,

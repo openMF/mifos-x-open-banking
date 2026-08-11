@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.data.TestSigningKey
-import org.mifosx.openbanking.core.data.banking.impl.PaymentInitiationRepositoryImpl
+import org.mifosx.openbanking.core.data.banking.impl.SinglePaymentInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.callback.SettingsPaymentAuthSession
 import org.mifosx.openbanking.core.model.banking.BankAccount
@@ -37,6 +37,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.OAuth
@@ -79,7 +80,7 @@ private const val PAYMENT_JSON =
     """{"Data":{"DomesticPaymentId":"$PAYMENT_ID","ConsentId":"$CONSENT_ID","Status":"AcceptedSettlementInProcess"}}"""
 
 /**
- * Covers [PaymentInitiationRepositoryImpl] at the wire, with one recurring question: **which
+ * Covers [SinglePaymentInitiationRepositoryImpl] at the wire, with one recurring question: **which
  * credential does each call present?**
  *
  * That question is not academic. Reading a submitted payment back on the PSU token returned `401`
@@ -87,7 +88,7 @@ private const val PAYMENT_JSON =
  * because a payment resource is TPP-authenticated while the PSU token authorises only the payment
  * itself. These cases pin the split so it cannot invert again.
  */
-class PaymentInitiationRepositoryImplTest {
+class SinglePaymentInitiationRepositoryImplTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
@@ -140,7 +141,7 @@ class PaymentInitiationRepositoryImplTest {
         errorBody: String? = null,
         status: HttpStatusCode = HttpStatusCode.Created,
         storedType: ConsentType? = null,
-    ): PaymentInitiationRepositoryImpl {
+    ): SinglePaymentInitiationRepositoryImpl {
         val client = HttpClient(
             MockEngine { request: HttpRequestData ->
                 captured += Recorded(
@@ -167,7 +168,7 @@ class PaymentInitiationRepositoryImplTest {
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         }
         val signingKey = TestSigningKey.pem()
-        return PaymentInitiationRepositoryImpl(
+        return SinglePaymentInitiationRepositoryImpl(
             pisp = Pisp(
                 httpClient = client,
                 kid = "test-kid",
@@ -199,6 +200,12 @@ class PaymentInitiationRepositoryImplTest {
             MutableStateFlow(emptyList())
         override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) {}
         override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) {}
+        override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {}
+        override suspend fun saveFailed(
+            draft: ScheduledPaymentDraft,
+            errorKind: String,
+            errorDescription: String,
+        ) = Unit
         override suspend fun refreshStatuses() {}
         override suspend fun consentTypeOf(paymentId: String): ConsentType? = type
         override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
@@ -227,68 +234,6 @@ class PaymentInitiationRepositoryImplTest {
         repository().stagePayment(draft())
 
         assertEquals("Bearer $CLIENT_CREDENTIALS_TOKEN", requestTo("domestic-payment-consents").authorization)
-    }
-
-    /**
-     * The regression this suite exists for. Reading the payment back on the PSU token earned a `401`
-     * from the live sandbox; the TPP credential is what keeps a submitted payment readable, and
-     * readable long after the single-payment PSU token has expired.
-     */
-    @Test
-    fun readingAPaymentBackPresentsTheClientCredentialsTokenNotThePsuOne() = runTest {
-        val session = sessionHoldingAPsuToken()
-
-        repository(session, storedType = ConsentType.DomesticSinglePayment).paymentStatus(PAYMENT_ID)
-
-        val read = requestTo("domestic-payments/$PAYMENT_ID")
-        assertEquals("Bearer $CLIENT_CREDENTIALS_TOKEN", read.authorization)
-        assertTrue(PSU_TOKEN !in read.authorization.orEmpty())
-    }
-
-    /**
-     * An international payment is read from the international endpoint.
-     *
-     * The rail cannot be told from the id and the two endpoints do not accept each other's, so this
-     * used to call the domestic one for everything — meaning every international payment answered
-     * 404 on its own status screen. The rail comes from the row written at submission.
-     */
-    @Test
-    fun readingAnInternationalPaymentUsesTheInternationalEndpoint() = runTest {
-        repository(storedType = ConsentType.InternationalSinglePayment).paymentStatus(PAYMENT_ID)
-
-        assertNotNull(
-            captured.lastOrNull { it.path.contains("international-payments/$PAYMENT_ID") },
-            "expected the international endpoint, saw ${captured.map { it.path }}",
-        )
-        assertNull(captured.firstOrNull { it.path.contains("domestic-payments/$PAYMENT_ID") })
-    }
-
-    @Test
-    fun readingADomesticPaymentUsesTheDomesticEndpoint() = runTest {
-        repository(storedType = ConsentType.DomesticSinglePayment).paymentStatus(PAYMENT_ID)
-
-        assertNotNull(captured.lastOrNull { it.path.contains("domestic-payments/$PAYMENT_ID") })
-        assertNull(captured.firstOrNull { it.path.contains("international-payments/$PAYMENT_ID") })
-    }
-
-    /**
-     * With no stored row the type is unknown, and the read fails rather than guessing.
-     *
-     * This reverses what the code used to do. Defaulting to domestic was defensible while single
-     * payments were the only product — every id predating the column really was domestic — but the
-     * moment a second product can be stored, the same default sends a standing order's id to
-     * `domestic-payments/{id}` and reports whatever comes back as the truth. A guess that is right
-     * for legacy rows and silently wrong for new ones is worse than an error.
-     */
-    @Test
-    fun readingAPaymentWithNoStoredRowFailsRatherThanGuessingTheEndpoint() = runTest {
-        val result = repository(storedType = null).paymentStatus(PAYMENT_ID)
-
-        assertIs<NetworkResult.Error<*>>(result)
-        assertNull(
-            captured.lastOrNull { it.path.contains("-payments/$PAYMENT_ID") },
-            "an unknown type must not reach any payment endpoint",
-        )
     }
 
     /** Funds confirmation and submission are the two calls the PSU actually authorised. */

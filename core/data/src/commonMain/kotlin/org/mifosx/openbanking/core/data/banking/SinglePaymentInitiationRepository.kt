@@ -23,7 +23,7 @@ import template.core.base.network.NetworkResult
  * succeeded" answer to live, and duplicate protection here comes from the idempotency key on the
  * draft, not from a cache.
  */
-interface PaymentInitiationRepository {
+interface SinglePaymentInitiationRepository {
 
     /**
      * Stages [draft] with the bank and builds the URL the PSU authorises it at.
@@ -58,7 +58,4 @@ interface PaymentInitiationRepository {
      * `Initiation` must be byte-identical to the staged one, which a rebuilt equivalent would not be.
      */
     fun stagedDraft(): PaymentDraft?
-
-    /** Reads a submitted payment's current settlement status. */
-    suspend fun paymentStatus(domesticPaymentId: String): NetworkResult<PaymentReceipt, NetworkError>
 }

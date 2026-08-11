@@ -60,8 +60,17 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override suspend fun migrate(connection: SQLiteConnection) {
+        // Scheduled payments only. NULL on every existing row, and on every immediate payment
+        // written after this: an immediate payment has no future date, and defaulting one would
+        // make the hub claim a payment is due later than it was actually made.
+        connection.execSQL("ALTER TABLE payment_history ADD COLUMN requestedExecutionDateTime TEXT")
+    }
+}
+
 /** Every migration the database knows about, in the order Room should consider them. */
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6)
+val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 
 /**
  * Registers every migration on a builder.

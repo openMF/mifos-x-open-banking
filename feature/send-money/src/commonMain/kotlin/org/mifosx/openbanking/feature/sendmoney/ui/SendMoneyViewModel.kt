@@ -25,7 +25,7 @@ import org.mifosx.openbanking.core.common.parseMinorUnits
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
 import org.mifosx.openbanking.core.model.banking.BankAccount
@@ -115,7 +115,7 @@ private const val SHORT_NAME_WORDS = 1
 class SendMoneyViewModel(
     private val accountsOverviewRepository: AccountsOverviewRepository,
     private val beneficiariesRepository: BeneficiariesRepository,
-    private val paymentInitiationRepository: PaymentInitiationRepository,
+    private val paymentInitiationRepository: SinglePaymentInitiationRepository,
     private val capabilityRegistry: AccountCapabilityRegistry,
 ) : BaseViewModel<SendMoneyState, SendMoneyEvent, SendMoneyAction>(initialState = SendMoneyState()) {
 
@@ -566,7 +566,7 @@ class SendMoneyViewModel(
             paymentIdempotencyKey = Uuid.generateV4().toString(),
             // Derived from the instructed currency now that there is one selector, and **still null
             // on the domestic rail**. That nullness is the rail discriminator in two places —
-            // `PaymentInitiationRepositoryImpl.isInternational()` routes staging and submission by
+            // `SinglePaymentInitiationRepositoryImpl.isInternational()` routes staging and submission by
             // it, and `PaymentHistoryMapper.paymentType()` persists it so the status read-back hits
             // the right endpoint — so filling it in unconditionally would silently send every
             // domestic payment down the international rail.

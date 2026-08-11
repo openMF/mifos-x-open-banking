@@ -13,6 +13,7 @@ import com.russhwolf.settings.Settings
 import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 
 /**
@@ -80,6 +81,23 @@ interface PaymentAuthSession {
     fun draft(): PaymentDraft?
 
     /**
+     * Stores the scheduled instruction awaiting authorisation.
+     *
+     * A second key rather than a polymorphic one. Sharing `payment_auth_draft` between two shapes
+     * would change its on-disk format, and [draft] swallows a decode failure and returns null — so a
+     * device upgrading mid-authorisation would silently lose its draft and the return leg would
+     * report that nothing was staged.
+     */
+    fun saveScheduledDraft(draft: ScheduledPaymentDraft)
+
+    /**
+     * The scheduled instruction staged for the authorisation in flight, or null when none is.
+     *
+     * Never both this and [draft]: staging clears the session first, on both repositories.
+     */
+    fun scheduledDraft(): ScheduledPaymentDraft?
+
+    /**
      * Records when the bank confirmed the PSU's authorisation.
      *
      * Kept here rather than passed down the submit call because the two moments are separated by
@@ -110,19 +128,28 @@ class SettingsPaymentAuthSession(
     }
 
     /**
-     * Falls back to the staged draft only when no type was recorded.
+     * Falls back to the staged draft only when no type was recorded, and only for a single payment.
      *
      * A session written before this key existed can only be a single payment — nothing else could
-     * stage one — so its draft still answers, and `CurrencyOfTransfer` gives the rail. With neither
-     * a type nor a draft there is nothing to reason from, and null says so.
+     * stage one then — so its draft still answers, and `CurrencyOfTransfer` gives the rail.
+     *
+     * The scheduled-draft guard is what keeps that reasoning true now that a second product exists.
+     * A scheduled session always writes the type key, so reaching the fallback with a scheduled draft
+     * present means the type was lost, and the safe answer is "cannot say". Without the guard the
+     * fallback would read the *absence* of a single-payment draft as a domestic single payment and
+     * send a scheduled consent id to `domestic-payments`.
      */
     override fun pendingConsentType(): ConsentType? =
         ConsentType.fromWire(secureSettings.getStringOrNull(KEY_CONSENT_TYPE))
-            ?: draft()?.let {
-                if (it.currencyOfTransfer != null) {
-                    ConsentType.InternationalSinglePayment
-                } else {
-                    ConsentType.DomesticSinglePayment
+            ?: if (secureSettings.getStringOrNull(KEY_SCHEDULED_DRAFT) != null) {
+                null
+            } else {
+                draft()?.let {
+                    if (it.currencyOfTransfer != null) {
+                        ConsentType.InternationalSinglePayment
+                    } else {
+                        ConsentType.DomesticSinglePayment
+                    }
                 }
             }
 
@@ -156,6 +183,18 @@ class SettingsPaymentAuthSession(
         return runCatching { json.decodeFromString(PaymentDraft.serializer(), raw) }.getOrNull()
     }
 
+    override fun saveScheduledDraft(draft: ScheduledPaymentDraft) {
+        secureSettings.putString(
+            KEY_SCHEDULED_DRAFT,
+            json.encodeToString(ScheduledPaymentDraft.serializer(), draft),
+        )
+    }
+
+    override fun scheduledDraft(): ScheduledPaymentDraft? {
+        val raw = secureSettings.getStringOrNull(KEY_SCHEDULED_DRAFT) ?: return null
+        return runCatching { json.decodeFromString(ScheduledPaymentDraft.serializer(), raw) }.getOrNull()
+    }
+
     override fun saveApprovedAt(instant: String) {
         secureSettings.putString(KEY_APPROVED_AT, instant)
     }
@@ -168,6 +207,7 @@ class SettingsPaymentAuthSession(
         secureSettings.remove(KEY_NONCE)
         secureSettings.remove(KEY_PAYMENT_TOKENS)
         secureSettings.remove(KEY_DRAFT)
+        secureSettings.remove(KEY_SCHEDULED_DRAFT)
         secureSettings.remove(KEY_APPROVED_AT)
         secureSettings.remove(KEY_CONSENT_TYPE)
     }
@@ -179,6 +219,7 @@ class SettingsPaymentAuthSession(
         const val KEY_PAYMENT_TOKENS = "payment_auth_tokens"
         const val KEY_APPROVED_AT = "payment_auth_approved_at"
         const val KEY_DRAFT = "payment_auth_draft"
+        const val KEY_SCHEDULED_DRAFT = "payment_auth_scheduled_draft"
         const val KEY_CONSENT_TYPE = "payment_auth_consent_type"
     }
 }

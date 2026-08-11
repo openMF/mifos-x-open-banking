@@ -38,6 +38,17 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
     Pending(PaymentDisposition.InProgress),
     AcceptedSettlementInProcess(PaymentDisposition.InProgress),
     AcceptedTechnicalValidation(PaymentDisposition.InProgress),
+
+    /**
+     * The instruction is set up and waiting for its execution date.
+     *
+     * Both scheduled rails return this immediately after the payment resource is created, and it is
+     * the status a scheduled payment then holds for up to 365 days. Without it here the wire value
+     * `INCO` fell to [Unknown] — which is also `InProgress`, so nothing looked broken, but the hub's
+     * refresh re-read every scheduled payment on every visit for a status that cannot move until the
+     * date arrives.
+     */
+    InitiationCompleted(PaymentDisposition.InProgress),
     AcceptedSettlementCompleted(PaymentDisposition.TerminalSuccess),
     AcceptedCreditSettlementCompleted(PaymentDisposition.TerminalSuccess),
     AcceptedWithoutPosting(PaymentDisposition.TerminalSuccess),
@@ -51,6 +62,7 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
             "PDNG", "PENDING" -> Pending
             "ACSP", "ACCEPTEDSETTLEMENTINPROCESS" -> AcceptedSettlementInProcess
             "ACTC", "ACCEPTEDTECHNICALVALIDATION" -> AcceptedTechnicalValidation
+            "INCO", "INITIATIONCOMPLETED" -> InitiationCompleted
             "ACSC", "ACCEPTEDSETTLEMENTCOMPLETED" -> AcceptedSettlementCompleted
             "ACCC", "ACCEPTEDCREDITSETTLEMENTCOMPLETED" -> AcceptedCreditSettlementCompleted
             "ACWP", "ACCEPTEDWITHOUTPOSTING" -> AcceptedWithoutPosting

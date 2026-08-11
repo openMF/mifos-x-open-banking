@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.update
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
@@ -109,13 +109,13 @@ class FakeBeneficiariesRepository(
  * members exist only to satisfy the interface, and a test that sees them called has caught the
  * submission drifting back to the wrong screen.
  */
-class FakePaymentInitiationRepository(
+class FakeSinglePaymentInitiationRepository(
     private var stageResult: NetworkResult<StagedConsent, NetworkError> =
         NetworkResult.Success(SendMoneyFixtures.stagedConsent()),
     private var fundsResult: NetworkResult<Boolean, NetworkError> = NetworkResult.Success(true),
     private var submitResult: NetworkResult<PaymentReceipt, NetworkError> =
         NetworkResult.Success(SendMoneyFixtures.receipt()),
-) : PaymentInitiationRepository {
+) : SinglePaymentInitiationRepository {
 
     val stagedDrafts = mutableListOf<PaymentDraft>()
     val submittedDrafts = mutableListOf<PaymentDraft>()
@@ -142,10 +142,6 @@ class FakePaymentInitiationRepository(
     }
 
     override fun stagedDraft(): PaymentDraft? = stagedDrafts.lastOrNull()
-
-    override suspend fun paymentStatus(
-        domesticPaymentId: String,
-    ): NetworkResult<PaymentReceipt, NetworkError> = NetworkResult.Success(SendMoneyFixtures.receipt())
 
     fun stageReturns(result: NetworkResult<StagedConsent, NetworkError>) {
         stageResult = result

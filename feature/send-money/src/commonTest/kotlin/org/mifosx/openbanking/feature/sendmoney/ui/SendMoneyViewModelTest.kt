@@ -20,7 +20,7 @@ import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeBeneficiariesRepository
-import org.mifosx.openbanking.feature.sendmoney.FakePaymentInitiationRepository
+import org.mifosx.openbanking.feature.sendmoney.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyFixtures
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
@@ -60,7 +60,7 @@ class SendMoneyViewModelTest {
     private fun viewModel(
         accounts: FakeAccountsOverviewRepository = FakeAccountsOverviewRepository(),
         beneficiaries: FakeBeneficiariesRepository = FakeBeneficiariesRepository(),
-        payments: FakePaymentInitiationRepository = FakePaymentInitiationRepository(),
+        payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
     ) = SendMoneyViewModel(accounts, beneficiaries, payments, registry)
 
     private fun content(vm: SendMoneyViewModel): SendMoneyUiState.Content =
@@ -198,7 +198,7 @@ class SendMoneyViewModelTest {
     /** A draft with no payer omits the block rather than inventing one. */
     @Test
     fun aBankChosenPayerStagesWithoutADebtorAccount() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.trySendAction(SendMoneyAction.LetBankChoosePayer)
@@ -223,7 +223,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun aDomesticPaymentStagesInSterling() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
 
         vm.completeForm()
@@ -511,7 +511,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun aWholePoundAmountIsStagedAsMinorUnits() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm(amount = "250")
 
@@ -523,7 +523,7 @@ class SendMoneyViewModelTest {
     /** The same amount written out, which must not become a different payment. */
     @Test
     fun anAmountWithPenceIsStagedAsTheSameMinorUnits() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm(amount = "250.00")
 
@@ -569,7 +569,7 @@ class SendMoneyViewModelTest {
 
     @Test
     fun stagingMovesToSubmittingAndLaunchesTheAuthorisation() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
 
@@ -584,7 +584,7 @@ class SendMoneyViewModelTest {
     /** TC-SEND-006: paying an account the PSU also owns is a transfer to self. */
     @Test
     fun marksAPaymentToAnOwnAccountAsATransferToSelf() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.trySendAction(SendMoneyAction.ShowManualCreditorEntry)
         vm.trySendAction(SendMoneyAction.EnterManualSortCode("801225"))
@@ -600,7 +600,7 @@ class SendMoneyViewModelTest {
 
     @Test
     fun payingAThirdPartyIsNotMarkedAsATransferToSelf() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
 
@@ -704,7 +704,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun aRefusedPayerIsReportedAsSuchAndOffersAWayOut() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(
                 NetworkError.Client.BadRequest(
@@ -745,7 +745,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun stagingDoesNotSubmitThePayment() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
 
@@ -759,7 +759,7 @@ class SendMoneyViewModelTest {
     /** The OBIE cap is 40 characters. */
     @Test
     fun mintsAnIdempotencyKeyWithinTheObieLimit() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
 
@@ -779,7 +779,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun theConsentAndPaymentPostsCarryDifferentIdempotencyKeys() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
 
@@ -796,7 +796,7 @@ class SendMoneyViewModelTest {
     /** TC-SEND-007: nothing the PSU can do, so no CTA and a reference to quote. */
     @Test
     fun aSignatureFailureCarriesASupportReferenceAndNoRetry() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(
                 NetworkError.Client.BadRequest(
@@ -818,7 +818,7 @@ class SendMoneyViewModelTest {
     /** TC-SEND-008. */
     @Test
     fun anUnauthorisedConsentAsksForReauthorisation() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(NetworkError.Client.BadRequest("""{"Errors":[{"ErrorCode":"U009"}]}""")),
         )
@@ -843,7 +843,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun aRejectedFieldIsNotReportedAsANetworkProblem() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(NetworkError.Client.BadRequest("""{"Errors":[{"ErrorCode":"U021"}]}""")),
         )
@@ -860,7 +860,7 @@ class SendMoneyViewModelTest {
     /** TC-SEND-009: editing the amount keeps the payer and payee already chosen. */
     @Test
     fun editingReturnsToTheFormWithSelectionsIntact() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(NetworkError.Client.BadRequest("""{"Errors":[{"ErrorCode":"U014"}]}""")),
         )
@@ -883,7 +883,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun editingTheAmountDiscardsTheStagedDraftAndKey() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(payments = payments)
         vm.completeForm()
         vm.trySendAction(SendMoneyAction.ConfirmAndStageConsent)
@@ -896,7 +896,7 @@ class SendMoneyViewModelTest {
 
     @Test
     fun aRevokedConsentPointsAtTheConsentScreens() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(NetworkResult.Error(NetworkError.Client.Forbidden(null)))
         val vm = viewModel(payments = payments)
         vm.completeForm()
@@ -910,7 +910,7 @@ class SendMoneyViewModelTest {
 
     @Test
     fun aTransportFailureOffersRetry() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))))
         val vm = viewModel(payments = payments)
         vm.completeForm()
@@ -969,7 +969,7 @@ class SendMoneyViewModelTest {
      */
     @Test
     fun retryingAfterAStagingFailureStagesAgain() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stageReturns(
             NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))),
         )

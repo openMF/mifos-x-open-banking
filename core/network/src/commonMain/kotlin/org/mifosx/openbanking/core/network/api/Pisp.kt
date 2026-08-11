@@ -22,11 +22,19 @@ import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Do
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DomesticPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.response.DomesticPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.response.DomesticPaymentResponse
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentConsentResponse
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentResponse
 import org.mifosx.openbanking.core.network.model.pisp.fundsConfirmation.response.FundsConfirmationResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.response.InternationalPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.response.InternationalPaymentResponse
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentConsentResponse
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentResponse
 import org.mifosx.openbanking.core.network.pisp.detachedJwsSignature
 import org.mifosx.openbanking.core.network.pisp.fapiHeaders
 import org.mifosx.openbanking.core.network.pisp.obieBody
@@ -52,7 +60,12 @@ private const val PIS = "v4.0/pisp"
  * The two write calls additionally carry a detached JWS over the request body and an idempotency
  * key. The key is a parameter rather than something this class generates: it is staged once per
  * payment and replayed unchanged on every retry.
+ *
+ * The function count is over detekt's threshold and suppressed deliberately: this class is an
+ * endpoint catalogue, four calls per payment product, and splitting it by product would put the
+ * shared signing and header logic behind an internal seam for no gain in readability.
  */
+@Suppress("TooManyFunctions")
 class Pisp(
     private val httpClient: HttpClient,
     private val kid: String,
@@ -183,6 +196,100 @@ class Pisp(
             "$PIS/international-payments/$internationalPaymentId",
             accessToken,
         ).toNetworkResult()
+
+    // region — Scheduled payments
+    //
+    // The same four calls per rail as an immediate payment, with two absences worth stating.
+    //
+    // There is no funds-confirmation call. OBIE defines one for international-scheduled consents and
+    // none at all for domestic-scheduled; HSBC marks the international one unsupported for every
+    // brand, and no capture has ever exercised it. Asking would be inventing an endpoint.
+    //
+    // The consent create carries `Data.Permission = "Create"`, which the immediate rails have no
+    // field for — the mapper sets it, and omitting it is refused `400 U004`.
+
+    suspend fun createDomesticScheduledPaymentConsent(
+        paymentsScopeToken: String,
+        request: DomesticScheduledPaymentConsentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<DomesticScheduledPaymentConsentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/domestic-scheduled-payment-consents",
+            accessToken = paymentsScopeToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(DomesticScheduledPaymentConsentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getDomesticScheduledPaymentConsent(
+        accessToken: String,
+        consentId: String,
+    ): NetworkResult<DomesticScheduledPaymentConsentResponse, NetworkError> =
+        authorizedGet("$PIS/domestic-scheduled-payment-consents/$consentId", accessToken).toNetworkResult()
+
+    suspend fun createDomesticScheduledPayment(
+        psuAccessToken: String,
+        request: DomesticScheduledPaymentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<DomesticScheduledPaymentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/domestic-scheduled-payments",
+            accessToken = psuAccessToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(DomesticScheduledPaymentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getDomesticScheduledPayment(
+        accessToken: String,
+        domesticScheduledPaymentId: String,
+    ): NetworkResult<DomesticScheduledPaymentResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/domestic-scheduled-payments/$domesticScheduledPaymentId",
+            accessToken,
+        ).toNetworkResult()
+
+    suspend fun createInternationalScheduledPaymentConsent(
+        paymentsScopeToken: String,
+        request: InternationalScheduledPaymentConsentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<InternationalScheduledPaymentConsentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/international-scheduled-payment-consents",
+            accessToken = paymentsScopeToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(InternationalScheduledPaymentConsentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getInternationalScheduledPaymentConsent(
+        accessToken: String,
+        consentId: String,
+    ): NetworkResult<InternationalScheduledPaymentConsentResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/international-scheduled-payment-consents/$consentId",
+            accessToken,
+        ).toNetworkResult()
+
+    suspend fun createInternationalScheduledPayment(
+        psuAccessToken: String,
+        request: InternationalScheduledPaymentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<InternationalScheduledPaymentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/international-scheduled-payments",
+            accessToken = psuAccessToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(InternationalScheduledPaymentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getInternationalScheduledPayment(
+        accessToken: String,
+        internationalScheduledPaymentId: String,
+    ): NetworkResult<InternationalScheduledPaymentResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/international-scheduled-payments/$internationalScheduledPaymentId",
+            accessToken,
+        ).toNetworkResult()
+
+    // endregion
 
     private suspend fun authorizedGet(path: String, accessToken: String): HttpResponse =
         httpClient.get(path) {

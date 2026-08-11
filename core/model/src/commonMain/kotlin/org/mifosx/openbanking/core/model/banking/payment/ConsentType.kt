@@ -45,10 +45,31 @@ sealed interface ConsentType {
         override val rail: PaymentRail = PaymentRail.International
     }
 
+    data object DomesticScheduledPayment : ConsentType {
+        override val wireValue: String = "domestic_scheduled_payment"
+        override val rail: PaymentRail = PaymentRail.Domestic
+    }
+
+    data object InternationalScheduledPayment : ConsentType {
+        override val wireValue: String = "international_scheduled_payment"
+        override val rail: PaymentRail = PaymentRail.International
+    }
+
     companion object {
 
-        /** Every type this build knows. Adding a member above adds it here without another edit. */
-        val ALL: List<ConsentType> = listOf(DomesticSinglePayment, InternationalSinglePayment)
+        /**
+         * Every type this build knows.
+         *
+         * Maintained by hand. An earlier comment claimed a new member landed here automatically; it
+         * does not, and a member missing from this list is invisible to [fromWire] — the row reads
+         * back as unrecognised and its payment becomes unreadable.
+         */
+        val ALL: List<ConsentType> = listOf(
+            DomesticSinglePayment,
+            InternationalSinglePayment,
+            DomesticScheduledPayment,
+            InternationalScheduledPayment,
+        )
 
         /**
          * The type a stored string names, or null when this build does not recognise it.

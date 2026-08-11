@@ -17,11 +17,14 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 private const val PAYMENT_TYPE_DOMESTIC = "domestic_payment"
 private const val PAYMENT_TYPE_INTERNATIONAL = "international_payment"
+private const val PAYMENT_TYPE_DOMESTIC_SCHEDULED = "domestic_scheduled_payment"
+private const val PAYMENT_TYPE_INTERNATIONAL_SCHEDULED = "international_scheduled_payment"
 
 private fun PaymentStatus.toLabel(): String = when (disposition) {
     PaymentDisposition.TerminalSuccess -> "Sent"
@@ -89,6 +92,76 @@ internal fun PaymentReceipt.toEntity(
         paymentType = draft.paymentType(),
         syncedAt = null,
     )
+
+/** The rail a scheduled draft was built for, on the same discriminator. */
+private fun ScheduledPaymentDraft.paymentType(): String =
+    if (currencyOfTransfer != null) PAYMENT_TYPE_INTERNATIONAL_SCHEDULED else PAYMENT_TYPE_DOMESTIC_SCHEDULED
+
+/**
+ * The scheduled equivalent, carrying the one column an immediate payment has no value for.
+ *
+ * `settlementDateTime` stays null here whatever the receipt says: on this rail the bank returns a
+ * settlement date equal to the creation date, and the truthful date is the requested one.
+ */
+internal fun PaymentReceipt.toEntity(
+    draft: ScheduledPaymentDraft,
+    approvedAt: String? = null,
+    submittedAt: String? = null,
+): PaymentHistoryEntity =
+    PaymentHistoryEntity(
+        id = domesticPaymentId,
+        paymentId = domesticPaymentId,
+        errorKind = null,
+        errorDescription = null,
+        status = status.name,
+        debtorAccountId = draft.debtorAccount.historyAccountId(),
+        debtorName = draft.debtorAccount.historyName(),
+        debtorIdentification = debtorIdentification.ifBlank {
+            draft.debtorAccount.historyIdentification()
+        },
+        creditorName = draft.creditor.name,
+        creditorIdentification = draft.creditor.identification,
+        amountMinorUnits = draft.amountMinorUnits,
+        currency = draft.currency,
+        reference = draft.reference,
+        creationDateTime = creationDateTime,
+        approvedAt = approvedAt,
+        submittedAt = submittedAt,
+        settlementDateTime = null,
+        chargeBearer = draft.chargeBearer?.wireValue,
+        currencyOfTransfer = draft.currencyOfTransfer,
+        requestedExecutionDateTime = requestedExecutionDateTime.takeIf { it.isNotBlank() }
+            ?: draft.requestedExecutionDate,
+        paymentType = draft.paymentType(),
+        syncedAt = null,
+    )
+
+/** A scheduled instruction the bank refused before it became a payment. */
+internal fun ScheduledPaymentDraft.toFailureEntity(
+    errorKind: String,
+    errorDescription: String,
+): PaymentHistoryEntity = PaymentHistoryEntity(
+    id = errorId(),
+    paymentId = null,
+    errorKind = errorKind,
+    errorDescription = errorDescription,
+    status = null,
+    debtorAccountId = debtorAccount.historyAccountId(),
+    debtorName = debtorAccount.historyName(),
+    debtorIdentification = debtorAccount.historyIdentification(),
+    creditorName = creditor.name,
+    creditorIdentification = creditor.identification,
+    amountMinorUnits = amountMinorUnits,
+    currency = currency,
+    reference = reference,
+    creationDateTime = "",
+    settlementDateTime = null,
+    chargeBearer = chargeBearer?.wireValue,
+    currencyOfTransfer = currencyOfTransfer,
+    requestedExecutionDateTime = requestedExecutionDate,
+    paymentType = paymentType(),
+    syncedAt = null,
+)
 
 internal fun PaymentDraft.toFailureEntity(
     errorKind: String,

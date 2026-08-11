@@ -12,7 +12,8 @@ package org.mifosx.openbanking.feature.paymentconsent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthValidation
 import org.mifosx.openbanking.core.model.banking.BankAccount
@@ -24,6 +25,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.feature.paymentconsent.ui.PaymentConsentErrorKind
 import org.mifosx.openbanking.feature.paymentconsent.ui.PaymentConsentState
@@ -163,12 +165,12 @@ class FakePaymentAuthRepository(
  * [stagedDraft] defaults to a real draft because the callback's whole job now depends on finding
  * one; the null case is the interesting exception, not the baseline.
  */
-class FakePaymentInitiationRepository(
+class FakeSinglePaymentInitiationRepository(
     private var staged: PaymentDraft? = PaymentConsentFixtures.draft(),
     private var funds: NetworkResult<Boolean, NetworkError> = NetworkResult.Success(true),
     private var submission: NetworkResult<PaymentReceipt, NetworkError> =
         NetworkResult.Success(PaymentConsentFixtures.receipt()),
-) : PaymentInitiationRepository {
+) : SinglePaymentInitiationRepository {
 
     val submittedDrafts = mutableListOf<PaymentDraft>()
     val fundsChecks = mutableListOf<String>()
@@ -203,10 +205,6 @@ class FakePaymentInitiationRepository(
         return staged
     }
 
-    override suspend fun paymentStatus(
-        domesticPaymentId: String,
-    ): NetworkResult<PaymentReceipt, NetworkError> = submission
-
     fun stagedDraftReturns(draft: PaymentDraft?) {
         staged = draft
     }
@@ -230,6 +228,11 @@ class FakePaymentInitiationRepository(
 class FakePaymentHistoryRepository : PaymentHistoryRepository {
 
     val submitted = mutableListOf<Pair<PaymentReceipt, PaymentDraft>>()
+
+    /** Kept apart from [submitted] so a test can prove which draft shape was actually recorded. */
+    val submittedScheduled = mutableListOf<Pair<PaymentReceipt, ScheduledPaymentDraft>>()
+
+    val scheduledFailures = mutableListOf<Triple<ScheduledPaymentDraft, String, String>>()
     val failures = mutableListOf<Triple<PaymentDraft, String, String>>()
     var refreshCount: Int = 0
         private set
@@ -238,6 +241,18 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
 
     override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) {
         submitted += receipt to draft
+    }
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {
+        submittedScheduled += receipt to draft
+    }
+
+    override suspend fun saveFailed(
+        draft: ScheduledPaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) {
+        scheduledFailures += Triple(draft, errorKind, errorDescription)
     }
 
     override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) {
@@ -254,3 +269,62 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
     /** This fake keeps no rows, so it has no stage times to report. */
     override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
 }
+
+/**
+ * The scheduled write path as the return leg sees it.
+ *
+ * `confirmFunds` is absent from the interface entirely, which is what lets the strongest test in this
+ * suite be written as an assertion about the *immediate* fake's empty call log: a scheduled journey
+ * that confirmed funds could only have done so by taking the wrong branch.
+ */
+class FakeScheduledPaymentInitiationRepository(
+    private var staged: ScheduledPaymentDraft? = null,
+    private var submission: NetworkResult<PaymentReceipt, NetworkError> =
+        NetworkResult.Success(PaymentConsentFixtures.receipt()),
+) : ScheduledPaymentInitiationRepository {
+
+    val submittedDrafts = mutableListOf<ScheduledPaymentDraft>()
+    val submittedConsentIds = mutableListOf<String>()
+
+    override suspend fun stagePayment(
+        draft: ScheduledPaymentDraft,
+    ): NetworkResult<StagedConsent, NetworkError> =
+        error("the callback leg never stages a payment")
+
+    override suspend fun submitPayment(
+        draft: ScheduledPaymentDraft,
+        consentId: String,
+    ): NetworkResult<PaymentReceipt, NetworkError> {
+        submittedDrafts += draft
+        submittedConsentIds += consentId
+        return submission
+    }
+
+    override fun stagedDraft(): ScheduledPaymentDraft? = staged
+
+    fun stagedDraftReturns(draft: ScheduledPaymentDraft?) {
+        staged = draft
+    }
+
+    fun submissionReturns(result: NetworkResult<PaymentReceipt, NetworkError>) {
+        submission = result
+    }
+}
+
+/** A scheduled instruction due next week, the shape the return leg receives. */
+fun scheduledDraftFixture(): ScheduledPaymentDraft = ScheduledPaymentDraft(
+    debtorAccount = null,
+    creditor = CreditorSelection(
+        name = "Mr Dharani C",
+        scheme = BeneficiaryScheme.SortCode,
+        identification = "80200110203350",
+    ),
+    amountMinorUnits = 25_000L,
+    currency = "GBP",
+    reference = "RENT-AUG",
+    instructionIdentification = "MFX20260811T1000000001",
+    endToEndIdentification = "E2E-SCHED-202608",
+    consentIdempotencyKey = "consent-key-1",
+    paymentIdempotencyKey = "payment-key-1",
+    requestedExecutionDate = "2026-08-14",
+)

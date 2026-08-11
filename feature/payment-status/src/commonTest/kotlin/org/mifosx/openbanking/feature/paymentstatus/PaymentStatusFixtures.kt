@@ -12,7 +12,7 @@ package org.mifosx.openbanking.feature.paymentstatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentCharge
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
@@ -21,7 +21,6 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
-import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusErrorKind
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
@@ -162,35 +161,24 @@ object PaymentStatusFixtures {
 }
 
 /**
- * Only `paymentStatus` is exercised here — this screen never writes, which is the property that
- * lets it read on a client-credentials token after the PSU token has expired.
+ * The read-only half of the payment path.
+ *
+ * `PaymentStatusRepository` declares one method, which is the point: this screen never writes, and
+ * that is what lets it read on a client-credentials token after the PSU token has expired. The four
+ * write methods this fake used to stub out with `error(...)` went with the interface split.
  */
-class FakePaymentInitiationRepository(
+class FakePaymentStatusRepository(
     receipt: PaymentReceipt = PaymentStatusFixtures.receipt(),
     private var statusResult: NetworkResult<PaymentReceipt, NetworkError> =
         NetworkResult.Success(receipt),
-) : PaymentInitiationRepository {
+) : PaymentStatusRepository {
 
     val statusReads = mutableListOf<String>()
 
-    override suspend fun stagePayment(draft: PaymentDraft): NetworkResult<StagedConsent, NetworkError> =
-        error("send-money stages payments; payment-status never does")
-
-    override suspend fun confirmFunds(consentId: String): NetworkResult<Boolean, NetworkError> =
-        error("send-money confirms funds; payment-status never does")
-
-    override suspend fun submitPayment(
-        draft: PaymentDraft,
-        consentId: String,
-    ): NetworkResult<PaymentReceipt, NetworkError> =
-        error("the callback leg submits payments; payment-status never does")
-
-    override fun stagedDraft(): PaymentDraft? = null
-
     override suspend fun paymentStatus(
-        domesticPaymentId: String,
+        paymentId: String,
     ): NetworkResult<PaymentReceipt, NetworkError> {
-        statusReads += domesticPaymentId
+        statusReads += paymentId
         return statusResult
     }
 

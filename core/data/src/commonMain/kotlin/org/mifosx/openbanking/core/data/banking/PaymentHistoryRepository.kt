@@ -15,6 +15,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 
 /**
  * Local snapshot store for payment activity shown on the hub screen.
@@ -30,8 +31,20 @@ interface PaymentHistoryRepository {
     /** Persists a payment that the bank has accepted (any OBIE status, not just success). */
     suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft)
 
+    /** The scheduled equivalent, which also records the date the payment is due. */
+    suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft)
+
     /** Persists a payment that failed before reaching submission. */
     suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String)
+
+    /**
+     * The scheduled equivalent.
+     *
+     * A separate overload rather than a shared supertype because the return leg must call the one
+     * matching the draft it found — calling neither would leave a failed scheduled payment with no
+     * history row at all, silently.
+     */
+    suspend fun saveFailed(draft: ScheduledPaymentDraft, errorKind: String, errorDescription: String)
 
     /**
      * Which rail a submitted payment was sent on, so its status is read from the right endpoint.

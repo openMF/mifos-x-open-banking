@@ -18,7 +18,7 @@ import org.mifosx.openbanking.core.data.util.RemoteException
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeBeneficiariesRepository
-import org.mifosx.openbanking.feature.sendmoney.FakePaymentInitiationRepository
+import org.mifosx.openbanking.feature.sendmoney.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyFixtures
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
@@ -61,7 +61,7 @@ class SendMoneyPayeeLoadTest {
     private fun viewModel(
         accounts: FakeAccountsOverviewRepository = FakeAccountsOverviewRepository(),
         beneficiaries: FakeBeneficiariesRepository = FakeBeneficiariesRepository(),
-    ) = SendMoneyViewModel(accounts, beneficiaries, FakePaymentInitiationRepository(), registry)
+    ) = SendMoneyViewModel(accounts, beneficiaries, FakeSinglePaymentInitiationRepository(), registry)
 
     private fun content(vm: SendMoneyViewModel): SendMoneyUiState.Content =
         assertIs<SendMoneyUiState.Content>(vm.stateFlow.value.uiState)

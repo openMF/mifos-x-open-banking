@@ -34,4 +34,15 @@ data class Data(
     val scaSupportData: SCASupportData? = null,
     @SerialName("InternationalScheduledPaymentId")
     val internationalScheduledPaymentId: String? = null,
+    /**
+     * The charges the bank applies. **Absent at consent staging on this rail** and present only once
+     * the payment resource is created — which is after the customer has authorised. The review screen
+     * therefore cannot state a figure, and must say the bank will confirm its charge instead.
+     *
+     * `ExpectedSettlementDateTime` is deliberately NOT modelled — see the domestic sibling.
+     */
+    @SerialName("Charges")
+    val charges: List<Charge>? = null,
+    @SerialName("ExpectedExecutionDateTime")
+    val expectedExecutionDateTime: String? = null,
 )

@@ -16,9 +16,7 @@ import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.mapper.toConsentType
 import org.mifosx.openbanking.core.data.banking.mapper.toEntity
 import org.mifosx.openbanking.core.data.banking.mapper.toFailureEntity
-import org.mifosx.openbanking.core.data.banking.mapper.toIntlPaymentReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toPaymentHistoryItem
-import org.mifosx.openbanking.core.data.banking.mapper.toPaymentReceipt
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
@@ -28,6 +26,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.network.api.ConsentCreationScope
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -65,6 +64,25 @@ internal class PaymentHistoryRepositoryImpl(
                 submittedAt = Clock.System.now().toString(),
             ),
         )
+    }
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {
+        dao.upsert(
+            receipt.toEntity(
+                draft = draft,
+                approvedAt = paymentAuthSession.approvedAt(),
+                submittedAt = Clock.System.now().toString(),
+            ),
+        )
+    }
+
+    override suspend fun saveFailed(
+        draft: ScheduledPaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) {
+        val now = Clock.System.now().toEpochMilliseconds().toString()
+        dao.upsert(draft.toFailureEntity(errorKind, errorDescription).copy(creationDateTime = now))
     }
 
     override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) {
@@ -139,15 +157,5 @@ internal class PaymentHistoryRepositoryImpl(
         token: String,
         paymentId: String,
         type: ConsentType,
-    ): PaymentReceipt? = when (type) {
-        ConsentType.DomesticSinglePayment ->
-            (pisp.getDomesticPayment(token, paymentId) as? NetworkResult.Success)
-                ?.data
-                ?.toPaymentReceipt()
-
-        ConsentType.InternationalSinglePayment ->
-            (pisp.getInternationalPayment(token, paymentId) as? NetworkResult.Success)
-                ?.data
-                ?.toIntlPaymentReceipt()
-    }
+    ): PaymentReceipt? = (pisp.readReceipt(token, paymentId, type) as? NetworkResult.Success)?.data
 }

@@ -49,9 +49,15 @@ private const val SCHEME_PAN = "UK.OBIE.PAN"
  */
 private const val LOCAL_INSTRUMENT_FPS = "UK.OBIE.FPS"
 
-/** A payment the PSU makes to one of their own accounts, as opposed to anyone else's. */
-private const val CONTEXT_TRANSFER_TO_SELF = "TransferToSelf"
-private const val CONTEXT_TRANSFER_TO_THIRD_PARTY = "TransferToThirdParty"
+/**
+ * A payment the PSU makes to one of their own accounts, as opposed to anyone else's.
+ *
+ * Shared with [ScheduledPaymentInitiationMapper.kt]: the domestic scheduled rail sends the same `Risk` shape.
+ * Note [LOCAL_INSTRUMENT_FPS] above is deliberately NOT shared — the scheduled rails send no
+ * `LocalInstrument` at all, and the proven sandbox consents carry no such key.
+ */
+internal const val CONTEXT_TRANSFER_TO_SELF = "TransferToSelf"
+internal const val CONTEXT_TRANSFER_TO_THIRD_PARTY = "TransferToThirdParty"
 
 /**
  * Builds the OBIE `Initiation` for [this] draft.

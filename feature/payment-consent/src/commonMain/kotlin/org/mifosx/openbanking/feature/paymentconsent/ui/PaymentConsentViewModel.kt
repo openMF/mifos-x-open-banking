@@ -13,11 +13,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthValidation
 import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import template.core.base.network.NetworkResult
 import template.core.base.ui.viewmodel.BaseViewModel
 
@@ -69,7 +71,8 @@ private const val MAX_STATUS_CHECKS = 3
 class PaymentConsentViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PaymentAuthRepository,
-    private val paymentInitiationRepository: PaymentInitiationRepository,
+    private val paymentInitiationRepository: SinglePaymentInitiationRepository,
+    private val scheduledPaymentInitiationRepository: ScheduledPaymentInitiationRepository,
     private val paymentHistoryRepository: PaymentHistoryRepository,
 ) : BaseViewModel<PaymentConsentState, PaymentConsentEvent, PaymentConsentAction>(
     initialState = PaymentConsentState(),
@@ -203,6 +206,10 @@ class PaymentConsentViewModel(
      * instruction wearing the same consent.
      */
     private suspend fun completePayment() {
+        // A scheduled instruction is stored under its own key, so ask for it first: finding one is
+        // what says this journey skips funds confirmation.
+        scheduledPaymentInitiationRepository.stagedDraft()?.let { return submitScheduled(it) }
+
         val draft = paymentInitiationRepository.stagedDraft()
             ?: return fail(PaymentConsentErrorKind.NoStagedPayment)
 
@@ -217,6 +224,30 @@ class PaymentConsentViewModel(
                 }
 
             is NetworkResult.Error -> failFromResponse(funds.error.toThrowable())
+        }
+    }
+
+    /**
+     * The scheduled journey: authorised straight to created, with no funds confirmation.
+     *
+     * There is no endpoint to ask. OBIE defines none for domestic-scheduled and HSBC marks the
+     * international-scheduled one unsupported for every brand, so [PaymentConsentUiState
+     * .ConfirmingFunds] is never entered on this path — it is no longer a stage every payment passes
+     * through.
+     *
+     * Nothing about this fails to compile if it is wrong, and no shared test covers it, which is why
+     * it is stated here rather than left to read as an omission.
+     */
+    private suspend fun submitScheduled(draft: ScheduledPaymentDraft) {
+        updateState { copy(uiState = PaymentConsentUiState.Submitting) }
+
+        when (val result = scheduledPaymentInitiationRepository.submitPayment(draft, state.consentId)) {
+            is NetworkResult.Success -> {
+                repository.discardAuthorisation()
+                sendEvent(PaymentConsentEvent.PaymentSubmitted(result.data.domesticPaymentId))
+            }
+
+            is NetworkResult.Error -> failFromSubmission(result.error.toThrowable())
         }
     }
 
@@ -257,11 +288,28 @@ class PaymentConsentViewModel(
      * the fact.
      */
     private fun fail(kind: PaymentConsentErrorKind, detail: PaymentConsentErrorDetail? = null) {
-        // Read the draft before discarding the session — discard clears the stored draft.
-        val draft = paymentInitiationRepository.stagedDraft()
+        // Read the drafts before discarding the session — discard clears both.
+        //
+        // Both are asked for, and only one can be present. Asking for just the immediate draft would
+        // leave a failed scheduled payment with no history row at all: the row would simply never be
+        // written, silently, and the hub would show nothing where a failure belongs.
+        val scheduled = scheduledPaymentInitiationRepository.stagedDraft()
+        val draft = if (scheduled == null) paymentInitiationRepository.stagedDraft() else null
         repository.discardAuthorisation()
 
-        if (draft != null) {
+        // Exactly one row, and the scheduled draft wins when both somehow answer. Only one can be
+        // real — staging clears the session first on both repositories — so two rows would describe
+        // one failure twice. Asking the scheduled side first is what stops a scheduled failure being
+        // recorded under the immediate shape, where the hub would read back the wrong endpoint for it.
+        if (scheduled != null) {
+            viewModelScope.launch {
+                paymentHistoryRepository.saveFailed(
+                    draft = scheduled,
+                    errorKind = kind.name,
+                    errorDescription = kind.description(detail),
+                )
+            }
+        } else if (draft != null) {
             viewModelScope.launch {
                 paymentHistoryRepository.saveFailed(
                     draft = draft,

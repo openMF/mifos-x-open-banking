@@ -11,7 +11,7 @@ package org.mifosx.openbanking.core.data.banking.impl
 
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
-import org.mifosx.openbanking.core.data.banking.PaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.mapper.consentIdOrNull
 import org.mifosx.openbanking.core.data.banking.mapper.intlConsentIdOrNull
 import org.mifosx.openbanking.core.data.banking.mapper.intlStatusOrEmpty
@@ -41,7 +41,7 @@ import kotlin.time.Clock
 private const val AUTHORIZE_PATH = "/obie/open-banking/v1.1/oauth2/authorize"
 private const val RESPONSE_TYPE = "code id_token"
 
-internal class PaymentInitiationRepositoryImpl(
+internal class SinglePaymentInitiationRepositoryImpl(
     private val pisp: Pisp,
     private val oauth: OAuth,
     private val paymentAuthSession: PaymentAuthSession,
@@ -53,7 +53,7 @@ internal class PaymentInitiationRepositoryImpl(
     private val authorizeHost: String,
     private val redirectUri: String,
     private val paymentHistoryRepository: PaymentHistoryRepository,
-) : PaymentInitiationRepository {
+) : SinglePaymentInitiationRepository {
 
     @Suppress("ReturnCount")
     override suspend fun stagePayment(draft: PaymentDraft): NetworkResult<StagedConsent, NetworkError> {
@@ -165,6 +165,17 @@ internal class PaymentInitiationRepositoryImpl(
             ConsentType.DomesticSinglePayment -> pisp.getFundsConfirmation(token, consentId)
             ConsentType.InternationalSinglePayment ->
                 pisp.getInternationalFundsConfirmation(token, consentId)
+
+            // Unreachable in practice — a scheduled consent is staged by its own repository and its
+            // return leg never asks. The compiler demands an answer, and refusing is the honest one:
+            // OBIE defines no funds-confirmation endpoint for domestic-scheduled at all, and HSBC
+            // marks the international-scheduled one unsupported for every brand. Answering `true`
+            // here would invent a confirmation the bank never gave.
+            ConsentType.DomesticScheduledPayment,
+            ConsentType.InternationalScheduledPayment,
+            -> return NetworkResult.Error(
+                NetworkError.Client.BadRequest("Scheduled payments have no funds confirmation"),
+            )
         }
         return when (result) {
             is NetworkResult.Success ->
@@ -225,39 +236,6 @@ internal class PaymentInitiationRepositoryImpl(
             paymentHistoryRepository.saveSubmitted(submitted.data, draft)
         }
         return submitted
-    }
-
-    /**
-     * Reads a submitted payment's status from the endpoint belonging to its rail.
-     *
-     * The rail cannot be told from the id, and the two endpoints do not accept each other's — an
-     * international payment read as domestic answers 404, which is what every international payment
-     * used to do on its own status screen. It is read back from the row written at submission.
-     * Domestic is the fallback when no row is stored, matching how those ids were treated before
-     * the rail was recorded at all.
-     */
-    @Suppress("ReturnCount")
-    override suspend fun paymentStatus(domesticPaymentId: String): NetworkResult<PaymentReceipt, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> return result
-        }
-        val type = paymentHistoryRepository.consentTypeOf(domesticPaymentId)
-            ?: return NetworkResult.Error(
-                NetworkError.Client.BadRequest("Unknown consent type — cannot choose an endpoint"),
-            )
-        return when (type) {
-            ConsentType.DomesticSinglePayment -> when (val r = pisp.getDomesticPayment(token, domesticPaymentId)) {
-                is NetworkResult.Success -> NetworkResult.Success(r.data.toPaymentReceipt())
-                is NetworkResult.Error -> r
-            }
-
-            ConsentType.InternationalSinglePayment ->
-                when (val r = pisp.getInternationalPayment(token, domesticPaymentId)) {
-                    is NetworkResult.Success -> NetworkResult.Success(r.data.toIntlPaymentReceipt())
-                    is NetworkResult.Error -> r
-                }
-        }
     }
 
     private fun PaymentDraft.isInternational(): Boolean = currencyOfTransfer != null

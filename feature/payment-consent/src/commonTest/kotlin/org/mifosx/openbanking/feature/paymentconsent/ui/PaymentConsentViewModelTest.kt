@@ -20,7 +20,8 @@ import kotlinx.coroutines.test.setMain
 import org.mifosx.openbanking.core.data.callback.PaymentAuthValidation
 import org.mifosx.openbanking.feature.paymentconsent.FakePaymentAuthRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakePaymentHistoryRepository
-import org.mifosx.openbanking.feature.paymentconsent.FakePaymentInitiationRepository
+import org.mifosx.openbanking.feature.paymentconsent.FakeScheduledPaymentInitiationRepository
+import org.mifosx.openbanking.feature.paymentconsent.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.paymentconsent.PaymentConsentFixtures
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -46,14 +47,16 @@ class PaymentConsentViewModelTest {
 
     private fun viewModel(
         repository: FakePaymentAuthRepository = FakePaymentAuthRepository(),
-        payments: FakePaymentInitiationRepository = FakePaymentInitiationRepository(),
+        payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
         history: FakePaymentHistoryRepository = FakePaymentHistoryRepository(),
+        scheduled: FakeScheduledPaymentInitiationRepository = FakeScheduledPaymentInitiationRepository(),
     ) = PaymentConsentViewModel(
         savedStateHandle = SavedStateHandle(
             mapOf(PaymentConsentViewModel.REDIRECT_URL_ARG to PaymentConsentFixtures.REDIRECT_URL),
         ),
         repository = repository,
         paymentInitiationRepository = payments,
+        scheduledPaymentInitiationRepository = scheduled,
         paymentHistoryRepository = history,
     )
 
@@ -101,7 +104,7 @@ class PaymentConsentViewModelTest {
      */
     @Test
     fun anAuthorisedConsentConfirmsFundsAndSubmitsTheStagedDraft() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
 
         viewModel(payments = payments)
 
@@ -147,7 +150,7 @@ class PaymentConsentViewModelTest {
     fun anAuthorisedConsentIsShownAsApprovedBeforeTheFundsCheckStarts() = runTest {
         val repository = FakePaymentAuthRepository()
         repository.statusReturns(NetworkResult.Success("AWAU"))
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(repository, payments)
         val seen = mutableListOf<PaymentConsentUiState>()
         payments.onStagedDraft = { seen += vm.stateFlow.value.uiState }
@@ -210,7 +213,7 @@ class PaymentConsentViewModelTest {
     fun aConsumedConsentSubmitsNothingFurther() = runTest {
         val repository = FakePaymentAuthRepository()
         repository.statusReturns(NetworkResult.Success("COND"))
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
 
         viewModel(repository, payments)
 
@@ -240,7 +243,7 @@ class PaymentConsentViewModelTest {
     fun acceptsEitherSpellingOfAnAuthorisedConsent() = runTest {
         val repository = FakePaymentAuthRepository()
         repository.statusReturns(NetworkResult.Success("Authorised"))
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
 
         viewModel(repository, payments)
 
@@ -257,7 +260,7 @@ class PaymentConsentViewModelTest {
      */
     @Test
     fun aNegativeFundsCheckStopsBeforeSubmitting() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.fundsReturn(NetworkResult.Success(false))
 
         val vm = viewModel(payments = payments)
@@ -273,7 +276,7 @@ class PaymentConsentViewModelTest {
      */
     @Test
     fun aMissingStagedDraftIsTerminalRatherThanRebuilt() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.stagedDraftReturns(null)
 
         val vm = viewModel(payments = payments)
@@ -292,7 +295,7 @@ class PaymentConsentViewModelTest {
      */
     @Test
     fun aRefusedSubmissionSurfacesAsARejection() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.submissionReturns(
             NetworkResult.Error(NetworkError.Client.BadRequest("U008")),
         )
@@ -311,7 +314,7 @@ class PaymentConsentViewModelTest {
      */
     @Test
     fun aSubmissionThatLostTheConnectionStillReadsAsSubmissionFailed() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.submissionReturns(
             NetworkResult.Error(NetworkError.Network(cause = RuntimeException("offline"))),
         )
@@ -325,7 +328,7 @@ class PaymentConsentViewModelTest {
     /** A credential the bank rejected outright never reached processing, so it is a clean failure. */
     @Test
     fun aSubmissionRefusedOnAnExpiredTokenReadsAsExpired() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.submissionReturns(NetworkResult.Error(NetworkError.Client.Unauthorized(null)))
 
         val vm = viewModel(payments = payments)
@@ -336,7 +339,7 @@ class PaymentConsentViewModelTest {
 
     @Test
     fun aSubmissionForbiddenByTheBankReadsAsDeclined() = runTest {
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         payments.submissionReturns(NetworkResult.Error(NetworkError.Client.Forbidden(null)))
 
         val vm = viewModel(payments = payments)
@@ -367,7 +370,7 @@ class PaymentConsentViewModelTest {
     fun checkingAgainRepollsTheConsentStatus() = runTest {
         val repository = FakePaymentAuthRepository()
         repository.statusReturns(NetworkResult.Success("AWAU"))
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(repository, payments)
 
         repository.statusReturns(NetworkResult.Success("AUTH"))
@@ -405,7 +408,7 @@ class PaymentConsentViewModelTest {
     fun aTimedOutAuthorisationSubmitsNothingAndClearsTheSession() = runTest {
         val repository = FakePaymentAuthRepository()
         repository.statusReturns(NetworkResult.Success("AWAU"))
-        val payments = FakePaymentInitiationRepository()
+        val payments = FakeSinglePaymentInitiationRepository()
         val vm = viewModel(repository, payments)
 
         repeat(2) {
