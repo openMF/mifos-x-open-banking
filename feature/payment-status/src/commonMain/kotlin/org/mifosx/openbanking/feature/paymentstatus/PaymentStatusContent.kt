@@ -62,6 +62,7 @@ import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_from
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress_note
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress_note_scheduled
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_last_checked
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_new_payment
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_payment_id
@@ -123,7 +124,7 @@ internal fun PaymentStatusContent(
         }
 
         if (state.inProgress) {
-            InProgressNote()
+            InProgressNote(scheduled = state.scheduledForAt.isNotBlank())
         }
 
         if (state.timeline.isNotEmpty()) {
@@ -297,8 +298,19 @@ private fun RefreshFailureNote() {
     }
 }
 
+/**
+ * The banner under the chip, worded by whether the payment has a date to wait for.
+ *
+ * A scheduled payment is told to keep the account funded, because there is a day on which the money
+ * has to be there. An immediate payment has no such day — it is already on its way — so the same
+ * sentence would point at a date that does not exist.
+ *
+ * Keyed off [PaymentStatusUiState.Content.scheduledForAt] rather than the rail, because that field is
+ * populated from the requested execution date and so is non-blank exactly when there is a date to
+ * name.
+ */
 @Composable
-private fun InProgressNote() {
+private fun InProgressNote(scheduled: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -315,7 +327,11 @@ private fun InProgressNote() {
             modifier = Modifier.size(NoteIconSize),
         )
         Text(
-            text = stringResource(Res.string.feature_payment_status_in_progress_note),
+            text = if (scheduled) {
+                stringResource(Res.string.feature_payment_status_in_progress_note_scheduled)
+            } else {
+                stringResource(Res.string.feature_payment_status_in_progress_note)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
         )

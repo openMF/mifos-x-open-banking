@@ -16,7 +16,12 @@
     <string name="feature_payment_status_in_progress">In progress</string>
     <string name="feature_payment_status_completed">Completed</string>
     <string name="feature_payment_status_failed">Failed</string>
-    <string name="feature_payment_status_in_progress_note">Payment approved. Make sure to keep your account funded on the scheduled date.</string>
+    <!-- Shown for any in-progress payment. Must stay true of an immediate one, which has no future
+         date to talk about. -->
+    <string name="feature_payment_status_in_progress_note">Your bank has accepted this payment. The money has not left your account yet.</string>
+    <!-- The scheduled variant. Only reachable when the payment actually has a date, so it can name
+         one without inventing it. -->
+    <string name="feature_payment_status_in_progress_note_scheduled">Payment approved. Make sure to keep your account funded on the scheduled date.</string>
 
     <!-- The bank's own OBIE status, shown under the chip. Several of these share one chip label,
          so this is what distinguishes them. -->

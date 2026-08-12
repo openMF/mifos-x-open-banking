@@ -132,6 +132,19 @@ class PaymentStatusScreenScreenshotTest {
     @Test
     fun scheduledGolden() = capture("scheduled", PaymentStatusFixtures.scheduledState())
 
+    /**
+     * The in-progress banner on an IMMEDIATE payment, which must not mention a scheduled date.
+     *
+     * The same banner serves both rails, and the only thing separating them is whether the payment
+     * has a date at all — so the two wordings sit side by side as images rather than resting on one
+     * boolean nobody looks at.
+     */
+    @Test
+    fun immediateInProgressNoteGolden() = capture("note_immediate", PaymentStatusFixtures.contentState())
+
+    @Test
+    fun scheduledInProgressNoteGolden() = capture("note_scheduled", PaymentStatusFixtures.scheduledState())
+
     @Test
     fun loadingGolden() = capture("loading", PaymentStatusFixtures.loadingState())
 
