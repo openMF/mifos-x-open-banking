@@ -33,6 +33,7 @@
 :feature:payment-consent
 :feature:payment-status
 :feature:payments-hub
+:feature:payments-schedule-payment
 :feature:product
 :feature:scheduled-payments
 :feature:send-money
