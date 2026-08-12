@@ -31,6 +31,7 @@ import org.mifosx.openbanking.feature.home.di.HomeModule
 import org.mifosx.openbanking.feature.login.di.LoginModule
 import org.mifosx.openbanking.feature.paymentconsent.di.PaymentConsentModule
 import org.mifosx.openbanking.feature.paymentshub.di.PaymentsHubModule
+import org.mifosx.openbanking.feature.paymentsschedulepayment.di.SchedulePaymentModule
 import org.mifosx.openbanking.feature.paymentstatus.di.PaymentStatusModule
 import org.mifosx.openbanking.feature.product.di.ProductModule
 import org.mifosx.openbanking.feature.scheduledpayments.di.ScheduledPaymentsModule
@@ -84,6 +85,7 @@ object KoinModules {
             AccountHolderModule,
             LoginModule,
             ConsentCallbackModule,
+            SchedulePaymentModule,
             SendMoneyModule,
             PaymentStatusModule,
             PaymentConsentModule,

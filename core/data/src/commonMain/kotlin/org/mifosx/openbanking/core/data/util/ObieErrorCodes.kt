@@ -111,6 +111,24 @@ fun Throwable.isDebtorAccountRefusal(): Boolean =
 
 private const val DEBTOR_ACCOUNT_PATH_FRAGMENT = "DebtorAccount"
 
+/**
+ * Whether the bank refused the request because of the requested EXECUTION DATE specifically.
+ *
+ * Three codes reach this one field, and matching on the path catches all of them at once:
+ *  - `U003` — the date is today or earlier ("a date in the past"; the bank counts today as past)
+ *  - `U002` — the date is beyond the accepted window, reported as "Invalid Field"
+ *  - `U004` — the field was omitted altogether
+ *
+ * Matched on the path for the same reason as [isDebtorAccountRefusal], and with more force: `U002`
+ * alone says only "Invalid Field" and is raised for refused payers and refused schemes too. Reading
+ * the code without the path would land a date beyond the window on "check your details" — advice that
+ * points at everything except the one field the customer has to change.
+ */
+fun Throwable.isExecutionDateRefusal(): Boolean =
+    obieErrorPath()?.contains(EXECUTION_DATE_PATH_FRAGMENT, ignoreCase = true) == true
+
+private const val EXECUTION_DATE_PATH_FRAGMENT = "RequestedExecutionDateTime"
+
 private fun String?.carriesUnsupportedProductCode(): Boolean {
     if (this.isNullOrBlank()) return false
     val errors = parseObError()?.errors

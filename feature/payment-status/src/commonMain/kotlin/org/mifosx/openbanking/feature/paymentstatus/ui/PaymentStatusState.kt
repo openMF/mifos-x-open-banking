@@ -106,6 +106,15 @@ sealed interface PaymentStatusUiState {
         val debtorLabel: String,
         val submittedAt: String,
         val settledAt: String = "",
+        /**
+         * The date a scheduled payment is due, formatted, or empty on an immediate one.
+         *
+         * Read from `requestedExecutionDateTime` and **not** from `settlementDateTime`, which the
+         * scheduled rails return equal to the creation timestamp — today, not the date the customer
+         * chose. Rendering that field would tell someone their payment settled today when it is due
+         * next week, so the scheduled mapper leaves it empty and this carries the real date instead.
+         */
+        val scheduledForAt: String = "",
         val statusChangedAt: String = "",
         val charges: List<PaymentCharge> = emptyList(),
         val lastCheckedAt: String = "",

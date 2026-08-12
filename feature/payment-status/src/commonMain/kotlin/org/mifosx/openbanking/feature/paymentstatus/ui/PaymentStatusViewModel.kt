@@ -123,6 +123,7 @@ class PaymentStatusViewModel(
             debtorLabel = debtorIdentification.toAccountLabel(),
             submittedAt = formatDateTime(creationDateTime, timeZone),
             settledAt = settled,
+            scheduledForAt = requestedExecutionDateTime.formatted(),
             // Guarded exactly as `settledAt` is. Unguarded, a blank wire value went through
             // `formatDateTime`, which returns its input unparsed — so a blank became a blank, and
             // whatever it returned drove the conditional row rather than the fact of the absence.

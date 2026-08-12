@@ -21,6 +21,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusErrorKind
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
@@ -212,6 +213,15 @@ class FakePaymentHistoryRepository(
 
     override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) =
         error("payment-status never writes history")
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) =
+        error("payment-status never writes history")
+
+    override suspend fun saveFailed(
+        draft: ScheduledPaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = error("payment-status never writes history")
 
     override suspend fun consentTypeOf(paymentId: String): ConsentType? = ConsentType.DomesticSinglePayment
 

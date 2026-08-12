@@ -48,6 +48,7 @@ kotlin {
             implementation(projects.feature.accountHolder)
             implementation(projects.feature.login)
             implementation(projects.feature.consentCallback)
+            implementation(projects.feature.paymentsSchedulePayment)
             implementation(projects.feature.sendMoney)
             implementation(projects.feature.paymentStatus)
             implementation(projects.feature.paymentConsent)

@@ -133,6 +133,7 @@ include(":feature:send-money")
 include(":feature:payment-status")
 include(":feature:payment-consent")
 include(":feature:payments-hub")
+include(":feature:payments-schedule-payment")
 
 include(":core-base:analytics")
 include(":core-base:common")

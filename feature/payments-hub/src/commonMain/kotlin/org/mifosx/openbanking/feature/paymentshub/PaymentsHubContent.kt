@@ -75,6 +75,7 @@ internal fun PaymentsHubContent(
     onNavigateToSendMoney: () -> Unit,
     onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToSchedulePayment: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     when (val current = state.uiState) {
@@ -84,6 +85,7 @@ internal fun PaymentsHubContent(
         is PaymentsHubUiState.Content -> PaymentsHubContentLoaded(
             current = current,
             onNavigateToSendMoney = onNavigateToSendMoney,
+            onNavigateToSchedulePayment = onNavigateToSchedulePayment,
             onNavigateToPaymentStatus = onNavigateToPaymentStatus,
             modifier = modifier.padding(contentPadding),
         )
@@ -101,6 +103,7 @@ private fun PaymentsHubContentLoaded(
     onNavigateToSendMoney: () -> Unit,
     onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToSchedulePayment: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize()
@@ -120,7 +123,10 @@ private fun PaymentsHubContentLoaded(
         }
 
         item {
-            QuickActionsSection(onNavigateToSendMoney = onNavigateToSendMoney)
+            QuickActionsSection(
+                onNavigateToSendMoney = onNavigateToSendMoney,
+                onNavigateToSchedulePayment = onNavigateToSchedulePayment,
+            )
         }
 
         item {
@@ -147,9 +153,12 @@ private fun PaymentsHubContentLoaded(
 }
 
 @Composable
-private fun QuickActionsSection(onNavigateToSendMoney: () -> Unit) {
+private fun QuickActionsSection(
+    onNavigateToSendMoney: () -> Unit,
+    onNavigateToSchedulePayment: () -> Unit,
+) {
     val gap = KptTheme.spacing.md
-    val rows = quickActionRows(onNavigateToSendMoney)
+    val rows = quickActionRows(onNavigateToSendMoney, onNavigateToSchedulePayment)
     Column(modifier = Modifier.testTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID)) {
         for (row in rows) {
             Row(
@@ -184,6 +193,7 @@ private data class QuickActionItem(
 @Composable
 private fun quickActionRows(
     onSendMoney: () -> Unit,
+    onSchedulePayment: () -> Unit,
 ): List<List<QuickActionItem>> = listOf(
     listOf(
         QuickActionItem(
@@ -198,6 +208,7 @@ private fun quickActionRows(
             label = "Schedule",
             testTag = PaymentsHubTestTags.QUICK_ACTION_SCHEDULE,
             subtext = "Pay on a date",
+            onClick = onSchedulePayment,
         ),
     ),
     listOf(

@@ -60,6 +60,8 @@ import org.mifosx.openbanking.feature.login.LoginRenewRoute
 import org.mifosx.openbanking.feature.login.browser.BrowserLauncher
 import org.mifosx.openbanking.feature.login.loginRenewScreen
 import org.mifosx.openbanking.feature.paymentshub.paymentsHubGraph
+import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentRoute
+import org.mifosx.openbanking.feature.paymentsschedulepayment.schedulePaymentGraph
 import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusRoute
 import org.mifosx.openbanking.feature.paymentstatus.paymentStatusScreen
 import org.mifosx.openbanking.feature.product.ProductRoute
@@ -168,11 +170,18 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             )
             paymentsHubGraph(
                 onNavigateToSendMoney = { navController.navigate(SendMoneyRoute) },
+                onNavigateToSchedulePayment = { navController.navigate(SchedulePaymentRoute) },
                 onNavigateToPaymentStatus = { paymentId ->
                     navController.navigate(PaymentStatusRoute(paymentId))
                 },
             )
             sendMoneyGraph(
+                onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
+                onNavigateToConsents = {},
+            )
+            // A sibling of the hub graph, like send-money: the scheduled rails own their own browser
+            // hand-off, and the return leg lands at the root navigator, not here.
+            schedulePaymentGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},
             )

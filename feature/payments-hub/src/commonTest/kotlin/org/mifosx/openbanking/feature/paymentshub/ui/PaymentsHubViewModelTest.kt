@@ -23,6 +23,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -52,6 +53,18 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
     override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) {
         savedFailed += draft to errorKind
     }
+
+    // The scheduled overloads exist for the interface only. The hub reads history and never writes
+    // it — a call landing here would mean a write path had drifted into the tab landing.
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {
+        savedSubmitted += receipt
+    }
+
+    override suspend fun saveFailed(
+        draft: ScheduledPaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = Unit
 
     override suspend fun refreshStatuses() {
         refreshCallCount++

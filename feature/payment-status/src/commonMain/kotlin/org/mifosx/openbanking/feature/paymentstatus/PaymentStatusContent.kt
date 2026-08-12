@@ -70,6 +70,7 @@ import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_reference_empty
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_refresh
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_refresh_failed
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_scheduled_for
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_settled
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_status_changed
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_submitted
@@ -344,6 +345,18 @@ private fun DetailsSection(state: PaymentStatusUiState.Content) {
                 value = state.submittedAt,
                 tag = PaymentStatusTestTags.DETAIL_SUBMITTED,
             )
+
+            // A scheduled payment states when it is due. The wording is deliberately future tense
+            // and never says paid or sent: nothing has moved, and on this rail nothing will until
+            // the date. The app also cannot confirm that it did — no per-execution status exists.
+            if (state.scheduledForAt.isNotBlank()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DetailRow(
+                    label = stringResource(Res.string.feature_payment_status_scheduled_for),
+                    value = state.scheduledForAt,
+                    tag = PaymentStatusTestTags.DETAIL_SCHEDULED_FOR,
+                )
+            }
 
             // Omitted rather than drawn blank when the bank did not say — an empty value beside a
             // label reads as data we lost, not data we were never given.

@@ -53,6 +53,9 @@
     <string name="feature_payment_status_from">From</string>
     <string name="feature_payment_status_submitted">Submitted</string>
     <string name="feature_payment_status_settled">Settles</string>
+    <!-- Future tense, always. A scheduled payment has not been made, and this app cannot observe
+         whether it ever is — there is no per-execution status on either scheduled rail. -->
+    <string name="feature_payment_status_scheduled_for">Scheduled for</string>
     <string name="feature_payment_status_status_changed">Status updated</string>
     <string name="feature_payment_status_fee">Fee (%1$s)</string>
     <string name="feature_payment_status_payment_id">Payment ID</string>
