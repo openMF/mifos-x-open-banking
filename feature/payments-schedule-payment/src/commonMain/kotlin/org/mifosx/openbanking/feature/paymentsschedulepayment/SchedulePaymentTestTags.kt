@@ -93,9 +93,7 @@ internal object SchedulePaymentTestTags {
     const val CANCEL_BUTTON = "schedulePayment:cancelButton"
     const val REVIEW_HERO = "schedulePayment:reviewHero"
     const val REVIEW_PAYEE_CHIP = "schedulePayment:reviewPayeeChip"
-    const val REVIEW_SENT_VIA = "schedulePayment:reviewSentVia"
     const val REVIEW_CHARGE_BEARER = "schedulePayment:reviewChargeBearer"
-    const val REVIEW_TOTAL = "schedulePayment:reviewTotal"
     const val REVIEW_AUTH_NOTICE = "schedulePayment:reviewAuthNotice"
     const val EDIT_PAYMENT_BUTTON = "schedulePayment:editPaymentButton"
 

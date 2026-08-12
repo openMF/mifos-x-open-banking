@@ -58,6 +58,7 @@ import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resource
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_amount_error_not_a_number
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_amount_error_not_positive
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_amount_error_too_many_decimals
+import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_charges_caveat
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_charges_heading
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_creditor_heading
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_date_heading
@@ -549,6 +550,15 @@ private fun ChargesSection(
             optionTestTag = SchedulePaymentTestTags::chargeBearerOption,
             onSelect = { onAction(SchedulePaymentAction.SelectChargeBearer(it)) },
             modifier = Modifier.testTag(SchedulePaymentTestTags.CHARGE_BEARER_PICKER),
+        )
+        // Says what the app cannot: this rail declares no charge until the payment resource exists,
+        // which is after the customer has authorised. Without this line the row reads as though the
+        // fee were settled here.
+        Text(
+            text = stringResource(Res.string.feature_payments_schedule_payment_charges_caveat),
+            style = KptTheme.typography.bodySmall,
+            color = KptTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag(SchedulePaymentTestTags.CHARGES_ROW),
         )
     }
 }

@@ -31,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.ui.account.accountDisplayName
@@ -56,11 +55,7 @@ import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resource
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_reference_empty
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_scheduled_for
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_sent_as
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_sent_via
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_sent_via_domestic
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_sent_via_international
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_to
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_total
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentAction
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentUiState
 import template.core.base.designsystem.theme.KptTheme
@@ -126,12 +121,6 @@ internal fun SchedulePaymentReviewPage(
             verticalArrangement = Arrangement.spacedBy(RowGap),
         ) {
             SectionHeading(stringResource(Res.string.feature_payments_schedule_payment_review_details_heading))
-            ReviewRow(
-                label = stringResource(Res.string.feature_payments_schedule_payment_review_to),
-                value = state.creditorLabel,
-                tag = SchedulePaymentTestTags.REVIEW_TO,
-                secondary = state.creditorSupporting,
-            )
             // Blank when the PSU left the choice to the bank — which is a decision they made, so it
             // is stated rather than left as an empty row that reads like a missing field.
             ReviewRow(
@@ -140,6 +129,12 @@ internal fun SchedulePaymentReviewPage(
                     stringResource(Res.string.feature_payments_schedule_payment_review_from_bank_choice)
                 },
                 tag = SchedulePaymentTestTags.REVIEW_FROM,
+            )
+            ReviewRow(
+                label = stringResource(Res.string.feature_payments_schedule_payment_review_to),
+                value = state.creditorLabel,
+                tag = SchedulePaymentTestTags.REVIEW_TO,
+                secondary = state.creditorSupporting,
             )
             if (state.rail == PaymentRail.Domestic) {
                 ReviewRow(
@@ -169,19 +164,6 @@ internal fun SchedulePaymentReviewPage(
                     tag = SchedulePaymentTestTags.REVIEW_CHARGE_ROW,
                 )
             }
-            // Which rail, not how fast — the bank promises no timing. Derived rather than fixed:
-            // it read "Faster Payments" on both, which is untrue of an international payment.
-            ReviewRow(
-                label = stringResource(Res.string.feature_payments_schedule_payment_review_sent_via),
-                value = stringResource(state.rail.sentViaLabel()),
-                tag = SchedulePaymentTestTags.REVIEW_SENT_VIA,
-            )
-            ReviewRow(
-                label = stringResource(Res.string.feature_payments_schedule_payment_review_total),
-                value = state.amountLabel,
-                tag = SchedulePaymentTestTags.REVIEW_TOTAL,
-                emphasis = true,
-            )
         }
 
         if (state.rail == PaymentRail.International) {
@@ -384,10 +366,4 @@ private fun ReviewRow(
             )
         }
     }
-}
-
-/** Which rail carried it. Not a speed claim — the bank commits to no timing on either. */
-private fun PaymentRail.sentViaLabel(): StringResource = when (this) {
-    PaymentRail.Domestic -> Res.string.feature_payments_schedule_payment_review_sent_via_domestic
-    PaymentRail.International -> Res.string.feature_payments_schedule_payment_review_sent_via_international
 }

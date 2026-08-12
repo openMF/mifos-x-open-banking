@@ -81,8 +81,8 @@
          paraphrasing was asserting a meaning nobody had defined. FollowingServiceLevel has no string
          because it is not offered — HSBC refuses it with UK.OBIE.Field.Invalid. -->
     <string name="feature_payments_schedule_payment_charges_heading">Charges</string>
-    <string name="feature_payments_schedule_payment_charge_bearer_creditor">Borne by creditor</string>
-    <string name="feature_payments_schedule_payment_charge_bearer_debtor">Borne by debtor</string>
+    <string name="feature_payments_schedule_payment_charge_bearer_creditor">Paid by recipient</string>
+    <string name="feature_payments_schedule_payment_charge_bearer_debtor">Paid by you</string>
     <string name="feature_payments_schedule_payment_charge_bearer_shared">Shared</string>
 
     <!-- HSBC's documented routing currencies. Resolved through a code-keyed map that falls back to
@@ -117,9 +117,9 @@
 
     <string name="feature_payments_schedule_payment_reference_label">Reference (optional)</string>
     <string name="feature_payments_schedule_payment_reference_helper">Max 35 characters</string>
-    <string name="feature_payments_schedule_payment_review_button">Review &amp; pay</string>
+    <string name="feature_payments_schedule_payment_review_button">Review payment</string>
 
-    <string name="feature_payments_schedule_payment_review_heading">Check this before you send it</string>
+    <string name="feature_payments_schedule_payment_review_heading">Check this before you continue</string>
     <string name="feature_payments_schedule_payment_review_from_bank_choice">You’ll choose at your bank</string>
     <!-- No "Recipient receives" row on the review any more: the amount above it is already in the
          currency the recipient receives, so the row restated it. -->
@@ -130,10 +130,6 @@
     <string name="feature_payments_schedule_payment_review_reference_empty">None</string>
     <string name="feature_payments_schedule_payment_review_hero_caption">to be sent</string>
     <string name="feature_payments_schedule_payment_review_details_heading">Payment details</string>
-    <string name="feature_payments_schedule_payment_review_sent_via">Sent via</string>
-    <string name="feature_payments_schedule_payment_review_sent_via_domestic">Faster Payments</string>
-    <string name="feature_payments_schedule_payment_review_sent_via_international">International payment</string>
-    <string name="feature_payments_schedule_payment_review_total">Amount to send</string>
     <!-- Curly apostrophe, not \' — Compose Multiplatform does not collapse Android's escape and
          renders the backslash literally. Same trap as %% in a templated string. -->
     <string name="feature_payments_schedule_payment_review_auth_notice">You’ll approve this with your bank before any money moves.</string>
