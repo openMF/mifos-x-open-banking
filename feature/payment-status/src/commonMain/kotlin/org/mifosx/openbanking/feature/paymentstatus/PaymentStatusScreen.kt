@@ -24,11 +24,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.ui.scaffold.KptScaffold
 import org.mifosx.openbanking.core.ui.scaffold.rememberKptPullToRefreshState
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.Res
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_back_a11y
-import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusAction
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
