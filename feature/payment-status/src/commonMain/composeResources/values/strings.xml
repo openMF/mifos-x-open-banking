@@ -9,30 +9,29 @@
     See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
 -->
 <resources>
-    <string name="feature_payment_status_screen_title">Payment status</string>
-    <string name="feature_payment_status_loading_a11y">Reading payment status</string>
+    <string name="feature_payment_status_loading_a11y">Getting payment status</string>
     <string name="feature_payment_status_back_a11y">Back</string>
 
     <string name="feature_payment_status_to">to %1$s</string>
     <string name="feature_payment_status_in_progress">In progress</string>
     <string name="feature_payment_status_completed">Completed</string>
     <string name="feature_payment_status_failed">Failed</string>
-    <string name="feature_payment_status_in_progress_note">Your bank has accepted this payment. The money has not left your account yet.</string>
+    <string name="feature_payment_status_in_progress_note">Payment approved. Make sure to keep your account funded on the scheduled date.</string>
 
     <!-- The bank's own OBIE status, shown under the chip. Several of these share one chip label,
          so this is what distinguishes them. -->
-    <string name="feature_payment_status_detail_received">Received by your bank</string>
+    <string name="feature_payment_status_detail_received">Redirecting to bank portal</string>
     <string name="feature_payment_status_detail_pending">Pending at your bank</string>
-    <string name="feature_payment_status_detail_acsp">Accepted — settlement in process</string>
-    <string name="feature_payment_status_detail_actc">Accepted — technical validation passed</string>
+    <string name="feature_payment_status_detail_acsp">Payment accepted for execution.</string>
+    <string name="feature_payment_status_detail_actc">Payement request is valid and authenticated</string>
     <!-- A scheduled payment that is set up and waiting for its date. It is not "in process": nothing
          happens until the execution date, which may be up to a year away. -->
     <string name="feature_payment_status_detail_inco">Set up — waiting for its payment date</string>
-    <string name="feature_payment_status_detail_acsc">Accepted — settlement completed</string>
-    <string name="feature_payment_status_detail_accc">Accepted — credit settled</string>
-    <string name="feature_payment_status_detail_acwp">Accepted without posting</string>
-    <string name="feature_payment_status_detail_rjct">Rejected by your bank</string>
-    <string name="feature_payment_status_detail_unknown">Your bank reported a status this app does not recognise</string>
+    <string name="feature_payment_status_detail_acsc">Payment is settled</string>
+    <string name="feature_payment_status_detail_accc">Payment is settled</string>
+    <string name="feature_payment_status_detail_acwp">Payment is accepted but not credited into payee's account yet.</string>
+    <string name="feature_payment_status_detail_rjct">Payment is rejected.</string>
+    <string name="feature_payment_status_detail_unknown">Unknown status.</string>
 
     <!-- The four stages, newest first. "Completed" becomes "Rejected" when the bank refused the
          payment, so the last row never claims a completion that did not happen. -->
@@ -45,7 +44,7 @@
     <string name="feature_payment_status_step_waiting">Waiting on your bank</string>
     <string name="feature_payment_status_step_settling">Settling now</string>
 
-    <string name="feature_payment_status_refresh_failed">Could not refresh just now. This is your bank’s last answer.</string>
+    <string name="feature_payment_status_refresh_failed">Could not refresh just now. This is last status.</string>
 
     <string name="feature_payment_status_details">Details</string>
     <string name="feature_payment_status_reference">Reference</string>

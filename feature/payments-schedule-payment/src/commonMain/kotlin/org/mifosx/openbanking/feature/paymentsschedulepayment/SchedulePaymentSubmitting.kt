@@ -106,11 +106,17 @@ internal fun SchedulePaymentSubmitting(
 
         // The way out of the waiting state, and only of the waiting state.
         //
-        // Staging is brief and cannot be interrupted — a consent that has reached the bank cannot be
-        // withdrawn — so there is nothing to offer there. Waiting is different: the customer may have
-        // come back through the task switcher rather than the redirect, in which case no callback is
-        // ever delivered and this screen would spin forever. The immediate rail has exactly that
-        // defect. This does not cancel anything; it releases the screen.
+        // Staging is brief and cannot be interrupted, so there is nothing to offer there. Waiting is
+        // different: the customer may have come back through the task switcher rather than the
+        // redirect, in which case no callback is ever delivered and this screen would spin forever.
+        // The immediate rail has exactly that defect.
+        //
+        // The label reads "Cancel", which is true of the PAYMENT and not of the consent. Nothing has
+        // been authorised at this point, so no payment will be made — that is what the customer is
+        // cancelling. The staged consent itself survives and expires unauthorised; it cannot be
+        // withdrawn, because the bank answers 405 to a delete. That distinction is why the same word
+        // must never appear after approval, where the payment IS scheduled and the app has no way to
+        // stop it.
         if (stage == SchedulePaymentStage.AwaitingAuthorisation) {
             MifosTonalPillButton(
                 label = stringResource(Res.string.feature_payments_schedule_payment_abandon_authorisation),

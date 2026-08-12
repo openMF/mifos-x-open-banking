@@ -202,6 +202,9 @@
     <string name="feature_payments_schedule_payment_protected_by">Protected by UK Open Banking</string>
 
     <!-- Waiting for the customer to come back from the bank. The way out is deliberate: returning
-         through the task switcher delivers no callback, and without this the screen waits forever. -->
-    <string name="feature_payments_schedule_payment_abandon_authorisation">I did not approve this</string>
+         through the task switcher delivers no callback, and without this the screen waits forever.
+         "Cancel" is honest at THIS point only — nothing has been authorised, so no payment will be
+         made. It must never be offered after approval, where the bank refuses to withdraw a
+         scheduled consent and the app could not honour the word. -->
+    <string name="feature_payments_schedule_payment_abandon_authorisation">Cancel</string>
 </resources>

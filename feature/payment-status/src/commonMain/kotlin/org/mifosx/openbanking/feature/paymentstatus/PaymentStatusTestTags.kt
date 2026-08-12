@@ -25,6 +25,8 @@ internal object PaymentStatusTestTags {
     const val DETAIL_SUBMITTED = "paymentStatus:detailSubmitted"
     const val DETAIL_PAYMENT_ID = "paymentStatus:detailPaymentId"
     const val STATUS_DETAIL = "paymentStatus:statusDetail"
+    const val APP_BAR = "paymentStatus:appBar"
+    const val APP_BAR_STATUS = "paymentStatus:appBarStatus"
     const val DETAIL_SETTLED = "paymentStatus:detailSettled"
     const val DETAIL_SCHEDULED_FOR = "paymentStatus:detailScheduledFor"
     const val DETAIL_STATUS_CHANGED = "paymentStatus:detailStatusChanged"

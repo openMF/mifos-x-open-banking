@@ -206,29 +206,41 @@ private fun SummaryCard(state: PaymentStatusUiState.Content) {
     }
 }
 
+/**
+ * The colours a disposition wears, in one place.
+ *
+ * The app bar spans the screen in these same colours, so a second mapping would be a second source
+ * of truth for what "failed" looks like — and the two would drift the first time either changed.
+ */
+internal data class DispositionColours(val container: Color, val onContainer: Color)
+
+@Composable
+internal fun dispositionColours(disposition: PaymentDisposition): DispositionColours = when (disposition) {
+    PaymentDisposition.InProgress -> DispositionColours(
+        MaterialTheme.colorScheme.secondaryContainer,
+        MaterialTheme.colorScheme.onSecondaryContainer,
+    )
+
+    PaymentDisposition.TerminalSuccess -> DispositionColours(
+        MaterialTheme.colorScheme.tertiaryContainer,
+        MaterialTheme.colorScheme.onTertiaryContainer,
+    )
+
+    PaymentDisposition.TerminalFailure -> DispositionColours(
+        MaterialTheme.colorScheme.errorContainer,
+        MaterialTheme.colorScheme.onErrorContainer,
+    )
+}
+
 @Composable
 private fun StatusChip(disposition: PaymentDisposition) {
-    val container: Color
-    val onContainer: Color
-    val icon: ImageVector
-    when (disposition) {
-        PaymentDisposition.InProgress -> {
-            container = MaterialTheme.colorScheme.secondaryContainer
-            onContainer = MaterialTheme.colorScheme.onSecondaryContainer
-            icon = Icons.Filled.Schedule
-        }
-
-        PaymentDisposition.TerminalSuccess -> {
-            container = MaterialTheme.colorScheme.tertiaryContainer
-            onContainer = MaterialTheme.colorScheme.onTertiaryContainer
-            icon = Icons.Filled.CheckCircle
-        }
-
-        PaymentDisposition.TerminalFailure -> {
-            container = MaterialTheme.colorScheme.errorContainer
-            onContainer = MaterialTheme.colorScheme.onErrorContainer
-            icon = Icons.Filled.ErrorOutline
-        }
+    val colours = dispositionColours(disposition)
+    val container = colours.container
+    val onContainer = colours.onContainer
+    val icon = when (disposition) {
+        PaymentDisposition.InProgress -> Icons.Filled.Schedule
+        PaymentDisposition.TerminalSuccess -> Icons.Filled.CheckCircle
+        PaymentDisposition.TerminalFailure -> Icons.Filled.ErrorOutline
     }
 
     Row(
@@ -425,7 +437,13 @@ private fun DetailRow(label: String, value: String, tag: String) {
     }
 }
 
-private fun PaymentDisposition.labelResource() = when (this) {
+/**
+ * The one place a disposition becomes words.
+ *
+ * Shared with the app bar rather than duplicated, so the title and the chip can never disagree about
+ * what state the payment is in.
+ */
+internal fun PaymentDisposition.labelResource() = when (this) {
     PaymentDisposition.InProgress -> Res.string.feature_payment_status_in_progress
     PaymentDisposition.TerminalSuccess -> Res.string.feature_payment_status_completed
     PaymentDisposition.TerminalFailure -> Res.string.feature_payment_status_failed

@@ -10,6 +10,8 @@
 package org.mifosx.openbanking.feature.paymentstatus
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +29,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusErrorKind
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
+import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStepState
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -135,6 +138,75 @@ class PaymentStatusScreenScreenshotTest {
     @Test
     fun errorGolden() =
         capture("error", PaymentStatusFixtures.errorState(PaymentStatusErrorKind.PaymentNotFound))
+
+    /**
+     * The app bar in each of the three colours it can wear, above the screen it titles.
+     *
+     * The other goldens capture `PaymentStatusScreenContent`, which sits *below* the bar — so until
+     * these existed, the one part of this screen that states the outcome at a glance appeared in no
+     * image at all.
+     */
+    @Test
+    fun appBarInProgressGolden() = captureWithBar("bar_in_progress", PaymentStatusFixtures.scheduledState())
+
+    @Test
+    fun appBarCompletedGolden() = captureWithBar(
+        "bar_completed",
+        PaymentStatusFixtures.contentState(
+            disposition = PaymentDisposition.TerminalSuccess,
+            status = PaymentStatus.AcceptedCreditSettlementCompleted,
+            // The default fixture timeline leaves the last stage Current — "Settling now" — which
+            // would have this golden claim a settled payment is still settling.
+            timeline = PaymentStatusFixtures.timeline(
+                completedState = PaymentStepState.Done,
+                completedAt = "3 Aug 2026, 14:22",
+            ),
+        ),
+    )
+
+    /** The title reads "Failed" — never the reason, which stays in the body. */
+    @Test
+    fun appBarFailedGolden() = captureWithBar(
+        "bar_failed",
+        PaymentStatusFixtures.contentState(
+            disposition = PaymentDisposition.TerminalFailure,
+            status = PaymentStatus.Rejected,
+            settledAt = "",
+            timeline = PaymentStatusFixtures.timeline(
+                completedState = PaymentStepState.Failed,
+                completedAt = "3 Aug 2026, 14:22",
+            ),
+        ),
+    )
+
+    /** No status yet, so no colour and no title — only the way back. */
+    @Test
+    fun appBarWhileLoadingGolden() = captureWithBar("bar_loading", PaymentStatusFixtures.loadingState())
+
+    private fun captureWithBar(state: String, screenState: PaymentStatusState) {
+        composeRule.setContent {
+            KptTheme {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                ) {
+                    Column {
+                        PaymentStatusTopBar(
+                            disposition = (screenState.uiState as? PaymentStatusUiState.Content)?.disposition,
+                            onBack = {},
+                        )
+                        PaymentStatusScreenContent(
+                            state = screenState,
+                            onAction = {},
+                            onStartNewPayment = {},
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.onRoot().captureRoboImage("build/outputs/roborazzi/payment_status_$state.png")
+    }
 
     private fun capture(state: String, screenState: PaymentStatusState) {
         composeRule.setContent {
