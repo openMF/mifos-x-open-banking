@@ -65,6 +65,19 @@ object PaymentStatusFixtures {
             charges = charges,
         )
 
+    /**
+     * A scheduled payment as the bank actually returns one, read back before its date.
+     *
+     * `INCO` is what both scheduled rails answer on a read-back. `settlementDateTime` carries the
+     * creation timestamp — which is what the bank really sends, and why the scheduled mappers drop it
+     * — while `requestedExecutionDateTime` carries the date the customer chose.
+     */
+    fun scheduledReceipt(): PaymentReceipt = receipt(status = PaymentStatus.InitiationCompleted).copy(
+        settlementDateTime = "",
+        requestedExecutionDateTime = "2026-08-14T00:00:00+00:00",
+        charges = emptyList(),
+    )
+
     /** An ASPSP that maintains the fields properly, so the three rows are proven independent. */
     fun receiptWithDistinctTimestamps(): PaymentReceipt = receipt().copy(
         creationDateTime = "2026-08-03T14:22:00+00:00",
@@ -124,6 +137,7 @@ object PaymentStatusFixtures {
         lastCheckedAt: String = "14:25",
         refreshFailure: PaymentStatusErrorKind? = null,
         statusChangedAt: String = "3 Aug 2026, 14:22",
+        scheduledForAt: String = "",
         timeline: List<PaymentTimelineEntry> = timeline(),
     ): PaymentStatusState = PaymentStatusState(
         paymentId = PAYMENT_ID,
@@ -137,6 +151,7 @@ object PaymentStatusFixtures {
             debtorLabel = "40-05-15 12345678",
             submittedAt = "3 Aug 2026, 14:22",
             settledAt = settledAt,
+            scheduledForAt = scheduledForAt,
             statusChangedAt = statusChangedAt,
             charges = charges,
             lastCheckedAt = lastCheckedAt,
@@ -144,6 +159,29 @@ object PaymentStatusFixtures {
             refreshFailure = refreshFailure,
             timeline = timeline,
         ),
+    )
+
+    /**
+     * A scheduled payment, read back before its date.
+     *
+     * `settledAt` is blank and `scheduledForAt` carries the date instead. That pairing is the whole
+     * point: the scheduled rails return `ExpectedSettlementDateTime` equal to the creation timestamp,
+     * so the mapper drops it — a screen showing "Settles 6 Aug" for a payment due on the 14th would
+     * be reporting today as the settlement date of something that has not happened.
+     *
+     * The status is `InitiationCompleted` (`INCO`), which is what both scheduled rails actually
+     * return on a read-back, and it stays `InProgress` until the bank executes.
+     */
+    fun scheduledState(): PaymentStatusState = contentState(
+        status = PaymentStatus.InitiationCompleted,
+        settledAt = "",
+        scheduledForAt = "14 Aug 2026",
+        statusChangedAt = "",
+        charges = emptyList(),
+        // The final stage is Pending, not Current. `inFlightStepState` maps INCO that way in
+        // production, and the default fixture's "Settling now" would have this golden assert the
+        // opposite of what the app does — a payment that has not reached its date is not settling.
+        timeline = timeline(completedState = PaymentStepState.Pending),
     )
 
     /** Two charges, the case a single `DETAIL_FEE` tag could not address. */

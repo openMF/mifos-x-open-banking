@@ -118,6 +118,17 @@ class PaymentStatusScreenScreenshotTest {
         PaymentStatusFixtures.contentState(charges = PaymentStatusFixtures.twoCharges()),
     )
 
+    /**
+     * A scheduled payment before its date — the state this screen had no golden for.
+     *
+     * Worth an image rather than an assertion because what matters is what it does NOT say. There is
+     * no "Settles" row, nothing claims the money has moved, and the date shown is the one the
+     * customer chose rather than the creation timestamp the bank echoes back in
+     * `ExpectedSettlementDateTime`.
+     */
+    @Test
+    fun scheduledGolden() = capture("scheduled", PaymentStatusFixtures.scheduledState())
+
     @Test
     fun loadingGolden() = capture("loading", PaymentStatusFixtures.loadingState())
 

@@ -68,4 +68,41 @@ class FormatDateTest {
         assertEquals("", formatDateTime("", TimeZone.UTC))
         assertEquals("2026-08-05", formatDateTime("2026-08-05", TimeZone.UTC))
     }
+
+    // region — formatIsoDate: a DATE, not an instant
+
+    @Test
+    fun rendersTheLeadingIsoDateInFull() {
+        assertEquals("14 Aug 2026", formatIsoDate("2026-08-14T00:00:00+00:00"))
+        assertEquals("1 Jan 2027", formatIsoDate("2027-01-01"))
+    }
+
+    /**
+     * The reason this exists rather than reusing [formatDateTime].
+     *
+     * A scheduled payment's execution date travels as midnight UTC because OBIE has no date-only
+     * type. Passing that through an instant formatter converts it to the device's zone, and any zone
+     * behind UTC lands on the previous day — so a payment scheduled for the 14th displays as the
+     * 13th in the Americas. This reads the calendar date as written and converts nothing, so the
+     * answer cannot depend on where the customer is standing.
+     */
+    @Test
+    fun doesNotShiftTheDayForAnyTimeZone() {
+        val midnightUtc = "2026-08-14T00:00:00+00:00"
+
+        assertEquals("14 Aug 2026", formatIsoDate(midnightUtc))
+        // The instant formatter, for contrast: same input, a day earlier in New York.
+        assertEquals(
+            "13 Aug 2026, 20:00",
+            formatDateTime(midnightUtc, TimeZone.of("America/New_York")),
+        )
+    }
+
+    @Test
+    fun fallsBackToTheRawInputWhenTheDateWillNotParse() {
+        assertEquals("not-a-date", formatIsoDate("not-a-date"))
+        assertEquals("", formatIsoDate(""))
+    }
+
+    // endregion
 }

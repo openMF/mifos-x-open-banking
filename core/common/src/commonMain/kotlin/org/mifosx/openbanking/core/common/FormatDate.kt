@@ -34,6 +34,25 @@ fun formatShortMonthDay(isoDateTime: String): String {
 }
 
 /**
+ * Renders the leading `yyyy-MM-dd` of an ISO-8601 value as a full date, e.g. `"14 Aug 2026"`.
+ *
+ * Date only, deliberately. It exists for values that ARE dates rather than instants — a scheduled
+ * payment's execution date is carried on the wire as midnight UTC, so rendering it through
+ * [formatDateTime] appends a `00:00` that means nothing to the customer and, worse, reads as a
+ * precise time the bank never committed to. It also does not convert zones, because shifting a
+ * date-only value into a local zone is what moves it to the day before.
+ *
+ * Falls back to the raw input when it will not parse, the same contract as the others here.
+ */
+fun formatIsoDate(isoDateTime: String): String {
+    val parts = isoDateTime.take(ISO_DATE_LENGTH).split('-')
+    val day = parts.getOrNull(2)?.toIntOrNull()
+    val month = parts.getOrNull(1)?.toIntOrNull()?.minus(1)?.let { MONTH_ABBREVIATIONS.getOrNull(it) }
+    val year = parts.getOrNull(0)?.toIntOrNull()
+    return if (day != null && month != null && year != null) "$day $month $year" else isoDateTime
+}
+
+/**
  * Renders a full ISO-8601 timestamp as a readable local date and time, e.g. `"5 Aug 2026, 18:46"`.
  *
  * Converts to [timeZone] — the device's by default — so a bank offset such as `+00:00` reads as the

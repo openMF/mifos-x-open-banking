@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import org.mifosx.openbanking.core.common.formatDateTime
+import org.mifosx.openbanking.core.common.formatIsoDate
 import org.mifosx.openbanking.core.common.formatSortCode
 import org.mifosx.openbanking.core.common.formatTimeOfDay
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
@@ -123,7 +124,11 @@ class PaymentStatusViewModel(
             debtorLabel = debtorIdentification.toAccountLabel(),
             submittedAt = formatDateTime(creationDateTime, timeZone),
             settledAt = settled,
-            scheduledForAt = requestedExecutionDateTime.formatted(),
+            // Date only. The wire value is midnight UTC, so a date-and-time rendering would
+            // append a 00:00 the bank never promised — it does not commit to a time of day.
+            scheduledForAt = requestedExecutionDateTime.takeIf { it.isNotBlank() }
+                ?.let(::formatIsoDate)
+                .orEmpty(),
             // Guarded exactly as `settledAt` is. Unguarded, a blank wire value went through
             // `formatDateTime`, which returns its input unparsed — so a blank became a blank, and
             // whatever it returned drove the conditional row rather than the fact of the absence.
