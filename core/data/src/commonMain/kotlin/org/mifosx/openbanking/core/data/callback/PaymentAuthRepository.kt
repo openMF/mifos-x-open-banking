@@ -9,6 +9,7 @@
  */
 package org.mifosx.openbanking.core.data.callback
 
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
@@ -96,6 +97,19 @@ interface PaymentAuthRepository {
      * a secondary note, and gating on an unobserved code would be guessing dressed as evidence.
      */
     suspend fun consentStatus(consentId: String): NetworkResult<String, NetworkError>
+
+    /**
+     * Which product the authorisation in flight belongs to, or null when it cannot be established.
+     *
+     * The return leg needs this to decide which repository holds the staged instruction. Asking each
+     * repository in turn instead — the shape this replaced — lets call order stand in for the answer:
+     * the first non-null draft wins whether or not it belongs to the product that actually came back,
+     * and nothing about that fails to compile.
+     *
+     * Null is not a default to fall back on. It means this build cannot say, and submitting anything
+     * on that basis would send one product's instruction to another product's endpoint.
+     */
+    fun pendingConsentType(): ConsentType?
 
     /**
      * Forgets the authorisation and everything staged under it.

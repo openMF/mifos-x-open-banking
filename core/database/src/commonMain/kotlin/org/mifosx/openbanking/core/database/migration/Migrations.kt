@@ -69,8 +69,24 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+/**
+ * Adds the two columns a recurring mandate needs.
+ *
+ * Both NULL on every existing row and on every product that runs once. A standing order's *first*
+ * payment date deliberately reuses `requestedExecutionDateTime` rather than taking a third column:
+ * the two mean the same thing — the date the first movement is due — and splitting them would leave
+ * two columns that must never both be set, which is a rule nothing enforces.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE payment_history ADD COLUMN frequency TEXT")
+        connection.execSQL("ALTER TABLE payment_history ADD COLUMN finalPaymentDateTime TEXT")
+    }
+}
+
 /** Every migration the database knows about, in the order Room should consider them. */
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+val ALL_MIGRATIONS: Array<Migration> =
+    arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 
 /**
  * Registers every migration on a builder.

@@ -28,4 +28,13 @@ data class Data(
     val initiation: Initiation? = null,
     @SerialName("DomesticStandingOrderId")
     val domesticStandingOrderId: String? = null,
+    /**
+     * The charges the bank applies. Present from consent staging onwards on this rail, so the review
+     * screen may state the fee before the customer commits.
+     *
+     * `CutOffDateTime` is deliberately not modelled: it is returned equal to `CreationDateTime` and
+     * says nothing about when the mandate runs.
+     */
+    @SerialName("Charges")
+    val charges: List<Charge>? = null,
 )

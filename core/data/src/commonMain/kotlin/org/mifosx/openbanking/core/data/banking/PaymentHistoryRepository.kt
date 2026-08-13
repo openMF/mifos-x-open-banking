@@ -16,6 +16,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 
 /**
  * Local snapshot store for payment activity shown on the hub screen.
@@ -34,6 +35,15 @@ interface PaymentHistoryRepository {
     /** The scheduled equivalent, which also records the date the payment is due. */
     suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft)
 
+    /**
+     * The standing-order equivalent, which also records how often it repeats and when it ends.
+     *
+     * This row matters more than its siblings: a mandate cannot be found again through the AIS read
+     * side, which returns no `StandingOrderId` to correlate on, so the hub is the only record the app
+     * keeps that the customer ever set one up.
+     */
+    suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft)
+
     /** Persists a payment that failed before reaching submission. */
     suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String)
 
@@ -45,6 +55,9 @@ interface PaymentHistoryRepository {
      * history row at all, silently.
      */
     suspend fun saveFailed(draft: ScheduledPaymentDraft, errorKind: String, errorDescription: String)
+
+    /** The standing-order equivalent, for the same reason. */
+    suspend fun saveFailed(draft: StandingOrderDraft, errorKind: String, errorDescription: String)
 
     /**
      * Which rail a submitted payment was sent on, so its status is read from the right endpoint.

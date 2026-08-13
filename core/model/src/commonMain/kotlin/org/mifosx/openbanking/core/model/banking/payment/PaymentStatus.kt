@@ -49,10 +49,35 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
      * date arrives.
      */
     InitiationCompleted(PaymentDisposition.InProgress),
+
+    /**
+     * Some of a multi-authorisation instruction is accepted and the rest is not yet.
+     *
+     * Still in progress, unlike its two neighbours below: `PATC` says the bank is waiting for more
+     * authorisations, not that it has stopped.
+     */
+    PartiallyAccepted(PaymentDisposition.InProgress),
     AcceptedSettlementCompleted(PaymentDisposition.TerminalSuccess),
     AcceptedCreditSettlementCompleted(PaymentDisposition.TerminalSuccess),
     AcceptedWithoutPosting(PaymentDisposition.TerminalSuccess),
     Rejected(PaymentDisposition.TerminalFailure),
+
+    /**
+     * The bank cancelled the instruction.
+     *
+     * Terminal, and reachable on a standing order — a mandate the customer stopped through their
+     * bank's own channel reads `CANC` here, and this app offers no way to have caused it.
+     */
+    Cancelled(PaymentDisposition.TerminalFailure),
+
+    /**
+     * Setting the instruction up failed at the bank.
+     *
+     * The counterpart to [InitiationCompleted], and terminal. Until these three landed they fell to
+     * [Unknown] — which is `InProgress`, so a cancelled or failed mandate was re-read on every hub
+     * refresh for a status that could never move, and the status screen never settled.
+     */
+    InitiationFailed(PaymentDisposition.TerminalFailure),
     Unknown(PaymentDisposition.InProgress),
     ;
 
@@ -63,10 +88,13 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
             "ACSP", "ACCEPTEDSETTLEMENTINPROCESS" -> AcceptedSettlementInProcess
             "ACTC", "ACCEPTEDTECHNICALVALIDATION" -> AcceptedTechnicalValidation
             "INCO", "INITIATIONCOMPLETED" -> InitiationCompleted
+            "PATC", "PARTIALLYACCEPTEDTECHNICALCORRECT" -> PartiallyAccepted
             "ACSC", "ACCEPTEDSETTLEMENTCOMPLETED" -> AcceptedSettlementCompleted
             "ACCC", "ACCEPTEDCREDITSETTLEMENTCOMPLETED" -> AcceptedCreditSettlementCompleted
             "ACWP", "ACCEPTEDWITHOUTPOSTING" -> AcceptedWithoutPosting
             "RJCT", "REJECTED" -> Rejected
+            "CANC", "CANCELLED" -> Cancelled
+            "INFA", "INITIATIONFAILED" -> InitiationFailed
             else -> Unknown
         }
     }

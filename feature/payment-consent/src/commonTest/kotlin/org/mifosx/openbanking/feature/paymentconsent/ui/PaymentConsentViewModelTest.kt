@@ -22,6 +22,7 @@ import org.mifosx.openbanking.feature.paymentconsent.FakePaymentAuthRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakePaymentHistoryRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakeScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakeSinglePaymentInitiationRepository
+import org.mifosx.openbanking.feature.paymentconsent.FakeStandingOrderInitiationRepository
 import org.mifosx.openbanking.feature.paymentconsent.PaymentConsentFixtures
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -50,6 +51,7 @@ class PaymentConsentViewModelTest {
         payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
         history: FakePaymentHistoryRepository = FakePaymentHistoryRepository(),
         scheduled: FakeScheduledPaymentInitiationRepository = FakeScheduledPaymentInitiationRepository(),
+        standingOrder: FakeStandingOrderInitiationRepository = FakeStandingOrderInitiationRepository(),
     ) = PaymentConsentViewModel(
         savedStateHandle = SavedStateHandle(
             mapOf(PaymentConsentViewModel.REDIRECT_URL_ARG to PaymentConsentFixtures.REDIRECT_URL),
@@ -57,6 +59,7 @@ class PaymentConsentViewModelTest {
         repository = repository,
         paymentInitiationRepository = payments,
         scheduledPaymentInitiationRepository = scheduled,
+        standingOrderInitiationRepository = standingOrder,
         paymentHistoryRepository = history,
     )
 

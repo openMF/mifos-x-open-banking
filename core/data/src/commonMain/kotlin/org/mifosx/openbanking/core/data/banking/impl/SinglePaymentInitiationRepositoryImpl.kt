@@ -166,15 +166,18 @@ internal class SinglePaymentInitiationRepositoryImpl(
             ConsentType.InternationalSinglePayment ->
                 pisp.getInternationalFundsConfirmation(token, consentId)
 
-            // Unreachable in practice — a scheduled consent is staged by its own repository and its
+            // Unreachable in practice — a deferred consent is staged by its own repository and its
             // return leg never asks. The compiler demands an answer, and refusing is the honest one:
-            // OBIE defines no funds-confirmation endpoint for domestic-scheduled at all, and HSBC
-            // marks the international-scheduled one unsupported for every brand. Answering `true`
-            // here would invent a confirmation the bank never gave.
+            // OBIE defines no funds-confirmation endpoint for domestic-scheduled at all, HSBC marks
+            // the international-scheduled one unsupported for every brand, and neither standing-order
+            // consent defines the sub-resource at all. Answering `true` here would invent a
+            // confirmation the bank never gave.
             ConsentType.DomesticScheduledPayment,
             ConsentType.InternationalScheduledPayment,
+            ConsentType.DomesticStandingOrder,
+            ConsentType.InternationalStandingOrder,
             -> return NetworkResult.Error(
-                NetworkError.Client.BadRequest("Scheduled payments have no funds confirmation"),
+                NetworkError.Client.BadRequest("Deferred payments have no funds confirmation"),
             )
         }
         return when (result) {

@@ -31,6 +31,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -76,6 +77,12 @@ class PaymentStatusRepositoryImplTest {
         override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {}
         override suspend fun saveFailed(
             draft: ScheduledPaymentDraft,
+            errorKind: String,
+            errorDescription: String,
+        ) = Unit
+        override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft) {}
+        override suspend fun saveFailed(
+            draft: StandingOrderDraft,
             errorKind: String,
             errorDescription: String,
         ) = Unit

@@ -87,7 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val paymentHistoryDao: PaymentHistoryDao
 
     companion object {
-        const val VERSION = 7
+        const val VERSION = 8
         const val DATABASE_NAME = "mifos_database.db"
     }
 }

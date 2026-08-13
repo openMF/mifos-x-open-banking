@@ -18,6 +18,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -25,6 +26,8 @@ private const val PAYMENT_TYPE_DOMESTIC = "domestic_payment"
 private const val PAYMENT_TYPE_INTERNATIONAL = "international_payment"
 private const val PAYMENT_TYPE_DOMESTIC_SCHEDULED = "domestic_scheduled_payment"
 private const val PAYMENT_TYPE_INTERNATIONAL_SCHEDULED = "international_scheduled_payment"
+private const val PAYMENT_TYPE_DOMESTIC_STANDING_ORDER = "domestic_standing_order"
+private const val PAYMENT_TYPE_INTERNATIONAL_STANDING_ORDER = "international_standing_order"
 
 private fun PaymentStatus.toLabel(): String = when (disposition) {
     PaymentDisposition.TerminalSuccess -> "Sent"
@@ -159,6 +162,86 @@ internal fun ScheduledPaymentDraft.toFailureEntity(
     chargeBearer = chargeBearer?.wireValue,
     currencyOfTransfer = currencyOfTransfer,
     requestedExecutionDateTime = requestedExecutionDate,
+    paymentType = paymentType(),
+    syncedAt = null,
+)
+
+/** The rail a mandate was built for, on the same discriminator both siblings use. */
+private fun StandingOrderDraft.paymentType(): String =
+    if (currencyOfTransfer != null) {
+        PAYMENT_TYPE_INTERNATIONAL_STANDING_ORDER
+    } else {
+        PAYMENT_TYPE_DOMESTIC_STANDING_ORDER
+    }
+
+/**
+ * The standing-order equivalent, carrying the two columns only a mandate has a value for.
+ *
+ * `settlementDateTime` stays null, and here that is not a workaround for a bank quirk but the plain
+ * fact: a mandate has no single settlement. The first payment date reuses `requestedExecutionDateTime`
+ * — the same meaning as on a scheduled payment — and [PaymentHistoryEntity.frequency] is what tells a
+ * reader the row repeats.
+ */
+internal fun PaymentReceipt.toEntity(
+    draft: StandingOrderDraft,
+    approvedAt: String? = null,
+    submittedAt: String? = null,
+): PaymentHistoryEntity =
+    PaymentHistoryEntity(
+        id = domesticPaymentId,
+        paymentId = domesticPaymentId,
+        errorKind = null,
+        errorDescription = null,
+        status = status.name,
+        debtorAccountId = draft.debtorAccount.historyAccountId(),
+        debtorName = draft.debtorAccount.historyName(),
+        debtorIdentification = debtorIdentification.ifBlank {
+            draft.debtorAccount.historyIdentification()
+        },
+        creditorName = draft.creditor.name,
+        creditorIdentification = draft.creditor.identification,
+        amountMinorUnits = draft.firstPaymentAmountMinorUnits,
+        currency = draft.currency,
+        reference = draft.reference,
+        creationDateTime = creationDateTime,
+        approvedAt = approvedAt,
+        submittedAt = submittedAt,
+        settlementDateTime = null,
+        chargeBearer = draft.chargeBearer?.wireValue,
+        currencyOfTransfer = draft.currencyOfTransfer,
+        requestedExecutionDateTime = requestedExecutionDateTime.takeIf { it.isNotBlank() }
+            ?: draft.firstPaymentDate,
+        frequency = draft.frequency.wireValue,
+        finalPaymentDateTime = draft.finalPaymentDate,
+        paymentType = draft.paymentType(),
+        syncedAt = null,
+    )
+
+/** A mandate the bank refused before it became a standing order. */
+internal fun StandingOrderDraft.toFailureEntity(
+    errorKind: String,
+    errorDescription: String,
+): PaymentHistoryEntity = PaymentHistoryEntity(
+    id = errorId(),
+    paymentId = null,
+    errorKind = errorKind,
+    errorDescription = errorDescription,
+    status = null,
+    debtorAccountId = debtorAccount.historyAccountId(),
+    debtorName = debtorAccount.historyName(),
+    debtorIdentification = debtorAccount.historyIdentification(),
+    creditorName = creditor.name,
+    creditorIdentification = creditor.identification,
+    amountMinorUnits = firstPaymentAmountMinorUnits,
+    currency = currency,
+    reference = reference,
+    creationDateTime = "",
+    settlementDateTime = null,
+    chargeBearer = chargeBearer?.wireValue,
+    currencyOfTransfer = currencyOfTransfer,
+    requestedExecutionDateTime = firstPaymentDate,
+    frequency = frequency.wireValue,
+    finalPaymentDateTime = finalPaymentDate,
     paymentType = paymentType(),
     syncedAt = null,
 )

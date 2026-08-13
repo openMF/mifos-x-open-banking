@@ -11,6 +11,7 @@ package org.mifosx.openbanking.core.data.banking
 
 import org.mifosx.openbanking.core.data.banking.mapper.toConsentType
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
+import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -27,7 +28,7 @@ class ConsentTypeTest {
 
     @Test
     fun everyMemberIsRegisteredInAll() {
-        assertEquals(4, ConsentType.ALL.size, "a member was added to the interface but not to ALL")
+        assertEquals(6, ConsentType.ALL.size, "a member was added to the interface but not to ALL")
     }
 
     @Test
@@ -52,6 +53,28 @@ class ConsentTypeTest {
     }
 
     /**
+     * Pinned because these strings are persisted and append-only.
+     *
+     * Changing one would not fail to compile; it would silently orphan every row already written
+     * under the old spelling, and those rows are the only record the app keeps that a mandate was
+     * ever set up — a standing order cannot be found again through the AIS read side.
+     */
+    @Test
+    fun theStandingOrderTypesCarryTheirOwnWireValues() {
+        assertEquals("domestic_standing_order", ConsentType.DomesticStandingOrder.wireValue)
+        assertEquals("international_standing_order", ConsentType.InternationalStandingOrder.wireValue)
+    }
+
+    /** Product and rail together select an endpoint, so neither alone may be the discriminator. */
+    @Test
+    fun aStandingOrderIsDistinctFromEveryOtherProductOnItsRail() {
+        val domestic = ConsentType.ALL.filter { it.rail == PaymentRail.Domestic }
+
+        assertEquals(3, domestic.size, "three products share the domestic rail")
+        assertEquals(domestic.size, domestic.map { it.wireValue }.toSet().size)
+    }
+
+    /**
      * An unrecognised non-blank value is null, never a guess.
      *
      * That string is a row written by a newer build, for a product this one cannot handle. Resolving
@@ -60,7 +83,7 @@ class ConsentTypeTest {
      */
     @Test
     fun anUnrecognisedValueResolvesToNullRatherThanADefault() {
-        assertNull(ConsentType.fromWire("domestic_standing_order"))
+        assertNull(ConsentType.fromWire("domestic_vrp"))
         assertNull(ConsentType.fromWire("vrp"))
     }
 

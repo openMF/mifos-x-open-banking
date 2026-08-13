@@ -18,6 +18,8 @@ data class Initiation(
     val mandateRelatedInformation: MandateRelatedInformation? = null,
     @SerialName("InstructedAmount")
     val instructedAmount: InstructedAmount? = null,
+    @SerialName("DebtorAccount")
+    val debtorAccount: DebtorAccount? = null,
     @SerialName("CreditorAccount")
     val creditorAccount: CreditorAccount? = null,
     @SerialName("CurrencyOfTransfer")

@@ -134,6 +134,7 @@ include(":feature:payment-status")
 include(":feature:payment-consent")
 include(":feature:payments-hub")
 include(":feature:payments-schedule-payment")
+include(":feature:payments-standing-order")
 
 include(":core-base:analytics")
 include(":core-base:common")

@@ -129,6 +129,41 @@ fun Throwable.isExecutionDateRefusal(): Boolean =
 
 private const val EXECUTION_DATE_PATH_FRAGMENT = "RequestedExecutionDateTime"
 
+/**
+ * Whether the bank refused a standing order because of its FIRST payment date.
+ *
+ * A separate predicate from [isExecutionDateRefusal] rather than a widening of it, because a standing
+ * order never sends `RequestedExecutionDateTime` at all — that predicate silently never fires on this
+ * product, which is worse than it failing, since a refused date then reads as a generic failure.
+ *
+ * Kept apart from [isFinalPaymentDateRefusal] because the customer has two dates and only one of them
+ * is wrong. The bank cannot tell them apart for us: its `U003` message recites three rules at once —
+ * not today or tomorrow, within twelve months, and after the first payment date — whichever was
+ * actually broken.
+ */
+fun Throwable.isFirstPaymentDateRefusal(): Boolean =
+    obieErrorPath()?.contains(FIRST_PAYMENT_DATE_PATH_FRAGMENT, ignoreCase = true) == true
+
+private const val FIRST_PAYMENT_DATE_PATH_FRAGMENT = "FirstPaymentDateTime"
+
+/** Whether the bank refused a standing order because of its FINAL payment date. */
+fun Throwable.isFinalPaymentDateRefusal(): Boolean =
+    obieErrorPath()?.contains(FINAL_PAYMENT_DATE_PATH_FRAGMENT, ignoreCase = true) == true
+
+private const val FINAL_PAYMENT_DATE_PATH_FRAGMENT = "FinalPaymentDateTime"
+
+/**
+ * Whether the bank rejected the repeat interval.
+ *
+ * `U002 "Invalid value"` at `…MandateRelatedInformation.Frequency.Type`. The app should never provoke
+ * this — the frequency is a closed enum of the five accepted codes — so reaching it means a defect
+ * rather than something the customer can correct.
+ */
+fun Throwable.isFrequencyRefusal(): Boolean =
+    obieErrorPath()?.contains(FREQUENCY_PATH_FRAGMENT, ignoreCase = true) == true
+
+private const val FREQUENCY_PATH_FRAGMENT = "Frequency"
+
 private fun String?.carriesUnsupportedProductCode(): Boolean {
     if (this.isNullOrBlank()) return false
     val errors = parseObError()?.errors

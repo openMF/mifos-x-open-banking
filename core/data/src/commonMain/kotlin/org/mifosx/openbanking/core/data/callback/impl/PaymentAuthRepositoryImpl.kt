@@ -10,8 +10,10 @@
 package org.mifosx.openbanking.core.data.callback.impl
 
 import org.mifosx.openbanking.core.data.banking.mapper.intlScheduledStatusOrEmpty
+import org.mifosx.openbanking.core.data.banking.mapper.intlStandingOrderStatusOrEmpty
 import org.mifosx.openbanking.core.data.banking.mapper.intlStatusOrEmpty
 import org.mifosx.openbanking.core.data.banking.mapper.scheduledStatusOrEmpty
+import org.mifosx.openbanking.core.data.banking.mapper.standingOrderStatusOrEmpty
 import org.mifosx.openbanking.core.data.banking.mapper.statusOrEmpty
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
@@ -141,8 +143,22 @@ internal class PaymentAuthRepositoryImpl(
                     is NetworkResult.Success -> NetworkResult.Success(result.data.intlScheduledStatusOrEmpty())
                     is NetworkResult.Error -> result
                 }
+
+            ConsentType.DomesticStandingOrder ->
+                when (val result = pisp.getDomesticStandingOrderConsent(token, consentId)) {
+                    is NetworkResult.Success -> NetworkResult.Success(result.data.standingOrderStatusOrEmpty())
+                    is NetworkResult.Error -> result
+                }
+
+            ConsentType.InternationalStandingOrder ->
+                when (val result = pisp.getInternationalStandingOrderConsent(token, consentId)) {
+                    is NetworkResult.Success -> NetworkResult.Success(result.data.intlStandingOrderStatusOrEmpty())
+                    is NetworkResult.Error -> result
+                }
         }
     }
+
+    override fun pendingConsentType(): ConsentType? = paymentAuthSession.pendingConsentType()
 
     override fun recordApproved() {
         paymentAuthSession.saveApprovedAt(Clock.System.now().toString())

@@ -63,6 +63,22 @@ data class PaymentHistoryEntity(
      * and writing one would make the hub claim a payment is due later than it was made.
      */
     val requestedExecutionDateTime: String? = null,
+    /**
+     * How often a standing order repeats, as the OBIE code — `MNTH`, `WEEK` — or null on any product
+     * that runs once.
+     *
+     * Stored because it is the difference between a mandate and a one-off, and the hub row is the
+     * only record the app keeps: a standing order cannot be found again through the AIS read side,
+     * which returns no `StandingOrderId` to correlate on. Without this column the row would show an
+     * amount and a payee and be indistinguishable from a scheduled payment.
+     */
+    val frequency: String? = null,
+    /**
+     * When a standing order stops, or null — which on this product means two different things and
+     * both are correct: the row is not a standing order, or it is one that runs until the customer
+     * stops it. [frequency] is what tells them apart.
+     */
+    val finalPaymentDateTime: String? = null,
     val paymentType: String,
     val syncedAt: String?,
 )

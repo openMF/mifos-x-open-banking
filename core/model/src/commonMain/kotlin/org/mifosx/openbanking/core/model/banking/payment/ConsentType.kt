@@ -18,11 +18,11 @@ package org.mifosx.openbanking.core.model.banking.payment
  * [PaymentRail] alone answers only half of that question, which is why it must not be the thing
  * dispatch is written against — see its own KDoc for what it is still for.
  *
- * Only single payments exist here today. The other four products (scheduled payments and standing
- * orders on both rails, plus domestic-only VRP) are deliberately absent rather than stubbed: adding
- * a member later breaks every `when` over this type at compile time, and that is the whole point.
- * The rails diverged silently once already — an international consent was read back at the domestic
- * path and answered `400 U011`, which no test caught because nothing forced the two apart.
+ * Single payments, scheduled payments and standing orders exist here. Domestic-only VRP is
+ * deliberately absent rather than stubbed: adding a member later breaks every `when` over this type
+ * at compile time, and that is the whole point. The rails diverged silently once already — an
+ * international consent was read back at the domestic path and answered `400 U011`, which no test
+ * caught because nothing forced the two apart.
  *
  * [wireValue] is what goes in `payment_history.paymentType`. The two strings predate this type and
  * are kept exactly, so a row written by an older build still reads. **Values are append-only**: a
@@ -55,6 +55,23 @@ sealed interface ConsentType {
         override val rail: PaymentRail = PaymentRail.International
     }
 
+    /**
+     * A recurring mandate rather than an instruction.
+     *
+     * Shares [PaymentRail.Domestic] with three other members and shares its product with the
+     * international sibling, which is exactly the pair this type exists to keep apart: reading the
+     * rail alone would send a mandate's id to `domestic-payments/{id}`.
+     */
+    data object DomesticStandingOrder : ConsentType {
+        override val wireValue: String = "domestic_standing_order"
+        override val rail: PaymentRail = PaymentRail.Domestic
+    }
+
+    data object InternationalStandingOrder : ConsentType {
+        override val wireValue: String = "international_standing_order"
+        override val rail: PaymentRail = PaymentRail.International
+    }
+
     companion object {
 
         /**
@@ -69,6 +86,8 @@ sealed interface ConsentType {
             InternationalSinglePayment,
             DomesticScheduledPayment,
             InternationalScheduledPayment,
+            DomesticStandingOrder,
+            InternationalStandingOrder,
         )
 
         /**

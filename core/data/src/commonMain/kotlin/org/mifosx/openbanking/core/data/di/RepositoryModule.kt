@@ -23,11 +23,13 @@ import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.StandingOrderInitiationRepository
 import org.mifosx.openbanking.core.data.banking.di.BankingModule
 import org.mifosx.openbanking.core.data.banking.impl.PaymentHistoryRepositoryImpl
 import org.mifosx.openbanking.core.data.banking.impl.PaymentStatusRepositoryImpl
 import org.mifosx.openbanking.core.data.banking.impl.ScheduledPaymentInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.banking.impl.SinglePaymentInitiationRepositoryImpl
+import org.mifosx.openbanking.core.data.banking.impl.StandingOrderInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.callback.ConsentCallbackRepository
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
@@ -121,6 +123,22 @@ val DataModule = module {
 
     single<ScheduledPaymentInitiationRepository> {
         ScheduledPaymentInitiationRepositoryImpl(
+            pisp = get(),
+            oauth = get(),
+            paymentAuthSession = get(),
+            capabilityRegistry = get(),
+            signingKeyPem = get(named("hsbcSigningKey")),
+            clientId = get(named("hsbcClientId")),
+            kid = get(named("hsbcKid")),
+            bankHost = get(named("hsbcBankHost")),
+            authorizeHost = get(named("hsbcAuthorizeHost")),
+            redirectUri = get(named("hsbcRedirectUri")),
+            paymentHistoryRepository = get(),
+        )
+    }
+
+    single<StandingOrderInitiationRepository> {
+        StandingOrderInitiationRepositoryImpl(
             pisp = get(),
             oauth = get(),
             paymentAuthSession = get(),

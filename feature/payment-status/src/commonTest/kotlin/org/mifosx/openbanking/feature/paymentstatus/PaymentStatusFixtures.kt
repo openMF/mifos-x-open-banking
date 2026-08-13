@@ -22,6 +22,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusErrorKind
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
@@ -267,6 +268,14 @@ class FakePaymentHistoryRepository(
         stageReads += paymentId
         return stages
     }
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft) = Unit
+
+    override suspend fun saveFailed(
+        draft: StandingOrderDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = Unit
 
     override suspend fun refreshStatuses() = error("payment-status never refreshes the whole hub")
 }

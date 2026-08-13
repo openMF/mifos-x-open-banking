@@ -200,7 +200,7 @@ class PaymentAuthSessionTest {
             nonce = "n",
             type = ConsentType.DomesticSinglePayment,
         )
-        settings.putString("payment_auth_consent_type", "domestic_standing_order")
+        settings.putString("payment_auth_consent_type", "domestic_vrp")
 
         assertNull(session.pendingConsentType())
     }

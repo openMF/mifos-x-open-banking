@@ -51,7 +51,10 @@ import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_acsp
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_actc
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_acwp
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_canc
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_inco
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_infa
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_patc
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_pending
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_received
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_detail_rjct
@@ -477,9 +480,12 @@ private fun PaymentStatus.detailResource() = when (this) {
     PaymentStatus.AcceptedSettlementInProcess -> Res.string.feature_payment_status_detail_acsp
     PaymentStatus.AcceptedTechnicalValidation -> Res.string.feature_payment_status_detail_actc
     PaymentStatus.InitiationCompleted -> Res.string.feature_payment_status_detail_inco
+    PaymentStatus.PartiallyAccepted -> Res.string.feature_payment_status_detail_patc
     PaymentStatus.AcceptedSettlementCompleted -> Res.string.feature_payment_status_detail_acsc
     PaymentStatus.AcceptedCreditSettlementCompleted -> Res.string.feature_payment_status_detail_accc
     PaymentStatus.AcceptedWithoutPosting -> Res.string.feature_payment_status_detail_acwp
     PaymentStatus.Rejected -> Res.string.feature_payment_status_detail_rjct
+    PaymentStatus.Cancelled -> Res.string.feature_payment_status_detail_canc
+    PaymentStatus.InitiationFailed -> Res.string.feature_payment_status_detail_infa
     PaymentStatus.Unknown -> Res.string.feature_payment_status_detail_unknown
 }

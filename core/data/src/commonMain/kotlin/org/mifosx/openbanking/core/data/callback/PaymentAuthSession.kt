@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 
 /**
@@ -98,6 +99,23 @@ interface PaymentAuthSession {
     fun scheduledDraft(): ScheduledPaymentDraft?
 
     /**
+     * Stores the recurring mandate awaiting authorisation.
+     *
+     * A third key, for the reason [saveScheduledDraft] gives and one more: the drafts are decoded
+     * with `ignoreUnknownKeys = true`, so a mandate stored under the scheduled key would decode
+     * *successfully* as a scheduled payment — losing the schedule silently and submitting the mandate
+     * to the wrong endpoint. Separate keys make that read return null instead.
+     */
+    fun saveStandingOrderDraft(draft: StandingOrderDraft)
+
+    /**
+     * The mandate staged for the authorisation in flight, or null when none is.
+     *
+     * Never this and either sibling: staging clears the session first, on all three repositories.
+     */
+    fun standingOrderDraft(): StandingOrderDraft?
+
+    /**
      * Records when the bank confirmed the PSU's authorisation.
      *
      * Kept here rather than passed down the submit call because the two moments are separated by
@@ -141,7 +159,9 @@ class SettingsPaymentAuthSession(
      */
     override fun pendingConsentType(): ConsentType? =
         ConsentType.fromWire(secureSettings.getStringOrNull(KEY_CONSENT_TYPE))
-            ?: if (secureSettings.getStringOrNull(KEY_SCHEDULED_DRAFT) != null) {
+            ?: if (secureSettings.getStringOrNull(KEY_SCHEDULED_DRAFT) != null ||
+                secureSettings.getStringOrNull(KEY_STANDING_ORDER_DRAFT) != null
+            ) {
                 null
             } else {
                 draft()?.let {
@@ -195,6 +215,18 @@ class SettingsPaymentAuthSession(
         return runCatching { json.decodeFromString(ScheduledPaymentDraft.serializer(), raw) }.getOrNull()
     }
 
+    override fun saveStandingOrderDraft(draft: StandingOrderDraft) {
+        secureSettings.putString(
+            KEY_STANDING_ORDER_DRAFT,
+            json.encodeToString(StandingOrderDraft.serializer(), draft),
+        )
+    }
+
+    override fun standingOrderDraft(): StandingOrderDraft? {
+        val raw = secureSettings.getStringOrNull(KEY_STANDING_ORDER_DRAFT) ?: return null
+        return runCatching { json.decodeFromString(StandingOrderDraft.serializer(), raw) }.getOrNull()
+    }
+
     override fun saveApprovedAt(instant: String) {
         secureSettings.putString(KEY_APPROVED_AT, instant)
     }
@@ -208,6 +240,7 @@ class SettingsPaymentAuthSession(
         secureSettings.remove(KEY_PAYMENT_TOKENS)
         secureSettings.remove(KEY_DRAFT)
         secureSettings.remove(KEY_SCHEDULED_DRAFT)
+        secureSettings.remove(KEY_STANDING_ORDER_DRAFT)
         secureSettings.remove(KEY_APPROVED_AT)
         secureSettings.remove(KEY_CONSENT_TYPE)
     }
@@ -220,6 +253,7 @@ class SettingsPaymentAuthSession(
         const val KEY_APPROVED_AT = "payment_auth_approved_at"
         const val KEY_DRAFT = "payment_auth_draft"
         const val KEY_SCHEDULED_DRAFT = "payment_auth_scheduled_draft"
+        const val KEY_STANDING_ORDER_DRAFT = "payment_auth_standing_order_draft"
         const val KEY_CONSENT_TYPE = "payment_auth_consent_type"
     }
 }

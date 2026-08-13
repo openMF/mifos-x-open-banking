@@ -62,6 +62,8 @@ import org.mifosx.openbanking.feature.login.loginRenewScreen
 import org.mifosx.openbanking.feature.paymentshub.paymentsHubGraph
 import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentRoute
 import org.mifosx.openbanking.feature.paymentsschedulepayment.schedulePaymentGraph
+import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderRoute
+import org.mifosx.openbanking.feature.paymentsstandingorder.standingOrderGraph
 import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusRoute
 import org.mifosx.openbanking.feature.paymentstatus.paymentStatusScreen
 import org.mifosx.openbanking.feature.product.ProductRoute
@@ -171,6 +173,7 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             paymentsHubGraph(
                 onNavigateToSendMoney = { navController.navigate(SendMoneyRoute) },
                 onNavigateToSchedulePayment = { navController.navigate(SchedulePaymentRoute) },
+                onNavigateToStandingOrder = { navController.navigate(StandingOrderRoute) },
                 onNavigateToPaymentStatus = { paymentId ->
                     navController.navigate(PaymentStatusRoute(paymentId))
                 },
@@ -182,6 +185,13 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             // A sibling of the hub graph, like send-money: the scheduled rails own their own browser
             // hand-off, and the return leg lands at the root navigator, not here.
             schedulePaymentGraph(
+                onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
+                onNavigateToConsents = {},
+            )
+
+            // A sibling of the hub graph too, for the same reason: each payment product owns its own
+            // browser hand-off, and the return leg lands at the root navigator rather than here.
+            standingOrderGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},
             )

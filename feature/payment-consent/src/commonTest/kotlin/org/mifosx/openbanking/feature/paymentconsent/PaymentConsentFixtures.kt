@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
+import org.mifosx.openbanking.core.data.banking.StandingOrderInitiationRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
 import org.mifosx.openbanking.core.data.callback.PaymentAuthValidation
 import org.mifosx.openbanking.core.model.banking.BankAccount
@@ -27,6 +28,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import org.mifosx.openbanking.feature.paymentconsent.ui.PaymentConsentErrorKind
 import org.mifosx.openbanking.feature.paymentconsent.ui.PaymentConsentState
 import org.mifosx.openbanking.feature.paymentconsent.ui.PaymentConsentUiState
@@ -135,6 +138,16 @@ class FakePaymentAuthRepository(
         return status
     }
 
+    /**
+     * Which product the return leg believes authorised.
+     *
+     * Drivable per test because it is now the thing that chooses the repository — a test that leaves
+     * it at the default and stages a mandate is asserting against a journey the app will not take.
+     */
+    var pendingType: ConsentType? = ConsentType.DomesticSinglePayment
+
+    override fun pendingConsentType(): ConsentType? = pendingType
+
     var approvedRecordedCount: Int = 0
         private set
 
@@ -232,7 +245,11 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
     /** Kept apart from [submitted] so a test can prove which draft shape was actually recorded. */
     val submittedScheduled = mutableListOf<Pair<PaymentReceipt, ScheduledPaymentDraft>>()
 
+    /** Kept apart again: a mandate recorded under a payment's shape is the defect being guarded. */
+    val submittedStandingOrders = mutableListOf<Pair<PaymentReceipt, StandingOrderDraft>>()
+
     val scheduledFailures = mutableListOf<Triple<ScheduledPaymentDraft, String, String>>()
+    val standingOrderFailures = mutableListOf<Triple<StandingOrderDraft, String, String>>()
     val failures = mutableListOf<Triple<PaymentDraft, String, String>>()
     var refreshCount: Int = 0
         private set
@@ -257,6 +274,18 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
 
     override suspend fun saveFailed(draft: PaymentDraft, errorKind: String, errorDescription: String) {
         failures += Triple(draft, errorKind, errorDescription)
+    }
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft) {
+        submittedStandingOrders += receipt to draft
+    }
+
+    override suspend fun saveFailed(
+        draft: StandingOrderDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) {
+        standingOrderFailures += Triple(draft, errorKind, errorDescription)
     }
 
     override suspend fun refreshStatuses() {
@@ -310,6 +339,65 @@ class FakeScheduledPaymentInitiationRepository(
         submission = result
     }
 }
+
+/**
+ * The standing-order write path as the return leg sees it.
+ *
+ * Like its scheduled sibling it has no `confirmFunds` at all, and here the absence is not merely an
+ * unsupported endpoint: OBIE defines no funds-confirmation sub-resource for either standing-order
+ * consent, so there is nothing to call.
+ */
+class FakeStandingOrderInitiationRepository(
+    private var staged: StandingOrderDraft? = null,
+    private var submission: NetworkResult<PaymentReceipt, NetworkError> =
+        NetworkResult.Success(PaymentConsentFixtures.receipt()),
+) : StandingOrderInitiationRepository {
+
+    val submittedDrafts = mutableListOf<StandingOrderDraft>()
+    val submittedConsentIds = mutableListOf<String>()
+
+    override suspend fun stageStandingOrder(
+        draft: StandingOrderDraft,
+    ): NetworkResult<StagedConsent, NetworkError> =
+        error("the callback leg never stages a standing order")
+
+    override suspend fun submitStandingOrder(
+        draft: StandingOrderDraft,
+        consentId: String,
+    ): NetworkResult<PaymentReceipt, NetworkError> {
+        submittedDrafts += draft
+        submittedConsentIds += consentId
+        return submission
+    }
+
+    override fun stagedDraft(): StandingOrderDraft? = staged
+
+    fun stagedDraftReturns(draft: StandingOrderDraft?) {
+        staged = draft
+    }
+
+    fun submissionReturns(result: NetworkResult<PaymentReceipt, NetworkError>) {
+        submission = result
+    }
+}
+
+/** A monthly mandate starting next week, the shape the return leg receives. */
+fun standingOrderDraftFixture(): StandingOrderDraft = StandingOrderDraft(
+    debtorAccount = null,
+    creditor = CreditorSelection(
+        name = "Liam Walker",
+        scheme = BeneficiaryScheme.SortCode,
+        identification = "80200110203350",
+    ),
+    frequency = StandingOrderFrequency.Monthly,
+    firstPaymentDate = "2026-08-20",
+    finalPaymentDate = null,
+    firstPaymentAmountMinorUnits = 25_000L,
+    currency = "GBP",
+    reference = "FLAT 4B RENT",
+    consentIdempotencyKey = "so-consent-key-1",
+    paymentIdempotencyKey = "so-payment-key-1",
+)
 
 /** A scheduled instruction due next week, the shape the return leg receives. */
 fun scheduledDraftFixture(): ScheduledPaymentDraft = ScheduledPaymentDraft(

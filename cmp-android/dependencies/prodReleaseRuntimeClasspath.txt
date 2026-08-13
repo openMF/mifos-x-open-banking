@@ -34,6 +34,7 @@
 :feature:payment-status
 :feature:payments-hub
 :feature:payments-schedule-payment
+:feature:payments-standing-order
 :feature:product
 :feature:scheduled-payments
 :feature:send-money

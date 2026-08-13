@@ -35,7 +35,12 @@
     <string name="feature_payment_status_detail_acsc">Payment is settled</string>
     <string name="feature_payment_status_detail_accc">Payment is settled</string>
     <string name="feature_payment_status_detail_acwp">Payment is accepted but not credited into payee's account yet.</string>
+    <string name="feature_payment_status_detail_patc">Partly accepted — the bank is waiting for the rest of the authorisation</string>
     <string name="feature_payment_status_detail_rjct">Payment is rejected.</string>
+    <!-- Reachable on a standing order the customer stopped through their bank's own channel, which
+         is the only place it can be stopped. Nothing in this app can have caused it. -->
+    <string name="feature_payment_status_detail_canc">Cancelled by the bank</string>
+    <string name="feature_payment_status_detail_infa">The bank could not set this up</string>
     <string name="feature_payment_status_detail_unknown">Unknown status.</string>
 
     <!-- The four stages, newest first. "Completed" becomes "Rejected" when the bank refused the

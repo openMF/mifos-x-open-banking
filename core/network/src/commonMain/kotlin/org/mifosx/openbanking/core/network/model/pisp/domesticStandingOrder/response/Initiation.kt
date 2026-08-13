@@ -18,6 +18,14 @@ data class Initiation(
     val mandateRelatedInformation: MandateRelatedInformation? = null,
     @SerialName("FirstPaymentAmount")
     val firstPaymentAmount: FirstPaymentAmount? = null,
+    @SerialName("RecurringPaymentAmount")
+    val recurringPaymentAmount: RecurringPaymentAmount? = null,
+    @SerialName("FinalPaymentAmount")
+    val finalPaymentAmount: FinalPaymentAmount? = null,
+    @SerialName("DebtorAccount")
+    val debtorAccount: DebtorAccount? = null,
     @SerialName("CreditorAccount")
     val creditorAccount: CreditorAccount? = null,
+    @SerialName("RemittanceInformation")
+    val remittanceInformation: RemittanceInformation? = null,
 )

@@ -54,8 +54,11 @@ class AppDatabaseTest {
         // 4 added payment_history; 5 renamed its id column and added the timeline and international
         // fields — and is the first version reached by a real migration rather than a table drop;
         // 6 added accounts.description, without which a Global Money wallet reads back as a plain
-        // current account and is offered as a payer the bank refuses.
-        assertEquals(7, AppDatabase.VERSION)
+        // current account and is offered as a payer the bank refuses; 7 added the scheduled execution
+        // date; 8 added the standing-order frequency and end date, without which a mandate row is
+        // indistinguishable from a one-off payment — and that row is the only record the app keeps,
+        // since a mandate cannot be found again through the AIS read side.
+        assertEquals(8, AppDatabase.VERSION)
     }
 
     /**

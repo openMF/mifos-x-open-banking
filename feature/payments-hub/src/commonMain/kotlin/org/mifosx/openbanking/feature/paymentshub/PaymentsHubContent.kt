@@ -76,6 +76,7 @@ internal fun PaymentsHubContent(
     onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
+    onNavigateToStandingOrder: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     when (val current = state.uiState) {
@@ -86,6 +87,7 @@ internal fun PaymentsHubContent(
             current = current,
             onNavigateToSendMoney = onNavigateToSendMoney,
             onNavigateToSchedulePayment = onNavigateToSchedulePayment,
+            onNavigateToStandingOrder = onNavigateToStandingOrder,
             onNavigateToPaymentStatus = onNavigateToPaymentStatus,
             modifier = modifier.padding(contentPadding),
         )
@@ -104,6 +106,7 @@ private fun PaymentsHubContentLoaded(
     onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
+    onNavigateToStandingOrder: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize()
@@ -126,6 +129,7 @@ private fun PaymentsHubContentLoaded(
             QuickActionsSection(
                 onNavigateToSendMoney = onNavigateToSendMoney,
                 onNavigateToSchedulePayment = onNavigateToSchedulePayment,
+                onNavigateToStandingOrder = onNavigateToStandingOrder,
             )
         }
 
@@ -156,9 +160,14 @@ private fun PaymentsHubContentLoaded(
 private fun QuickActionsSection(
     onNavigateToSendMoney: () -> Unit,
     onNavigateToSchedulePayment: () -> Unit,
+    onNavigateToStandingOrder: () -> Unit,
 ) {
     val gap = KptTheme.spacing.md
-    val rows = quickActionRows(onNavigateToSendMoney, onNavigateToSchedulePayment)
+    val rows = quickActionRows(
+        onSendMoney = onNavigateToSendMoney,
+        onSchedulePayment = onNavigateToSchedulePayment,
+        onStandingOrder = onNavigateToStandingOrder,
+    )
     Column(modifier = Modifier.testTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID)) {
         for (row in rows) {
             Row(
@@ -194,6 +203,7 @@ private data class QuickActionItem(
 private fun quickActionRows(
     onSendMoney: () -> Unit,
     onSchedulePayment: () -> Unit,
+    onStandingOrder: () -> Unit,
 ): List<List<QuickActionItem>> = listOf(
     listOf(
         QuickActionItem(
@@ -217,6 +227,7 @@ private fun quickActionRows(
             label = "Standing order",
             testTag = PaymentsHubTestTags.QUICK_ACTION_STANDING_ORDER,
             subtext = "Repeat on schedule",
+            onClick = onStandingOrder,
         ),
         QuickActionItem(
             icon = quickActionIcon(Icons.Filled.Speed),

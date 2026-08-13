@@ -26,6 +26,10 @@ import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.r
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentResponse
+import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.response.DomesticStandingOrderConsentResponse
+import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.response.DomesticStandingOrderResponse
 import org.mifosx.openbanking.core.network.model.pisp.fundsConfirmation.response.FundsConfirmationResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentRequest
@@ -35,6 +39,10 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPaym
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentResponse
+import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderConsentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.response.InternationalStandingOrderConsentResponse
+import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.response.InternationalStandingOrderResponse
 import org.mifosx.openbanking.core.network.pisp.detachedJwsSignature
 import org.mifosx.openbanking.core.network.pisp.fapiHeaders
 import org.mifosx.openbanking.core.network.pisp.obieBody
@@ -286,6 +294,105 @@ class Pisp(
     ): NetworkResult<InternationalScheduledPaymentResponse, NetworkError> =
         authorizedGet(
             "$PIS/international-scheduled-payments/$internationalScheduledPaymentId",
+            accessToken,
+        ).toNetworkResult()
+
+    // endregion
+
+    // region — Standing orders
+    //
+    // The same four calls per rail again, for a recurring mandate rather than an instruction.
+    //
+    // No funds confirmation, and here the absence is total: OBIE defines no such sub-resource for
+    // either standing-order consent, so there is nothing to call and nothing to skip conditionally.
+    //
+    // `Data.Permission = "Create"` is mandatory on the consent, as on the scheduled rails.
+    //
+    // One sub-resource is defined and deliberately not exposed: `…/payment-details`. No capture has
+    // ever called it, and OBIE describes it as detail about the submission rather than about
+    // individual instalments — so adding it would be offering an answer nobody has heard.
+
+    suspend fun createDomesticStandingOrderConsent(
+        paymentsScopeToken: String,
+        request: DomesticStandingOrderConsentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<DomesticStandingOrderConsentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/domestic-standing-order-consents",
+            accessToken = paymentsScopeToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(DomesticStandingOrderConsentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getDomesticStandingOrderConsent(
+        accessToken: String,
+        consentId: String,
+    ): NetworkResult<DomesticStandingOrderConsentResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/domestic-standing-order-consents/$consentId",
+            accessToken,
+        ).toNetworkResult()
+
+    suspend fun createDomesticStandingOrder(
+        psuAccessToken: String,
+        request: DomesticStandingOrderRequest,
+        idempotencyKey: String,
+    ): NetworkResult<DomesticStandingOrderResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/domestic-standing-orders",
+            accessToken = psuAccessToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(DomesticStandingOrderRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getDomesticStandingOrder(
+        accessToken: String,
+        domesticStandingOrderId: String,
+    ): NetworkResult<DomesticStandingOrderResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/domestic-standing-orders/$domesticStandingOrderId",
+            accessToken,
+        ).toNetworkResult()
+
+    suspend fun createInternationalStandingOrderConsent(
+        paymentsScopeToken: String,
+        request: InternationalStandingOrderConsentRequest,
+        idempotencyKey: String,
+    ): NetworkResult<InternationalStandingOrderConsentResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/international-standing-order-consents",
+            accessToken = paymentsScopeToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(InternationalStandingOrderConsentRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getInternationalStandingOrderConsent(
+        accessToken: String,
+        consentId: String,
+    ): NetworkResult<InternationalStandingOrderConsentResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/international-standing-order-consents/$consentId",
+            accessToken,
+        ).toNetworkResult()
+
+    suspend fun createInternationalStandingOrder(
+        psuAccessToken: String,
+        request: InternationalStandingOrderRequest,
+        idempotencyKey: String,
+    ): NetworkResult<InternationalStandingOrderResponse, NetworkError> =
+        signedPost(
+            path = "$PIS/international-standing-orders",
+            accessToken = psuAccessToken,
+            idempotencyKey = idempotencyKey,
+            body = obieBody(InternationalStandingOrderRequest.serializer(), request),
+        ).toNetworkResult()
+
+    suspend fun getInternationalStandingOrder(
+        accessToken: String,
+        internationalStandingOrderId: String,
+    ): NetworkResult<InternationalStandingOrderResponse, NetworkError> =
+        authorizedGet(
+            "$PIS/international-standing-orders/$internationalStandingOrderId",
             accessToken,
         ).toNetworkResult()
 

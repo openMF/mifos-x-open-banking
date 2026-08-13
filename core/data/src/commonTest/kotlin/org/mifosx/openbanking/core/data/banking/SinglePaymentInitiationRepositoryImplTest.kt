@@ -39,6 +39,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -203,6 +204,12 @@ class SinglePaymentInitiationRepositoryImplTest {
         override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {}
         override suspend fun saveFailed(
             draft: ScheduledPaymentDraft,
+            errorKind: String,
+            errorDescription: String,
+        ) = Unit
+        override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft) {}
+        override suspend fun saveFailed(
+            draft: StandingOrderDraft,
             errorKind: String,
             errorDescription: String,
         ) = Unit

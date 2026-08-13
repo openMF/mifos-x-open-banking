@@ -27,6 +27,7 @@ internal fun PaymentsHubScreen(
     onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
+    onNavigateToStandingOrder: () -> Unit = {},
     viewModel: PaymentsHubViewModel = koinViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
@@ -64,6 +65,7 @@ internal fun PaymentsHubScreen(
             onAction = viewModel::trySendAction,
             onNavigateToSendMoney = onNavigateToSendMoney,
             onNavigateToSchedulePayment = onNavigateToSchedulePayment,
+            onNavigateToStandingOrder = onNavigateToStandingOrder,
             onNavigateToPaymentStatus = onNavigateToPaymentStatus,
         )
     }

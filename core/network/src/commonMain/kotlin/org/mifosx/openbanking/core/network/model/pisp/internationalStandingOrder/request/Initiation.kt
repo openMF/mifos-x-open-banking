@@ -12,12 +12,22 @@ package org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrde
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * The international standing-order instruction.
+ *
+ * One amount, not three: this rail defines no `FirstPaymentAmount`, `RecurringPaymentAmount` or
+ * `FinalPaymentAmount`, and sending the domestic rail's field is `U005`. It also refuses
+ * `RemittanceInformation` and `ExchangeRateInformation` — the latter is not a member of
+ * `OBInternationalStandingOrder4` at all, so no rate can be requested and none can be displayed.
+ */
 @Serializable
 data class Initiation(
     @SerialName("MandateRelatedInformation")
     val mandateRelatedInformation: MandateRelatedInformation? = null,
     @SerialName("InstructedAmount")
     val instructedAmount: InstructedAmount? = null,
+    @SerialName("DebtorAccount")
+    val debtorAccount: DebtorAccount? = null,
     @SerialName("CreditorAccount")
     val creditorAccount: CreditorAccount? = null,
     @SerialName("CurrencyOfTransfer")

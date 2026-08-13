@@ -16,10 +16,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.feature.paymentconsent.FakePaymentAuthRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakePaymentHistoryRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakeScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.feature.paymentconsent.FakeSinglePaymentInitiationRepository
+import org.mifosx.openbanking.feature.paymentconsent.FakeStandingOrderInitiationRepository
 import org.mifosx.openbanking.feature.paymentconsent.PaymentConsentFixtures
 import org.mifosx.openbanking.feature.paymentconsent.scheduledDraftFixture
 import template.core.base.network.NetworkError
@@ -55,11 +57,12 @@ class PaymentConsentScheduledTest {
     }
 
     private fun viewModel(
-        repository: FakePaymentAuthRepository = FakePaymentAuthRepository(),
+        repository: FakePaymentAuthRepository = scheduledAuthRepository(),
         payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
         history: FakePaymentHistoryRepository = FakePaymentHistoryRepository(),
         scheduled: FakeScheduledPaymentInitiationRepository =
             FakeScheduledPaymentInitiationRepository(staged = scheduledDraftFixture()),
+        standingOrder: FakeStandingOrderInitiationRepository = FakeStandingOrderInitiationRepository(),
     ) = PaymentConsentViewModel(
         savedStateHandle = SavedStateHandle(
             mapOf(PaymentConsentViewModel.REDIRECT_URL_ARG to PaymentConsentFixtures.REDIRECT_URL),
@@ -67,8 +70,20 @@ class PaymentConsentScheduledTest {
         repository = repository,
         paymentInitiationRepository = payments,
         scheduledPaymentInitiationRepository = scheduled,
+        standingOrderInitiationRepository = standingOrder,
         paymentHistoryRepository = history,
     )
+
+    /**
+     * The return leg now chooses its repository from the recorded consent type, so a scheduled test
+     * has to say it is scheduled.
+     *
+     * That is the change this suite exists to protect. The previous shape asked each repository in
+     * turn and took whichever answered first, which happened to be right here and would have been
+     * wrong the moment a third product staged a draft.
+     */
+    private fun scheduledAuthRepository(): FakePaymentAuthRepository =
+        FakePaymentAuthRepository().apply { pendingType = ConsentType.DomesticScheduledPayment }
 
     /**
      * The single most important assertion in this feature.
@@ -141,12 +156,20 @@ class PaymentConsentScheduledTest {
         assertTrue(history.failures.isEmpty(), "and must not be recorded against the immediate shape")
     }
 
-    /** The regression guard: an immediate consent must still confirm funds. */
+    /**
+     * The regression guard: an immediate consent must still confirm funds.
+     *
+     * The pending type is what selects the branch now, so this states it rather than relying on the
+     * scheduled repository having nothing staged. Under the previous ordered probe those two were
+     * the same thing; they are not, and conflating them is what let a third product break the chain.
+     */
     @Test
     fun anImmediateConsentStillConfirmsFundsBeforeSubmitting() = runTest {
         val payments = FakeSinglePaymentInitiationRepository()
 
         viewModel(
+            repository = FakePaymentAuthRepository()
+                .apply { pendingType = ConsentType.DomesticSinglePayment },
             payments = payments,
             scheduled = FakeScheduledPaymentInitiationRepository(staged = null),
         )

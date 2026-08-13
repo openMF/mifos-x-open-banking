@@ -11,8 +11,10 @@ package org.mifosx.openbanking.core.data.banking.impl
 
 import org.mifosx.openbanking.core.data.banking.mapper.toIntlPaymentReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toIntlScheduledPaymentReceipt
+import org.mifosx.openbanking.core.data.banking.mapper.toIntlStandingOrderReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toPaymentReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toScheduledPaymentReceipt
+import org.mifosx.openbanking.core.data.banking.mapper.toStandingOrderReceipt
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -58,6 +60,18 @@ internal suspend fun Pisp.readReceipt(
     ConsentType.InternationalScheduledPayment ->
         when (val result = getInternationalScheduledPayment(token, paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toIntlScheduledPaymentReceipt())
+            is NetworkResult.Error -> result
+        }
+
+    ConsentType.DomesticStandingOrder ->
+        when (val result = getDomesticStandingOrder(token, paymentId)) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.toStandingOrderReceipt())
+            is NetworkResult.Error -> result
+        }
+
+    ConsentType.InternationalStandingOrder ->
+        when (val result = getInternationalStandingOrder(token, paymentId)) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.toIntlStandingOrderReceipt())
             is NetworkResult.Error -> result
         }
 }
