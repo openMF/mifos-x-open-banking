@@ -21,13 +21,34 @@ import kotlin.time.Instant
 /**
  * The furthest ahead a mandate may start, measured in days from today.
  *
- * **Carried over from scheduled payments rather than observed here.** The T+1 floor and T+365 ceiling
- * were established against `RequestedExecutionDateTime` on a different product; every standing-order
- * probe sent a first payment date between T+7 and T+20, so neither bound was ever tested on this
- * field. Applying them is the conservative direction — it can only refuse dates the bank might have
- * taken — but it is an assumption, and worth revisiting if a boundary probe is ever run.
+ * Still the ceiling carried over from `RequestedExecutionDateTime` on scheduled payments, and still
+ * never probed on this field — every standing-order capture sent a first payment date between T+7 and
+ * T+20. The bank's own `U003` does say the first transfer date "must be within 12 months", which 365
+ * days approximates and coincides with today; it is left in days because nothing has measured which
+ * of the two the bank actually applies.
+ *
+ * The *floor* is no longer an assumption — see [MIN_FIRST_PAYMENT_DAYS_AHEAD].
  */
 internal const val MAX_FIRST_PAYMENT_DAYS_AHEAD = 365
+
+/**
+ * The soonest a mandate may start: **the day after tomorrow**.
+ *
+ * Observed, not carried over. A T+1 first payment was refused live:
+ *
+ * ```
+ * U003  Sorry, We cannot process the Standing Order Instruction as the first transfer date
+ *       cannot be today or tomorrow, and must be within 12 months.
+ * Path: Data.Initiation.MandateRelatedInformation.FirstPaymentDateTime
+ * ```
+ *
+ * This is the boundary the research recorded as `first-payment-date-boundary-never-probed`. The T+1
+ * floor came from `RequestedExecutionDateTime` on scheduled payments, where T+1 genuinely is valid —
+ * and the tell was already here: the *final* date enforces "not today or tomorrow" because the bank's
+ * message had been read for that field. The identical clause governs the first date, and only the
+ * half that had been observed got implemented.
+ */
+internal const val MIN_FIRST_PAYMENT_DAYS_AHEAD = 2
 
 /**
  * The furthest ahead a mandate may end.
@@ -57,7 +78,8 @@ internal fun epochMillisOf(date: LocalDate): Long =
 /**
  * Whether the bank will accept [date] as the first payment.
  *
- * Two clauses: strictly after today, and at most [MAX_FIRST_PAYMENT_DAYS_AHEAD] ahead, inclusive.
+ * Two clauses: at least [MIN_FIRST_PAYMENT_DAYS_AHEAD] days ahead — the bank refuses today *and*
+ * tomorrow — and at most [MAX_FIRST_PAYMENT_DAYS_AHEAD] ahead, inclusive.
  *
  * **Weekends are selectable, on both rails.** This is the deliberate divergence from the scheduled
  * module, whose international rail refuses them — and it is the part of these rules that was actually
@@ -66,7 +88,8 @@ internal fun epochMillisOf(date: LocalDate): Long =
  * day. Refusing them here would deny a date the bank takes.
  */
 internal fun isSelectableFirstPaymentDate(date: LocalDate, today: LocalDate): Boolean =
-    date > today && date <= today.plus(MAX_FIRST_PAYMENT_DAYS_AHEAD, DateTimeUnit.DAY)
+    date >= today.plus(MIN_FIRST_PAYMENT_DAYS_AHEAD, DateTimeUnit.DAY) &&
+        date <= today.plus(MAX_FIRST_PAYMENT_DAYS_AHEAD, DateTimeUnit.DAY)
 
 /**
  * Whether the bank will accept [date] as the final payment.

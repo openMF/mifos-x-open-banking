@@ -10,6 +10,8 @@
 package org.mifosx.openbanking.feature.paymentsstandingorder
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -81,12 +83,52 @@ class StandingOrderScreenRobolectricTest {
         )
     }
 
-    /** `RemittanceInformation` is refused `U005` internationally, so the field must not be offered. */
+    /**
+     * `RemittanceInformation` is refused `U005` internationally — so the field is **disabled, not
+     * removed**, with a reason beneath it.
+     *
+     * The assertion is deliberately `assertIsNotEnabled` and not `assertDoesNotExist`. Absence is
+     * what this test used to check, and absence passes just as happily when the field was never
+     * built at all — which is precisely what had happened to the two amount overrides beside it.
+     */
     @Test
-    fun theInternationalFormOffersNoReferenceField() {
+    fun theInternationalFormDisablesTheReferenceFieldAndSaysWhy() {
         render(StandingOrderFixtures.formState(rail = PaymentRail.International))
 
-        composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_FIELD).assertDoesNotExist()
+        composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_REASON, useUnmergedTree = true).assertExists()
+    }
+
+    /** The same treatment for the two amount overrides that rail has no wire member for. */
+    @Test
+    fun theInternationalFormDisablesBothAmountOverridesAndSaysWhy() {
+        render(StandingOrderFixtures.formState(rail = PaymentRail.International))
+
+        composeRule.onNodeWithTag(StandingOrderTestTags.RECURRING_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.FINAL_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.RECURRING_AMOUNT_REASON, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithTag(StandingOrderTestTags.FINAL_AMOUNT_REASON, useUnmergedTree = true).assertExists()
+    }
+
+    /** And on the rail that can carry them, they are offered and usable. */
+    @Test
+    fun theDomesticFormOffersBothAmountOverridesEnabled() {
+        render(StandingOrderFixtures.formState())
+
+        composeRule.onNodeWithTag(StandingOrderTestTags.RECURRING_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.FINAL_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.RECURRING_AMOUNT_REASON, useUnmergedTree = true)
+            .assertDoesNotExist()
     }
 
     @Test

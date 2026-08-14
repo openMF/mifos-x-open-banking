@@ -10,6 +10,7 @@
 package org.mifosx.openbanking.feature.paymentsstandingorder
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -134,11 +135,20 @@ class StandingOrderScreenInstrumentedTest {
         )
     }
 
+    /** Disabled, not removed — the three fields the international rail has no wire member for. */
     @Test
-    fun theInternationalFormOffersNoReferenceField() {
+    fun theInternationalFormDisablesTheFieldsThatRailCannotCarry() {
         render(formState(rail = PaymentRail.International))
 
-        composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_FIELD).assertDoesNotExist()
+        composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.RECURRING_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
+        composeRule.onNodeWithTag(StandingOrderTestTags.FINAL_AMOUNT_FIELD)
+            .performScrollTo()
+            .assertIsNotEnabled()
     }
 
     @Test

@@ -9,7 +9,10 @@
     See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
 -->
 <resources>
-    <string name="feature_payments_standing_order_screen_title">Schedule a payment</string>
+    <!-- One title serves the form and the review, which are two steps of one route — so it names the
+         product rather than the step. "Schedule a payment" was left here by the copy of
+         payments-schedule-payment this module started from, and named the wrong product outright. -->
+    <string name="feature_payments_standing_order_screen_title">Set up standing order</string>
     <string name="feature_payments_standing_order_loading_a11y">Loading your accounts and payees</string>
 
     <string name="feature_payments_standing_order_rail_domestic">Domestic</string>
@@ -29,7 +32,7 @@
     <string name="feature_payments_standing_order_payee_needs_payer">Choose an account to pay from to see its saved payees.</string>
     <!-- The payer account holds one currency and the amount is instructed in another, so the bank
          converts. %1$s is the instructed currency's code — it is no longer always GBP. -->
-    <string name="feature_payments_standing_order_non_gbp_notice">This payment is instructed in %1$s. Your bank will convert from this account and may charge for it.</string>
+    <string name="feature_payments_standing_order_non_gbp_notice">This standing order is instructed in %1$s. Your bank will convert from this account and may charge for it.</string>
 
     <string name="feature_payments_standing_order_balance_available">%1$s available</string>
     <!-- Trailing the collapsed picker, where the label has to name what the figure is. -->
@@ -69,7 +72,7 @@
     <!-- Pounds, not pence. The field used to be labelled "Amount in pence" and parsed minor units,
          so someone typing 250 meaning £250 sent £2.50. The wire format is unchanged — the draft
          still carries minor units — but nothing on screen asks for them any more. -->
-    <string name="feature_payments_standing_order_amount_label">Amount to send</string>
+    <string name="feature_payments_standing_order_amount_label">Amount</string>
     <string name="feature_payments_standing_order_amount_placeholder">0.00</string>
     <string name="feature_payments_standing_order_amount_available">You have %1$s available</string>
     <string name="feature_payments_standing_order_amount_error_not_a_number">Enter an amount like 250 or 250.00</string>
@@ -117,7 +120,7 @@
 
     <string name="feature_payments_standing_order_reference_label">Reference (optional)</string>
     <string name="feature_payments_standing_order_reference_helper">Max 35 characters</string>
-    <string name="feature_payments_standing_order_review_button">Review payment</string>
+    <string name="feature_payments_standing_order_review_button">Review standing order</string>
 
     <string name="feature_payments_standing_order_review_heading">Check this before you continue</string>
     <string name="feature_payments_standing_order_review_from_bank_choice">You’ll choose at your bank</string>
@@ -128,34 +131,32 @@
     <string name="feature_payments_standing_order_review_to">To</string>
     <string name="feature_payments_standing_order_review_reference">Reference</string>
     <string name="feature_payments_standing_order_review_reference_empty">None</string>
-    <string name="feature_payments_standing_order_review_hero_caption">to be sent</string>
-    <string name="feature_payments_standing_order_review_details_heading">Payment details</string>
+    <string name="feature_payments_standing_order_review_details_heading">Standing order details</string>
     <!-- Curly apostrophe, not \' — Compose Multiplatform does not collapse Android's escape and
          renders the backslash literally. Same trap as %% in a templated string. -->
     <string name="feature_payments_standing_order_review_auth_notice">You’ll approve this with your bank before any money moves.</string>
-    <string name="feature_payments_standing_order_confirm">Confirm and send · %1$s</string>
-    <string name="feature_payments_standing_order_edit_payment">Edit payment</string>
 
-    <string name="feature_payments_standing_order_submitting_staging">Setting up your payment</string>
+    <!-- "Setting up", not "sending": this stages a mandate, and no money moves at this step. -->
+    <string name="feature_payments_standing_order_submitting_staging">Setting up your standing order</string>
     <string name="feature_payments_standing_order_submitting_awaiting">Waiting for you to authorise at your bank</string>
     <string name="feature_payments_standing_order_submitting_amount">%1$s to %2$s</string>
     <string name="feature_payments_standing_order_submitting_lock">Do not close the app until this finishes.</string>
 
-    <string name="feature_payments_standing_order_error_title">Payment could not be completed</string>
-    <string name="feature_payments_standing_order_error_signature_missing">This app could not sign the payment instruction. Nothing has been sent. Please report the reference below.</string>
-    <string name="feature_payments_standing_order_error_consent_not_authorised">The payment was not authorised at your bank. Authorise it to continue.</string>
-    <string name="feature_payments_standing_order_error_consent_mismatch">The payment changed after you approved it, so your bank refused it. Start again to send it.</string>
+    <string name="feature_payments_standing_order_error_title">Standing order could not be set up</string>
+    <string name="feature_payments_standing_order_error_signature_missing">This app could not sign the standing order instruction. Nothing has been set up. Please report the reference below.</string>
+    <string name="feature_payments_standing_order_error_consent_not_authorised">The standing order was not authorised at your bank. Authorise it to continue.</string>
+    <string name="feature_payments_standing_order_error_consent_mismatch">The standing order changed after you approved it, so your bank refused it. Start again to set it up.</string>
     <string name="feature_payments_standing_order_error_outside_limits">This amount is outside your bank’s payment limits. Try a smaller amount.</string>
-    <!-- Deliberately not "check the details": the details are right, the account just can't send
-         payments. Applies to credit cards and Global Money wallets. -->
-    <string name="feature_payments_standing_order_error_payer_not_supported">This account can’t be used to send payments. Choose a different account to pay from.</string>
+    <!-- Deliberately not "check the details": the details are right, the account just cannot carry
+         a standing order. Applies to credit cards and Global Money wallets. -->
+    <string name="feature_payments_standing_order_error_payer_not_supported">This account can’t be used for standing orders. Choose a different account to pay from.</string>
     <string name="feature_payments_standing_order_change_payer">Choose another account</string>
     <string name="feature_payments_standing_order_error_invalid_field">Your bank would not accept one of these details. Check them and try again.</string>
-    <string name="feature_payments_standing_order_error_consent_revoked">Access to this account was withdrawn, so the payment was refused.</string>
-    <string name="feature_payments_standing_order_error_token_expired">Your authorisation expired before the payment was sent. Authorise it again to continue.</string>
+    <string name="feature_payments_standing_order_error_consent_revoked">Access to this account was withdrawn, so the standing order was refused.</string>
+    <string name="feature_payments_standing_order_error_token_expired">Your authorisation expired before the standing order was set up. Authorise it again to continue.</string>
     <string name="feature_payments_standing_order_error_rate_limited">Your bank is busy right now. Wait a moment and try again.</string>
-    <!-- No insufficient-funds message: neither scheduled rail confirms funds, so the app never
-         learns whether the money is there and must not imply that it does. -->
+    <!-- No insufficient-funds message: no funds confirmation exists for standing orders on either
+         rail, so the app never learns whether the money is there and must not imply that it does. -->
     <!-- Split in two because the bank cannot say which date it means: its single U003 recites all
          three date rules whichever was broken, and the customer has two dates to choose between. -->
     <string name="feature_payments_standing_order_error_first_date_refused">Your bank would not accept that start date. Choose another and try again.</string>
@@ -165,9 +166,9 @@
     <string name="feature_payments_standing_order_error_frequency_refused">Something went wrong setting up how often this repeats. Please try again.</string>
     <!-- U004/U005: a field this app got wrong. Says so plainly rather than blaming the customer's
          details, and offers no retry, because the same request would be built and refused again. -->
-    <string name="feature_payments_standing_order_error_request_malformed">This payment could not be set up because of a problem in the app. Nothing has been scheduled.</string>
-    <string name="feature_payments_standing_order_error_scheme_not_supported">This account cannot be used for this kind of payment. Try a different account.</string>
-    <string name="feature_payments_standing_order_error_network">The payment could not be sent. Check your connection and try again.</string>
+    <string name="feature_payments_standing_order_error_request_malformed">This standing order could not be set up because of a problem in the app. Nothing has been set up.</string>
+    <string name="feature_payments_standing_order_error_scheme_not_supported">This account cannot be used for this kind of standing order. Try a different account.</string>
+    <string name="feature_payments_standing_order_error_network">The standing order could not be set up. Check your connection and try again.</string>
     <string name="feature_payments_standing_order_error_reference">Reference %1$s</string>
 
     <string name="feature_payments_standing_order_retry">Try again</string>
@@ -185,46 +186,60 @@
     <string name="feature_payments_standing_order_frequency_yearly">Yearly</string>
     <string name="feature_payments_standing_order_first_payment_label">First payment</string>
     <string name="feature_payments_standing_order_first_payment_empty">Choose a date</string>
-    <string name="feature_payments_standing_order_first_payment_helper">Between tomorrow and a year ahead</string>
+    <!-- Two days, not one. The bank refuses a first transfer date that is today or tomorrow, and the
+         picker greys both — but a greyed cell explains nothing, so the helper has to say the floor. -->
+    <string name="feature_payments_standing_order_first_payment_helper">At least two days ahead, and within a year</string>
     <string name="feature_payments_standing_order_final_payment_label">Last payment</string>
     <!-- Empty is a real answer here, so the placeholder states what it means rather than prompting. -->
     <string name="feature_payments_standing_order_final_payment_empty">Not set — continues until you stop it</string>
     <string name="feature_payments_standing_order_final_payment_helper">After the first payment, and within a year</string>
     <string name="feature_payments_standing_order_final_payment_needs_first">Choose a first payment date first</string>
     <string name="feature_payments_standing_order_clear">Clear</string>
-    <string name="feature_payments_standing_order_first_date_picker_title">When should it start?</string>
-    <string name="feature_payments_standing_order_final_date_picker_title">When should it end?</string>
     <!-- The window is stated in words as well as greyed in the grid: a greyed cell is invisible to a
-         screen reader, and the far bound is far enough away to be worth knowing before scrolling. -->
-    <string name="feature_payments_standing_order_date_picker_window">Any date from %1$s to %2$s</string>
-    <!-- Disabled-field reasons. Facts about the rail, never errors — and never in the error colour. -->
+         screen reader, and the far bound is far enough away to be worth knowing before scrolling.
+         It is rendered at body size, not in Material3's headline style, which is sized for a short
+         selected date and turns a sentence this long into five lines that push the buttons over the
+         grid. -->
+    <string name="feature_payments_standing_order_date_picker_window">Select between %1$s and %2$s</string>
+    <!-- UNBUILT. These four belong to the optional domestic recurring/final amount fields and the
+         disabled-reason lines beside them. Everything behind them exists — `EnterRecurringAmount`
+         and `EnterFinalAmount`, `recurringAmountEnabled`/`finalAmountEnabled`, the clearing on a
+         rail switch, and `buildDraft` reading both into the draft — but no composable renders the
+         fields, and `RECURRING_AMOUNT_FIELD`/`FINAL_AMOUNT_FIELD` are declared and never applied.
+         So the domestic rail cannot currently vary its first, ongoing and final amounts, which the
+         bank accepts and the mockups show.
+
+         Kept rather than deleted precisely because they are unused: removing them would erase the
+         only remaining trace that this half of the rail was specified and never wired up.
+         Disabled-field reasons are facts about the rail, never errors — never in the error colour. -->
     <string name="feature_payments_standing_order_disabled_one_amount">International standing orders use one amount for every payment</string>
     <string name="feature_payments_standing_order_disabled_no_reference">International standing orders do not carry a reference</string>
     <string name="feature_payments_standing_order_recurring_amount_label">Different ongoing amount (optional)</string>
     <string name="feature_payments_standing_order_final_amount_label">Different last payment (optional)</string>
     <!-- Stated before the customer commits, and again afterwards. Directing them to their bank is an
          obligation on the PISP for this product, not a courtesy: nothing here can change a mandate. -->
-    <string name="feature_payments_standing_order_irreversible_title">You can\'t change this here</string>
-    <string name="feature_payments_standing_order_irreversible_body">A standing order can\'t be changed or cancelled in this app. To change it later, use your bank\'s app or online banking.</string>
+    <string name="feature_payments_standing_order_irreversible_title">You can’t change this here</string>
+    <string name="feature_payments_standing_order_irreversible_body">A standing order can’t be changed or cancelled in this app. To change it later, use your bank’s app or online banking.</string>
+    <!-- UNBUILT, same class as above. The spec states the review must say the schedule as one
+         sentence ("Monthly, starting 20 August 2026, until you stop it"). The review instead shows a
+         "Repeats" label over the date, so these two are unreferenced. Kept as the record of it. -->
     <string name="feature_payments_standing_order_schedule_open_ended">%1$s, starting %2$s, until you stop it.</string>
     <string name="feature_payments_standing_order_schedule_until">%1$s, starting %2$s, until %3$s.</string>
-    <string name="feature_payments_standing_order_date_placeholder">Choose a date</string>
-    <!-- Helper text differs by rail because the accepted window does. The domestic rail takes any
-         day; the international one is documented as working-days-only. -->
-    <string name="feature_payments_standing_order_date_helper_domestic">Between tomorrow and 365 days ahead</string>
-    <string name="feature_payments_standing_order_date_helper_international">Weekdays only, up to 365 days ahead</string>
     <string name="feature_payments_standing_order_date_content_description">Payment date. %1$s</string>
-    <string name="feature_payments_standing_order_date_picker_title">Select execution date</string>
     <string name="feature_payments_standing_order_date_picker_confirm">Confirm</string>
     <string name="feature_payments_standing_order_date_picker_cancel">Cancel</string>
     <string name="feature_payments_standing_order_change_date">Change date</string>
 
-    <!-- The international rail declares no charge until after the payment exists, so the form and
-         the review both state the bearer and stop there. Naming a figure would be inventing one. -->
-    <string name="feature_payments_standing_order_charges_bearer_recipient">Paid by recipient</string>
-    <string name="feature_payments_standing_order_charges_caveat">Your bank confirms its own charge when the payment is created</string>
-    <string name="feature_payments_standing_order_review_charge_caveat">Your bank will confirm its own charge when it creates the payment.</string>
+    <!-- The international rail declares no charge until after the standing order exists, so the form
+         and the review both state the bearer and stop there. Naming a figure would be inventing one.
+         Two wordings because the form's sits under a heading and the review's is a full sentence. -->
+    <string name="feature_payments_standing_order_charges_caveat">Your bank confirms its own charge when the standing order is created</string>
+    <string name="feature_payments_standing_order_review_charge_caveat">Your bank will confirm its own charge when it creates the standing order.</string>
     <string name="feature_payments_standing_order_review_bank_charge">Bank charge</string>
+    <!-- The domestic rail does quote a per-payment charge, but only on the consent, which does not
+    exist until Confirm is tapped. The row still has to appear: an omitted charge row reads as no
+    charge. So it says when the figure arrives instead of inventing one. -->
+    <string name="feature_payments_standing_order_review_charge_at_setup">Confirmed when you set this up</string>
     <string name="feature_payments_standing_order_review_sent_as">Sent as</string>
 
     <!-- The review hero states the date before the amount: when the money leaves is the decision
@@ -237,12 +252,11 @@
     <string name="feature_payments_standing_order_review_not_yet_made_body">You are setting up a standing order. The first payment is due on %1$s.</string>
     <string name="feature_payments_standing_order_review_confirm">Confirm and continue</string>
     <string name="feature_payments_standing_order_review_edit">Edit</string>
-    <string name="feature_payments_standing_order_protected_by">Protected by UK Open Banking</string>
 
     <!-- Waiting for the customer to come back from the bank. The way out is deliberate: returning
          through the task switcher delivers no callback, and without this the screen waits forever.
          "Cancel" is honest at THIS point only — nothing has been authorised, so no payment will be
-         made. It must never be offered after approval, where the bank refuses to withdraw a
-         scheduled consent and the app could not honour the word. -->
+         made. It must never be offered after approval, where the bank answers 405 to a delete of a
+         standing-order consent and the app could not honour the word. -->
     <string name="feature_payments_standing_order_abandon_authorisation">Cancel</string>
 </resources>

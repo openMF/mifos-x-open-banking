@@ -21,6 +21,8 @@ import org.mifosx.openbanking.feature.paymentsstandingorder.FakeAccountsOverview
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeBeneficiariesRepository
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeStandingOrderInitiationRepository
 import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderFixtures
+import template.core.base.network.NetworkError
+import template.core.base.network.NetworkResult
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -223,12 +225,14 @@ class StandingOrderViewModelTest {
             override fun now(): Instant = Instant.parse("${current}T09:00:00Z")
         }
         val vm = viewModel(clock = movingClock)
-        val tomorrow = LocalDate(2026, 8, 13)
-        vm.trySendAction(StandingOrderAction.SelectDate(StandingOrderDateRole.First, tomorrow))
-        assertEquals(tomorrow, content(vm).firstPaymentDate)
+        // The earliest the bank allows: today + 2. Not today + 1 — the bank refuses a first payment
+        // that falls today or tomorrow, so T+1 would never have been selectable to begin with.
+        val earliestAllowed = LocalDate(2026, 8, 14)
+        vm.trySendAction(StandingOrderAction.SelectDate(StandingOrderDateRole.First, earliestAllowed))
+        assertEquals(earliestAllowed, content(vm).firstPaymentDate)
 
-        // The chosen date is now today, which the bank counts as past.
-        current = tomorrow
+        // One midnight passes. The held date is now only a day away, which the bank refuses.
+        current = LocalDate(2026, 8, 13)
         vm.trySendAction(StandingOrderAction.OpenDatePicker(StandingOrderDateRole.First))
 
         assertNull(content(vm).firstPaymentDate)
@@ -308,6 +312,52 @@ class StandingOrderViewModelTest {
         assertEquals("2026-08-14", payments.stagedDrafts.single().firstPaymentDate)
     }
 
+    /**
+     * The two optional overrides reach the wire on the rail that has members for them.
+     *
+     * Until the fields were built, this could not be asserted at all: the actions, the state and the
+     * draft mapping all existed, and nothing on screen could produce a value for any of them.
+     */
+    @Test
+    fun stagingCarriesTheRecurringAndFinalAmountsOnTheDomesticRail() = runTest {
+        val payments = FakeStandingOrderInitiationRepository()
+        val vm = viewModel(payments = payments)
+        vm.completeForm()
+
+        vm.trySendAction(StandingOrderAction.EnterRecurringAmount("300"))
+        vm.trySendAction(StandingOrderAction.EnterFinalAmount("50"))
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        val draft = payments.stagedDrafts.single()
+        assertEquals(85000L, draft.firstPaymentAmountMinorUnits)
+        assertEquals(30000L, draft.recurringPaymentAmountMinorUnits)
+        assertEquals(5000L, draft.finalPaymentAmountMinorUnits)
+    }
+
+    /**
+     * And cannot on the rail that has none — even when they were typed before the switch.
+     *
+     * `OBInternationalStandingOrder4` carries a single `InstructedAmount`; sending either override is
+     * `U005`. The fields are disabled there, but the guarantee that matters is this one, because it
+     * holds whether or not the disabling does.
+     */
+    @Test
+    fun stagingDropsBothOverridesOnTheInternationalRail() = runTest {
+        val payments = FakeStandingOrderInitiationRepository()
+        val vm = viewModel(payments = payments)
+        vm.completeForm()
+        vm.trySendAction(StandingOrderAction.EnterRecurringAmount("300"))
+        vm.trySendAction(StandingOrderAction.EnterFinalAmount("50"))
+
+        vm.trySendAction(StandingOrderAction.SelectRail(PaymentRail.International))
+        vm.completeForm()
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        val draft = payments.stagedDrafts.single()
+        assertNull(draft.recurringPaymentAmountMinorUnits, "this rail has no member for it")
+        assertNull(draft.finalPaymentAmountMinorUnits, "nor for this one")
+    }
+
     @Test
     fun stagingMintsTwoDistinctIdempotencyKeys() = runTest {
         val payments = FakeStandingOrderInitiationRepository()
@@ -318,6 +368,59 @@ class StandingOrderViewModelTest {
 
         val draft = payments.stagedDrafts.single()
         assertNotEquals(draft.consentIdempotencyKey, draft.paymentIdempotencyKey)
+    }
+
+    /**
+     * The key is only worth minting if a retry replays it.
+     *
+     * A staging failure does not say whether the bank saw the request. If it did and only the reply
+     * was lost, retrying under a fresh key stages a *second* consent rather than returning the
+     * first — and a standing-order consent cannot be withdrawn, because the bank answers `405` to a
+     * delete. Every such retry would leave a permanent orphan.
+     */
+    @Test
+    fun retryingAfterAFailedStagingReplaysTheSameKeys() = runTest {
+        val payments = FakeStandingOrderInitiationRepository()
+        payments.stageReturns(NetworkResult.Error(NetworkError.Client.BadRequest("lost")))
+        val vm = viewModel(payments = payments)
+        vm.completeForm()
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        vm.trySendAction(StandingOrderAction.RetryStaging)
+
+        assertEquals(2, payments.stagedDrafts.size, "the retry must reach the repository")
+        val (first, second) = payments.stagedDrafts
+        assertEquals(
+            first.consentIdempotencyKey,
+            second.consentIdempotencyKey,
+            "a retry of the same mandate must replay its consent key, not mint a new one",
+        )
+        assertEquals(first.paymentIdempotencyKey, second.paymentIdempotencyKey)
+    }
+
+    /**
+     * The other half: an edited mandate is a different mandate, so it must not inherit the keys.
+     *
+     * Replaying them would ask the bank to treat a changed instruction as the one it already has.
+     */
+    @Test
+    fun editingTheAmountAfterAFailureMintsFreshKeys() = runTest {
+        val payments = FakeStandingOrderInitiationRepository()
+        payments.stageReturns(NetworkResult.Error(NetworkError.Client.BadRequest("lost")))
+        val vm = viewModel(payments = payments)
+        vm.completeForm()
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        vm.trySendAction(StandingOrderAction.EnterAmount("900"))
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        val (first, second) = payments.stagedDrafts
+        assertNotEquals(
+            first.consentIdempotencyKey,
+            second.consentIdempotencyKey,
+            "an edited mandate must not reuse the previous mandate's key",
+        )
+        assertEquals(90000L, second.firstPaymentAmountMinorUnits)
     }
 
     /**
@@ -386,16 +489,28 @@ class StandingOrderViewModelTest {
         assertEquals(StandingOrderStep.Review, content(vm).step)
     }
 
-    /** Abandoning drops the draft: the next attempt is a fresh instruction under fresh keys. */
+    /**
+     * Abandoning keeps the draft, and with it the keys.
+     *
+     * Walking away from the browser changes nothing about the mandate, and the consent it already
+     * staged cannot be withdrawn. Confirming again must therefore land on that same consent rather
+     * than stage a second un-withdrawable one. The consent id is dropped because staging returns it
+     * afresh.
+     */
     @Test
-    fun abandoningAuthorisationDropsTheDraft() = runTest {
-        val vm = viewModel()
+    fun abandoningAuthorisationKeepsTheDraftAndItsKeys() = runTest {
+        val payments = FakeStandingOrderInitiationRepository()
+        val vm = viewModel(payments = payments)
         vm.completeForm()
         vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
 
         vm.trySendAction(StandingOrderAction.AbandonAuthorisation)
+        assertNull(vm.stateFlow.value.consentId, "the id is dropped; staging returns it afresh")
 
-        assertNull(vm.stateFlow.value.draft)
+        vm.trySendAction(StandingOrderAction.ConfirmAndStageConsent)
+
+        val (first, second) = payments.stagedDrafts
+        assertEquals(first.consentIdempotencyKey, second.consentIdempotencyKey)
     }
 
     /** Editing keeps the date — going back to change the amount is not a reason to re-pick a day. */

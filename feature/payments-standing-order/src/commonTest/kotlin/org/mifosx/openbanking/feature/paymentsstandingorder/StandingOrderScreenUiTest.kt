@@ -126,13 +126,21 @@ class StandingOrderScreenUiTest {
         onNodeWithTag(StandingOrderTestTags.REVIEW_CHARGE_CAVEAT).assertIsDisplayed()
     }
 
-    /** The caveat belongs to the international rail alone; the domestic review carries a reference. */
+    /**
+     * The domestic review states a charge too — the caveat sentence is what belongs to the
+     * international rail alone.
+     *
+     * This rail is the one HSBC quotes a real per-payment fee on, returned on the consent before
+     * authorisation. Showing nothing here would read as "no charge" on the rail that has one, which
+     * is why the row is asserted rather than its absence.
+     */
     @Test
-    fun theDomesticReviewShowsNoChargeCaveat() = runComposeUiTest {
+    fun theDomesticReviewShowsAChargeRowWithoutTheInternationalCaveat() = runComposeUiTest {
         setContent {
             StandingOrderScreenContent(StandingOrderFixtures.reviewState(), {}, {})
         }
 
+        onNodeWithTag(StandingOrderTestTags.REVIEW_CHARGE_ROW).assertIsDisplayed()
         onNodeWithTag(StandingOrderTestTags.REVIEW_CHARGE_CAVEAT).assertDoesNotExist()
         onNodeWithTag(StandingOrderTestTags.REVIEW_REFERENCE).assertIsDisplayed()
     }

@@ -32,16 +32,16 @@ import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_date_picker_cancel
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_date_picker_confirm
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_date_picker_window
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_final_date_picker_title
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_first_date_picker_title
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.MAX_FINAL_PAYMENT_MONTHS_AHEAD
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.MAX_FIRST_PAYMENT_DAYS_AHEAD
+import org.mifosx.openbanking.feature.paymentsstandingorder.ui.MIN_FIRST_PAYMENT_DAYS_AHEAD
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderDateRole
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.epochMillisOf
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.formatStandingOrderDate
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.isSelectableDate
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.selectableYears
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.utcDateOf
+import template.core.base.designsystem.theme.KptTheme
 
 /**
  * One dialog serving both mandate dates.
@@ -74,7 +74,9 @@ internal fun StandingOrderDatePickerDialog(
     )
 
     val earliest = when (role) {
-        StandingOrderDateRole.First -> today.plus(1, DateTimeUnit.DAY)
+        // Two days, matching the predicate. Stating a floor the grid then greys out is worse than
+        // stating none — the sentence exists because a greyed cell explains nothing.
+        StandingOrderDateRole.First -> today.plus(MIN_FIRST_PAYMENT_DAYS_AHEAD, DateTimeUnit.DAY)
         // The later of "after the first payment" and "not today or tomorrow": both apply, and which
         // one binds depends on how soon the mandate starts.
         StandingOrderDateRole.Final -> maxOf(
@@ -111,26 +113,21 @@ internal fun StandingOrderDatePickerDialog(
     ) {
         DatePicker(
             state = state,
-            title = {
-                Text(
-                    text = when (role) {
-                        StandingOrderDateRole.First ->
-                            stringResource(Res.string.feature_payments_standing_order_first_date_picker_title)
-
-                        StandingOrderDateRole.Final ->
-                            stringResource(Res.string.feature_payments_standing_order_final_date_picker_title)
-                    },
-                    modifier = Modifier.padding(TitlePadding),
-                )
-            },
+            title = null,
             headline = {
+                // Body size, explicitly. The headline slot is styled for a short selected date such
+                // as "14 Aug 2026"; a sentence naming both bounds renders at that size as five lines
+                // and forces the button row down over the last week of the grid. The style has to be
+                // stated on the Text because the slot provides its own.
                 Text(
                     text = stringResource(
                         Res.string.feature_payments_standing_order_date_picker_window,
                         formatStandingOrderDate(earliest),
                         formatStandingOrderDate(latest),
                     ),
-                    modifier = Modifier.padding(TitlePadding),
+                    style = KptTheme.typography.bodyMedium,
+                    color = KptTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(HeadlinePadding),
                 )
             },
             colors = DatePickerDefaults.colors(),
@@ -161,4 +158,4 @@ private class MandateSelectableDates(
     override fun isSelectableYear(year: Int): Boolean = year in selectableYears(today, role)
 }
 
-private val TitlePadding = 24.dp
+private val HeadlinePadding = 24.dp

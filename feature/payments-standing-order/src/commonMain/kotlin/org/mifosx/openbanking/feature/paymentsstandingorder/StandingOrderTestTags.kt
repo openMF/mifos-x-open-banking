@@ -126,6 +126,16 @@ internal object StandingOrderTestTags {
     /** Present AND disabled on the international rail — asserting absence would pass against a hidden field. */
     const val RECURRING_AMOUNT_FIELD = "standingOrder:recurringAmountField"
     const val FINAL_AMOUNT_FIELD = "standingOrder:finalAmountField"
+
+    /**
+     * The reason lines under the three fields the international rail cannot carry.
+     *
+     * Tagged separately from the fields they explain: a disabled control with no reason is the
+     * failure this is guarding against, and it is invisible to an assertion on the field alone.
+     */
+    const val RECURRING_AMOUNT_REASON = "standingOrder:recurringAmountReason"
+    const val FINAL_AMOUNT_REASON = "standingOrder:finalAmountReason"
+    const val REFERENCE_REASON = "standingOrder:referenceReason"
     const val IRREVERSIBLE_NOTICE = "standingOrder:irreversibleNotice"
     const val REVIEW_SCHEDULE_ROW = "standingOrder:reviewScheduleRow"
     const val DATE_PICKER = "standingOrder:datePicker"

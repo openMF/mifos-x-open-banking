@@ -50,9 +50,22 @@ class StandingOrderDateRulesTest {
         assertFalse(firstSelectable(today.plusDays(-1)))
     }
 
+    /**
+     * The regression this file exists for now.
+     *
+     * Tomorrow reads as obviously valid and is not: the bank refuses a first transfer date that is
+     * "today or tomorrow". This test asserted the opposite until a live `U003` said otherwise, and it
+     * passed the whole time because it was asserting an assumption inherited from scheduled payments,
+     * where T+1 genuinely is valid.
+     */
     @Test
-    fun tomorrowIsSelectable() {
-        assertTrue(firstSelectable(today.plusDays(1)))
+    fun tomorrowIsNotSelectable() {
+        assertFalse(firstSelectable(today.plusDays(1)), "the bank refuses today and tomorrow")
+    }
+
+    @Test
+    fun theDayAfterTomorrowIsSelectable() {
+        assertTrue(firstSelectable(today.plusDays(MIN_FIRST_PAYMENT_DAYS_AHEAD)))
     }
 
     @Test

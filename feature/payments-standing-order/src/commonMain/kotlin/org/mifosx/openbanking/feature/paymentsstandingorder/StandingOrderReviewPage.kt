@@ -44,6 +44,8 @@ import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_irreversible_body
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_irreversible_title
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_auth_notice
+import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_bank_charge
+import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_charge_at_setup
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_charge_bearer
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_charge_caveat
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_review_confirm
@@ -146,6 +148,17 @@ internal fun StandingOrderReviewPage(
                         stringResource(Res.string.feature_payments_standing_order_review_reference_empty)
                     },
                     tag = StandingOrderTestTags.REVIEW_REFERENCE,
+                )
+                // Both rails carry a charge row, because an omitted one reads as "no charge" — and
+                // this is the rail that actually has one. HSBC quotes a real per-payment fee here
+                // and returns it on the consent response, before authorisation; the international
+                // rail declares nothing until the resource exists. So the rail that can eventually
+                // name a figure must not be the silent one. It still cannot name it *yet* — the
+                // consent is not staged until Confirm — so the row says when, not how much.
+                ReviewRow(
+                    label = stringResource(Res.string.feature_payments_standing_order_review_bank_charge),
+                    value = stringResource(Res.string.feature_payments_standing_order_review_charge_at_setup),
+                    tag = StandingOrderTestTags.REVIEW_CHARGE_ROW,
                 )
             } else {
                 // No "Recipient receives" row. It existed because the instructed currency and the

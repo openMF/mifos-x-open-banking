@@ -445,11 +445,16 @@ class StandingOrderViewModel(
      * to a delete and keeps the consent — so pretending to cancel it would be a lie. What this fixes
      * is the screen: without it, returning through the task switcher rather than the redirect leaves
      * a spinner running against a callback that will never arrive.
+     *
+     * The draft is kept for the same reason. Nothing about the mandate changed by walking away from
+     * the browser, so confirming again must replay the keys already minted and land on the consent
+     * that already exists, rather than stage a second one that is equally impossible to withdraw.
+     * The consent id is dropped because staging returns it afresh.
      */
     private fun abandonAuthorisation() {
         form.value = form.value.copy(step = StandingOrderStep.Review)
         phase.value = Phase.Form
-        updateState { copy(draft = null, consentId = null) }
+        updateState { copy(consentId = null) }
     }
 
     private fun enterIban(raw: String) {
@@ -598,12 +603,20 @@ class StandingOrderViewModel(
     /**
      * Fixes the instruction and hands it to the bank.
      *
-     * This is where the idempotency key and both OBIE identifiers are minted, once. Everything after
-     * this point — submission, and any retry — reuses the draft built here rather than deriving a
-     * new one.
+     * Both idempotency keys are minted here, and minted **once per mandate**. A retry after a failed
+     * staging must replay the keys the first attempt used: if that attempt reached the bank and only
+     * the response was lost, a fresh key stages a second consent instead of returning the first —
+     * and a standing-order consent cannot be withdrawn, because the bank answers `405` to a delete.
+     * Every retry with a new key would therefore leave a permanent orphan.
+     *
+     * "The same mandate" is decided by comparing the rebuilt draft with the held one on everything
+     * except the keys, rather than by clearing the draft at each edit site. Any edit changes some
+     * field, so the keys regenerate on their own — and no future field can be added to the form and
+     * forgotten here, which is the failure a list of clear-sites invites.
      */
     private fun confirmAndStageConsent() {
-        val draft = buildDraft() ?: return
+        val rebuilt = buildDraft() ?: return
+        val draft = state.draft?.takeIf { it.isSameMandateAs(rebuilt) } ?: rebuilt
         phase.value = Phase.Submitting(StandingOrderStage.StagingConsent, consentId = null)
         updateState { copy(draft = draft) }
 
@@ -712,6 +725,19 @@ class StandingOrderViewModel(
             chargeBearer = if (isInternational) current.chargeBearer else null,
         )
     }
+
+    /**
+     * The same mandate, disregarding the keys minted to send it.
+     *
+     * Written as a copy-and-compare rather than a field-by-field check so that it stays correct as
+     * [StandingOrderDraft] grows: a new field is included the day it is added. Spelling the
+     * comparison out by hand would silently keep treating an edited mandate as unchanged.
+     */
+    private fun StandingOrderDraft.isSameMandateAs(other: StandingOrderDraft): Boolean =
+        copy(
+            consentIdempotencyKey = other.consentIdempotencyKey,
+            paymentIdempotencyKey = other.paymentIdempotencyKey,
+        ) == other
 
     private fun render(
         accounts: ScreenState<List<AccountWithBalance>>,
