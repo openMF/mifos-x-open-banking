@@ -12,74 +12,48 @@ package org.mifosx.openbanking.feature.paymentshub
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubState
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubUiState
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * The hub is four cards and nothing else.
+ *
+ * There is no state to drive it any more, so these cases take no fixtures: the Recent list, the
+ * loading skeleton and the error screen were all removed with the local payment store's only reader.
+ * What is left is worth testing for one reason — a card that renders but does not navigate is a
+ * defect this suite has already caught once.
+ */
 @OptIn(ExperimentalTestApi::class)
 class PaymentsHubScreenUiTest {
 
     @Test
-    fun loadingRendersTheSkeleton() = runComposeUiTest {
-        setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(uiState = PaymentsHubUiState.Loading),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
-        onNodeWithTag(PaymentsHubTestTags.SKELETON).assertIsDisplayed()
-        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID).assertDoesNotExist()
-    }
+    fun theHubRendersItsFourQuickActions() = runComposeUiTest {
+        setContent { PaymentsHubContent(onNavigateToSendMoney = {}) }
 
-    @Test
-    fun contentRendersQuickActionsGrid() = runComposeUiTest {
-        setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Content(activityItems = emptyList()),
-                ),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
+        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID).assertIsDisplayed()
         onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_SEND_MONEY).assertIsDisplayed()
+        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_SCHEDULE).assertIsDisplayed()
+        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_STANDING_ORDER).performScrollTo().assertIsDisplayed()
+        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_VRP).performScrollTo().assertIsDisplayed()
     }
 
+    /**
+     * Neither heading survives.
+     *
+     * "Recent" went with the list it introduced; "Quick Actions" went because with one section left
+     * there is nothing to tell it apart from.
+     */
     @Test
-    fun emptyActivityShowsEmptyState() = runComposeUiTest {
-        setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Content(activityItems = emptyList()),
-                ),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
-        onNodeWithTag(PaymentsHubTestTags.EMPTY_ACTIVITY).assertIsDisplayed()
-    }
+    fun theHubCarriesNoSectionHeadings() = runComposeUiTest {
+        setContent { PaymentsHubContent(onNavigateToSendMoney = {}) }
 
-    @Test
-    fun errorRendersRetryButton() = runComposeUiTest {
-        setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Error("Connection failed"),
-                ),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
-        onNodeWithTag(PaymentsHubTestTags.ERROR_SCREEN).assertIsDisplayed()
+        onNodeWithText("Recent").assertDoesNotExist()
+        onNodeWithText("Quick Actions").assertDoesNotExist()
+        onNodeWithText("No payments yet").assertDoesNotExist()
     }
 
     /**
@@ -95,12 +69,7 @@ class PaymentsHubScreenUiTest {
         var navigated = false
         setContent {
             PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Content(activityItems = emptyList()),
-                ),
-                onAction = {},
                 onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
                 onNavigateToStandingOrder = { navigated = true },
             )
         }
@@ -118,12 +87,7 @@ class PaymentsHubScreenUiTest {
         var navigated = false
         setContent {
             PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Content(activityItems = emptyList()),
-                ),
-                onAction = {},
                 onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
                 onNavigateToSchedulePayment = { navigated = true },
             )
         }
@@ -131,5 +95,16 @@ class PaymentsHubScreenUiTest {
         onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_SCHEDULE).performScrollTo().performClick()
 
         assertTrue(navigated, "the schedule card must reach its destination")
+    }
+
+    /** And send-money, which was the only card that ever worked. */
+    @Test
+    fun theSendMoneyCardNavigates() = runComposeUiTest {
+        var navigated = false
+        setContent { PaymentsHubContent(onNavigateToSendMoney = { navigated = true }) }
+
+        onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_SEND_MONEY).performScrollTo().performClick()
+
+        assertTrue(navigated, "the send-money card must reach its destination")
     }
 }

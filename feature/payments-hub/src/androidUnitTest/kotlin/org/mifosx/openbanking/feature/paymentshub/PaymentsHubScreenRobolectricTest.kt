@@ -12,11 +12,11 @@ package org.mifosx.openbanking.feature.paymentshub
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubState
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubUiState
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -30,45 +30,26 @@ class PaymentsHubScreenRobolectricTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun loadingRendersTheSkeleton() {
-        composeRule.setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(uiState = PaymentsHubUiState.Loading),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
-        composeRule.onNodeWithTag(PaymentsHubTestTags.SKELETON).assertIsDisplayed()
-    }
+    fun theHubRendersItsQuickActions() {
+        composeRule.setContent { PaymentsHubContent(onNavigateToSendMoney = {}) }
 
-    @Test
-    fun contentRendersQuickActions() {
-        composeRule.setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Content(activityItems = emptyList()),
-                ),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
+        composeRule.onNodeWithTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID).assertIsDisplayed()
         composeRule.onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_SEND_MONEY).assertIsDisplayed()
+        composeRule.onNodeWithTag(PaymentsHubTestTags.QUICK_ACTION_VRP).performScrollTo().assertIsDisplayed()
     }
 
+    /**
+     * Nothing waits on anything.
+     *
+     * The hub used to open on a skeleton and leave it only when the local payment store emitted. With
+     * no store to read, a shimmer here would never resolve — so its absence is the assertion.
+     */
     @Test
-    fun errorRendersScreen() {
-        composeRule.setContent {
-            PaymentsHubContent(
-                state = PaymentsHubState(
-                    uiState = PaymentsHubUiState.Error("Connection failed"),
-                ),
-                onAction = {},
-                onNavigateToSendMoney = {},
-                onNavigateToPaymentStatus = {},
-            )
-        }
-        composeRule.onNodeWithTag(PaymentsHubTestTags.ERROR_SCREEN).assertIsDisplayed()
+    fun theHubRendersImmediatelyWithNoLoadingOrEmptyState() {
+        composeRule.setContent { PaymentsHubContent(onNavigateToSendMoney = {}) }
+
+        composeRule.onNodeWithText("Recent").assertDoesNotExist()
+        composeRule.onNodeWithText("Quick Actions").assertDoesNotExist()
+        composeRule.onNodeWithText("No payments yet").assertDoesNotExist()
     }
 }

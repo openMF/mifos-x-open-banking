@@ -18,7 +18,6 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -101,52 +100,6 @@ class PaymentHistoryMapperTest {
         assertNull(entity.status)
         assertNull(entity.settlementDateTime)
         assertNull(entity.syncedAt)
-    }
-
-    @Test
-    fun mapsEntityToPaymentHistoryItemForTerminalSuccess() {
-        val entity = receipt(PaymentStatus.AcceptedSettlementCompleted).toEntity(draft())
-        val item = entity.toPaymentHistoryItem()
-
-        assertEquals("19901", item.id)
-        assertEquals("19901", item.domesticPaymentId)
-        assertEquals("Mr Dharani C", item.creditorName)
-        assertEquals(10_000L, item.amountMinorUnits)
-        assertEquals("Sent", item.statusLabel)
-        assertFalse(item.isFailure)
-        assertFalse(item.isInFlight)
-    }
-
-    @Test
-    fun mapsEntityToPaymentHistoryItemForInFlight() {
-        val entity = receipt(PaymentStatus.AcceptedSettlementInProcess).toEntity(draft())
-        val item = entity.toPaymentHistoryItem()
-
-        assertEquals("Processing", item.statusLabel)
-        assertFalse(item.isFailure)
-        assertTrue(item.isInFlight)
-    }
-
-    @Test
-    fun mapsEntityToPaymentHistoryItemForTerminalFailure() {
-        val entity = receipt(PaymentStatus.Rejected).toEntity(draft())
-        val item = entity.toPaymentHistoryItem()
-
-        assertEquals("Failed", item.statusLabel)
-        assertTrue(item.isFailure)
-        assertFalse(item.isInFlight)
-    }
-
-    @Test
-    fun mapsFailureEntityToPaymentHistoryItem() {
-        val entity = draft().toFailureEntity("InsufficientFunds", "Not enough money")
-        val item = entity.toPaymentHistoryItem()
-
-        assertNull(item.domesticPaymentId)
-        assertTrue(item.isFailure)
-        assertFalse(item.isInFlight)
-        assertEquals("Not enough money", item.statusLabel)
-        assertEquals("Not enough money", item.errorDescription)
     }
 
     @Test

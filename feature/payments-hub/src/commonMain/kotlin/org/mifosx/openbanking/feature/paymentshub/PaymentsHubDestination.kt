@@ -33,7 +33,6 @@ data object PaymentsHubRoute
  */
 fun NavGraphBuilder.paymentsHubGraph(
     onNavigateToSendMoney: () -> Unit,
-    onNavigateToPaymentStatus: (String) -> Unit,
     onNavigateToSchedulePayment: () -> Unit = {},
     onNavigateToStandingOrder: () -> Unit = {},
 ) {
@@ -41,7 +40,6 @@ fun NavGraphBuilder.paymentsHubGraph(
         composableWithStayTransitions<PaymentsHubRoute> {
             PaymentsHubScreen(
                 onNavigateToSendMoney = onNavigateToSendMoney,
-                onNavigateToPaymentStatus = onNavigateToPaymentStatus,
                 onNavigateToSchedulePayment = onNavigateToSchedulePayment,
                 onNavigateToStandingOrder = onNavigateToStandingOrder,
             )

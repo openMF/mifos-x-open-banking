@@ -154,10 +154,13 @@ sealed interface StandingOrderUiState {
      * The form and the review, as one state carrying a [step].
      *
      * Note what the international rail does **not** get: [recurringAmountEnabled], [finalAmountEnabled]
-     * and [referenceEnabled] all go false there, and the corresponding inputs are emptied. They stay on
-     * screen, disabled, with a reason beneath — the fields keep their position so nothing reflows under
-     * a rail toggle, and a grey field with an explanation teaches the difference where a vanishing one
-     * would read as a bug.
+     * and [referenceEnabled] all go false there, and the corresponding inputs are emptied. The fields
+     * are not rendered at all on that rail — `OBInternationalStandingOrder4` has no member for any of
+     * them, so there is nothing to fill in.
+     *
+     * The emptying still matters even though the controls are gone: `buildDraft` reads these inputs
+     * only on the domestic rail, and that is the guarantee the bank actually sees. A value typed
+     * before a rail switch cannot reach the wire whether or not its field is on screen.
      */
     data class Content(
         val step: StandingOrderStep,

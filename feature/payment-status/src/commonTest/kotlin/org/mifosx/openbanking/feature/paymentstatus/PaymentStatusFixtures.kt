@@ -9,15 +9,12 @@
  */
 package org.mifosx.openbanking.feature.paymentstatus
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentCharge
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
@@ -245,8 +242,6 @@ class FakePaymentHistoryRepository(
 
     val stageReads = mutableListOf<String>()
 
-    override fun observeRecent(): Flow<List<PaymentHistoryItem>> = flowOf(emptyList())
-
     override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) =
         error("payment-status never writes history")
 
@@ -276,6 +271,4 @@ class FakePaymentHistoryRepository(
         errorKind: String,
         errorDescription: String,
     ) = Unit
-
-    override suspend fun refreshStatuses() = error("payment-status never refreshes the whole hub")
 }

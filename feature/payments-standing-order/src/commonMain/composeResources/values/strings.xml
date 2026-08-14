@@ -212,8 +212,6 @@
          Kept rather than deleted precisely because they are unused: removing them would erase the
          only remaining trace that this half of the rail was specified and never wired up.
          Disabled-field reasons are facts about the rail, never errors — never in the error colour. -->
-    <string name="feature_payments_standing_order_disabled_one_amount">International standing orders use one amount for every payment</string>
-    <string name="feature_payments_standing_order_disabled_no_reference">International standing orders do not carry a reference</string>
     <string name="feature_payments_standing_order_recurring_amount_label">Different ongoing amount (optional)</string>
     <string name="feature_payments_standing_order_final_amount_label">Different last payment (optional)</string>
     <!-- Stated before the customer commits, and again afterwards. Directing them to their bank is an

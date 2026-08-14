@@ -21,8 +21,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.data.TestSigningKey
@@ -35,7 +33,6 @@ import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
@@ -138,7 +135,6 @@ class ScheduledPaymentInitiationRepositoryImplTest {
 
     private class FakePaymentHistoryRepo : PaymentHistoryRepository {
         val submitted = mutableListOf<Pair<PaymentReceipt, ScheduledPaymentDraft>>()
-        override fun observeRecent(): Flow<List<PaymentHistoryItem>> = MutableStateFlow(emptyList())
         override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) {}
         override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) {
             submitted += receipt to draft
@@ -155,7 +151,6 @@ class ScheduledPaymentInitiationRepositoryImplTest {
             errorKind: String,
             errorDescription: String,
         ) = Unit
-        override suspend fun refreshStatuses() {}
         override suspend fun consentTypeOf(paymentId: String): ConsentType? = null
         override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
     }

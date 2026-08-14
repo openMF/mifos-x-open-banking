@@ -65,8 +65,6 @@ import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_creditor_heading
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_date_heading
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_debtor_heading
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_disabled_no_reference
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_disabled_one_amount
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_final_amount_label
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_final_payment_empty
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_final_payment_helper
@@ -475,54 +473,46 @@ private fun AmountSection(
             }
         }
 
-        // The two optional refinements of the domestic rail. A standing order sends the same figure
-        // every time unless it is told otherwise: OBIE says the recurring and final amounts are to be
-        // populated only when they differ from the first, so these are overrides on the amount above
-        // rather than fields of their own. HSBC accepts three unequal amounts (1.00/2.00/3.00 → 201).
+        // The three fields only the domestic rail has wire members for, shown only on that rail.
         //
-        // Rendered on both rails and disabled on the international one, never hidden. That rail has no
-        // wire member for either — `OBInternationalStandingOrder4` carries a single `InstructedAmount`
-        // — but a field that vanishes on a toggle reads as a bug, and reflows the fields under it.
-        OptionalAmountField(
-            label = stringResource(Res.string.feature_payments_standing_order_recurring_amount_label),
-            value = state.recurringAmountInput,
-            enabled = state.recurringAmountEnabled,
-            reason = stringResource(Res.string.feature_payments_standing_order_disabled_one_amount),
-            fieldTag = StandingOrderTestTags.RECURRING_AMOUNT_FIELD,
-            reasonTag = StandingOrderTestTags.RECURRING_AMOUNT_REASON,
-            onValueChange = { onAction(StandingOrderAction.EnterRecurringAmount(it)) },
-        )
-        OptionalAmountField(
-            label = stringResource(Res.string.feature_payments_standing_order_final_amount_label),
-            value = state.finalAmountInput,
-            enabled = state.finalAmountEnabled,
-            reason = stringResource(Res.string.feature_payments_standing_order_disabled_one_amount),
-            fieldTag = StandingOrderTestTags.FINAL_AMOUNT_FIELD,
-            reasonTag = StandingOrderTestTags.FINAL_AMOUNT_REASON,
-            onValueChange = { onAction(StandingOrderAction.EnterFinalAmount(it)) },
-        )
-
-        // Same treatment. International refuses `RemittanceInformation` outright with U005, so the
-        // field is disabled rather than removed — and the reason says which rail cannot carry it,
-        // as a fact, not as an error.
-        OutlinedTextField(
-            value = state.reference,
-            onValueChange = { onAction(StandingOrderAction.EnterReference(it.take(REFERENCE_MAX_LENGTH))) },
-            label = { Text(stringResource(Res.string.feature_payments_standing_order_reference_label)) },
-            enabled = state.referenceEnabled,
-            supportingText = {
-                if (state.referenceEnabled) {
+        // The two amounts are overrides on the figure above rather than fields of their own: OBIE asks
+        // for the recurring and final amounts only where they differ from the first, and HSBC accepts
+        // three unequal figures (1.00/2.00/3.00 → 201). The reference maps to `RemittanceInformation`,
+        // which the international rail refuses outright with U005.
+        //
+        // Hidden rather than disabled on international. Note what that costs: a test asserting these
+        // are absent passes just as happily against fields that were never built, which is exactly how
+        // the two amount overrides went missing unnoticed once already. The guard is on the other side
+        // — the domestic cases assert they are present and enabled, so a field that stops rendering
+        // fails there instead.
+        if (state.recurringAmountEnabled) {
+            OptionalAmountField(
+                label = stringResource(Res.string.feature_payments_standing_order_recurring_amount_label),
+                value = state.recurringAmountInput,
+                fieldTag = StandingOrderTestTags.RECURRING_AMOUNT_FIELD,
+                onValueChange = { onAction(StandingOrderAction.EnterRecurringAmount(it)) },
+            )
+        }
+        if (state.finalAmountEnabled) {
+            OptionalAmountField(
+                label = stringResource(Res.string.feature_payments_standing_order_final_amount_label),
+                value = state.finalAmountInput,
+                fieldTag = StandingOrderTestTags.FINAL_AMOUNT_FIELD,
+                onValueChange = { onAction(StandingOrderAction.EnterFinalAmount(it)) },
+            )
+        }
+        if (state.referenceEnabled) {
+            OutlinedTextField(
+                value = state.reference,
+                onValueChange = { onAction(StandingOrderAction.EnterReference(it.take(REFERENCE_MAX_LENGTH))) },
+                label = { Text(stringResource(Res.string.feature_payments_standing_order_reference_label)) },
+                supportingText = {
                     Text(stringResource(Res.string.feature_payments_standing_order_reference_helper))
-                } else {
-                    Text(
-                        text = stringResource(Res.string.feature_payments_standing_order_disabled_no_reference),
-                        modifier = Modifier.testTag(StandingOrderTestTags.REFERENCE_REASON),
-                    )
-                }
-            },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag(StandingOrderTestTags.REFERENCE_FIELD),
-        )
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().testTag(StandingOrderTestTags.REFERENCE_FIELD),
+            )
+        }
 
         // International only, and required there: ChargeBearer is refused on the domestic rail, and
         // omitting it on the international one earns U004.
@@ -533,40 +523,29 @@ private fun AmountSection(
 }
 
 /**
- * One of the two optional amount overrides, disabled where its rail has no field for it.
+ * One of the two optional amount overrides. Only ever composed on the rail that can carry it.
  *
  * Left empty rather than pre-filled with the amount above. An override that arrives pre-filled would
  * put `RecurringPaymentAmount` on the wire for every mandate, and OBIE asks for it only when it
  * differs — sending it always would state a difference that is not there.
  *
- * The value is not cleared here when [enabled] goes false. The ViewModel already empties both inputs
- * on a rail switch, and `buildDraft` reads them only on the domestic rail, so clearing again in the
- * composable would be a third copy of one rule in the layer least able to enforce it.
+ * Nothing is cleared here when the rail changes. The ViewModel already empties both inputs on a
+ * switch, and `buildDraft` reads them only on the domestic rail — so a value typed before a switch
+ * cannot reach the wire even though this composable has simply stopped existing. That second
+ * guarantee is the one the bank sees, and it does not depend on this field being rendered at all.
  */
 @Composable
 private fun OptionalAmountField(
     label: String,
     value: String,
-    enabled: Boolean,
-    reason: String,
     fieldTag: String,
-    reasonTag: String,
     onValueChange: (String) -> Unit,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        enabled = enabled,
         placeholder = { Text(stringResource(Res.string.feature_payments_standing_order_amount_placeholder)) },
-        supportingText = if (enabled) {
-            null
-        } else {
-            {
-                // A fact about the rail, not an error: default supporting colour, never the error one.
-                Text(text = reason, modifier = Modifier.testTag(reasonTag))
-            }
-        },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth().testTag(fieldTag),

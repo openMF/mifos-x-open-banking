@@ -19,18 +19,16 @@ import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
 /**
  * DAO for the `payment_history` local snapshot table.
  *
- * [observeRecent] is the app's only consumer — the hub screen. Rows are limited to 5, ordered by
- * creation-time descending, so the most recent payment activity sits at the top regardless of
- * whether it succeeded, is still in flight, or failed.
+ * Nothing lists these rows any more. `observeRecent` existed for the hub's Recent section and went
+ * with it; what remains is written on every payment outcome and read back one row at a time by
+ * [observeById], which answers two questions the bank cannot: which rail a payment id belongs to,
+ * and when the app observed its approval and submission.
  *
- * [upsert] replaces a row by primary key, so a status refresh is an in-place update rather than a
- * duplicate.
+ * [upsert] replaces a row by primary key, so a write for a payment already recorded is an in-place
+ * update rather than a duplicate.
  */
 @Dao
 interface PaymentHistoryDao {
-
-    @Query("SELECT * FROM payment_history ORDER BY creationDateTime DESC LIMIT 5")
-    fun observeRecent(): Flow<List<PaymentHistoryEntity>>
 
     @Query("SELECT * FROM payment_history WHERE paymentId = :paymentId")
     fun observeById(paymentId: String): Flow<PaymentHistoryEntity?>

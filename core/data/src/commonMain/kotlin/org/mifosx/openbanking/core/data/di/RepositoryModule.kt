@@ -164,8 +164,6 @@ val DataModule = module {
     single<PaymentHistoryRepository> {
         PaymentHistoryRepositoryImpl(
             dao = get(),
-            pisp = get(),
-            oauth = get(),
             paymentAuthSession = get(),
         )
     }

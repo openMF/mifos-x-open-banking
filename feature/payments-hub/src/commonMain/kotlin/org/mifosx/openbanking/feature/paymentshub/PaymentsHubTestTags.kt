@@ -18,7 +18,6 @@ package org.mifosx.openbanking.feature.paymentshub
  * exist, which is how the two quick-action assertions came to fail from the day they were written.
  */
 internal object PaymentsHubTestTags {
-    const val SKELETON = "paymentsHub:skeleton"
     const val QUICK_ACTIONS_GRID = "paymentsHub:quickActionsGrid"
     const val QUICK_ACTION_SEND_MONEY = "paymentsHub:quickActionSendMoney"
     const val QUICK_ACTION_SCHEDULE = "paymentsHub:quickActionSchedule"
@@ -26,9 +25,4 @@ internal object PaymentsHubTestTags {
 
     /** The fourth card is "VRP / Sweeping"; it was named for an international rail it never showed. */
     const val QUICK_ACTION_VRP = "paymentsHub:quickActionVrp"
-    const val EMPTY_ACTIVITY = "paymentsHub:emptyActivity"
-    const val ERROR_SCREEN = "paymentsHub:errorScreen"
-    const val RETRY_BUTTON = "paymentsHub:retryButton"
-
-    fun activityCard(id: String): String = "paymentsHub:activityCard:$id"
 }

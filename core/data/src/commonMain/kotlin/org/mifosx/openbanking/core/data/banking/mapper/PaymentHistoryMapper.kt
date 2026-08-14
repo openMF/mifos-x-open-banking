@@ -12,11 +12,8 @@ package org.mifosx.openbanking.core.data.banking.mapper
 import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
-import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
-import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import kotlin.uuid.ExperimentalUuidApi
@@ -28,12 +25,6 @@ private const val PAYMENT_TYPE_DOMESTIC_SCHEDULED = "domestic_scheduled_payment"
 private const val PAYMENT_TYPE_INTERNATIONAL_SCHEDULED = "international_scheduled_payment"
 private const val PAYMENT_TYPE_DOMESTIC_STANDING_ORDER = "domestic_standing_order"
 private const val PAYMENT_TYPE_INTERNATIONAL_STANDING_ORDER = "international_standing_order"
-
-private fun PaymentStatus.toLabel(): String = when (disposition) {
-    PaymentDisposition.TerminalSuccess -> "Sent"
-    PaymentDisposition.InProgress -> "Processing"
-    PaymentDisposition.TerminalFailure -> "Failed"
-}
 
 /**
  * The payer's three columns, blank when the PSU left the account to the bank.
@@ -270,27 +261,6 @@ internal fun PaymentDraft.toFailureEntity(
     paymentType = paymentType(),
     syncedAt = null,
 )
-
-internal fun PaymentHistoryEntity.toPaymentHistoryItem(): PaymentHistoryItem {
-    val resolved = status?.let(PaymentStatus.Companion::fromWire)
-    return PaymentHistoryItem(
-        id = id,
-        domesticPaymentId = paymentId,
-        debtorName = debtorName,
-        creditorName = creditorName,
-        creditorIdentification = creditorIdentification,
-        amountMinorUnits = amountMinorUnits,
-        currency = currency,
-        creationDateTime = creationDateTime,
-        isFailure = errorKind != null ||
-            resolved?.disposition == PaymentDisposition.TerminalFailure,
-        isInFlight = resolved?.disposition == PaymentDisposition.InProgress,
-        statusLabel = resolved?.toLabel()
-            ?: errorDescription
-            ?: "Failed",
-        errorDescription = errorDescription,
-    )
-}
 
 @OptIn(ExperimentalUuidApi::class)
 private fun errorId(): String = Uuid.random().toString()

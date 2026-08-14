@@ -268,9 +268,6 @@ private class RecordingPaymentAuthSession : PaymentAuthSession {
 private class FakePaymentHistoryDao : PaymentHistoryDao {
     var clearCallCount = 0
 
-    override fun observeRecent(): Flow<List<PaymentHistoryEntity>> =
-        MutableStateFlow(emptyList())
-
     override fun observeById(paymentId: String): Flow<PaymentHistoryEntity?> =
         MutableStateFlow(null)
 

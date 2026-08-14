@@ -281,7 +281,7 @@ class StandingOrderViewModelTest {
         assertEquals("", state.recurringAmountInput)
         assertEquals("", state.finalAmountInput)
         assertEquals("", state.reference)
-        assertFalse(state.recurringAmountEnabled, "and the fields stay visible, disabled")
+        assertFalse(state.recurringAmountEnabled, "and the fields are not offered on this rail")
         assertFalse(state.referenceEnabled)
     }
 

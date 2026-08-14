@@ -64,7 +64,6 @@ import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentRou
 import org.mifosx.openbanking.feature.paymentsschedulepayment.schedulePaymentGraph
 import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderRoute
 import org.mifosx.openbanking.feature.paymentsstandingorder.standingOrderGraph
-import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusRoute
 import org.mifosx.openbanking.feature.paymentstatus.paymentStatusScreen
 import org.mifosx.openbanking.feature.product.ProductRoute
 import org.mifosx.openbanking.feature.product.productScreen
@@ -174,9 +173,6 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
                 onNavigateToSendMoney = { navController.navigate(SendMoneyRoute) },
                 onNavigateToSchedulePayment = { navController.navigate(SchedulePaymentRoute) },
                 onNavigateToStandingOrder = { navController.navigate(StandingOrderRoute) },
-                onNavigateToPaymentStatus = { paymentId ->
-                    navController.navigate(PaymentStatusRoute(paymentId))
-                },
             )
             sendMoneyGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
@@ -197,10 +193,14 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             )
             // Registered here as well as at the root, because a route has to exist in the host that
             // navigates to it. The root copy serves the authorisation return leg, which lands outside
-            // this NavHost entirely; this copy serves the hub, which is inside it. Without this,
-            // tapping a payment in the hub threw "Destination with route PaymentStatusRoute cannot be
-            // found in navigation graph" and killed the app — the two hosts cannot see each other's
-            // destinations in either direction.
+            // this NavHost entirely.
+            //
+            // This copy is currently unreachable: it existed for the hub's Recent list, and tapping a
+            // row there threw "Destination with route PaymentStatusRoute cannot be found in
+            // navigation graph" until it was added. The list is gone, so nothing inside this host
+            // navigates here any more. Kept deliberately — the two hosts cannot see each other's
+            // destinations in either direction, so the next screen in this host that wants to show a
+            // payment needs this entry to already exist rather than to rediscover the crash.
             paymentStatusScreen(
                 onBack = { navController.popBackStack() },
                 onStartNewPayment = { navController.navigate(SendMoneyRoute) },

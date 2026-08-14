@@ -9,8 +9,6 @@
  */
 package org.mifosx.openbanking.feature.paymentconsent
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
@@ -22,7 +20,6 @@ import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
@@ -251,10 +248,6 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
     val scheduledFailures = mutableListOf<Triple<ScheduledPaymentDraft, String, String>>()
     val standingOrderFailures = mutableListOf<Triple<StandingOrderDraft, String, String>>()
     val failures = mutableListOf<Triple<PaymentDraft, String, String>>()
-    var refreshCount: Int = 0
-        private set
-
-    override fun observeRecent(): Flow<List<PaymentHistoryItem>> = flowOf(emptyList())
 
     override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) {
         submitted += receipt to draft
@@ -286,10 +279,6 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
         errorDescription: String,
     ) {
         standingOrderFailures += Triple(draft, errorKind, errorDescription)
-    }
-
-    override suspend fun refreshStatuses() {
-        refreshCount++
     }
 
     /** The callback leg never reads a rail back; it always has the draft in hand. */

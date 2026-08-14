@@ -15,7 +15,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,13 +22,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Sync
@@ -44,19 +41,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.mifosx.openbanking.core.common.formatMinorUnits
-import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryItem
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubAction
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubState
-import org.mifosx.openbanking.feature.paymentshub.ui.PaymentsHubUiState
 import template.core.base.designsystem.theme.KptTheme
 
 private val QuickActionCardMinHeight = 120.dp
 private val QuickActionIconSize = 24.dp
-private val ActivityAvatarSize = 48.dp
-private val StatusDotSize = 8.dp
 private val CardBorderThickness = 1.dp
-private val SuccessCheckSize = 24.dp
 
 private fun quickActionIcon(icon: androidx.compose.ui.graphics.vector.ImageVector) =
     @Composable {
@@ -68,91 +57,42 @@ private fun quickActionIcon(icon: androidx.compose.ui.graphics.vector.ImageVecto
         )
     }
 
+/**
+ * The hub, which is now four cards and nothing else.
+ *
+ * Stateless by construction. It used to render a Recent list from the local `payment_history` table
+ * behind a Loading/Content/Error state machine; that list is gone, and with it the only asynchronous
+ * work this screen ever did. Keeping the state machine would have been worse than useless — `Loading`
+ * was left *only* by an emission from `observeRecent()`, so a hub that still waited for one would
+ * have shimmered for ever.
+ *
+ * `payment_history` itself is untouched. It is still written on every submission and failure, and
+ * still read for the payment-status screen's rail routing and stage timeline — none of which this
+ * screen ever displayed.
+ *
+ * No heading above the cards: with one section left there is nothing to distinguish it from.
+ */
 @Composable
 internal fun PaymentsHubContent(
-    state: PaymentsHubState,
-    onAction: (PaymentsHubAction) -> Unit,
     onNavigateToSendMoney: () -> Unit,
-    onNavigateToPaymentStatus: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
     onNavigateToStandingOrder: () -> Unit = {},
-    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    when (val current = state.uiState) {
-        PaymentsHubUiState.Loading -> PaymentsHubSkeleton(
-            modifier = modifier.padding(contentPadding),
-        )
-        is PaymentsHubUiState.Content -> PaymentsHubContentLoaded(
-            current = current,
+    // Scrollable even though it is one section: two rows of 120dp cards plus the scaffold's chrome
+    // overflow a short screen, and the LazyColumn this replaced scrolled by construction.
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = KptTheme.spacing.lg)
+            .padding(top = KptTheme.spacing.sm, bottom = KptTheme.spacing.lg),
+    ) {
+        QuickActionsSection(
             onNavigateToSendMoney = onNavigateToSendMoney,
             onNavigateToSchedulePayment = onNavigateToSchedulePayment,
             onNavigateToStandingOrder = onNavigateToStandingOrder,
-            onNavigateToPaymentStatus = onNavigateToPaymentStatus,
-            modifier = modifier.padding(contentPadding),
         )
-        is PaymentsHubUiState.Error -> PaymentsHubError(
-            message = current.message,
-            onRetry = { onAction(PaymentsHubAction.RetryLoad) },
-            modifier = modifier.padding(contentPadding),
-        )
-    }
-}
-
-@Composable
-private fun PaymentsHubContentLoaded(
-    current: PaymentsHubUiState.Content,
-    onNavigateToSendMoney: () -> Unit,
-    onNavigateToPaymentStatus: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    onNavigateToSchedulePayment: () -> Unit = {},
-    onNavigateToStandingOrder: () -> Unit = {},
-) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize()
-            .padding(horizontal = KptTheme.spacing.lg),
-        contentPadding = PaddingValues(
-            top = KptTheme.spacing.sm,
-            bottom = KptTheme.spacing.lg,
-        ),
-        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.lg),
-    ) {
-        item {
-            Text(
-                text = "Quick Actions",
-                style = KptTheme.typography.titleLarge,
-                color = KptTheme.colorScheme.primary,
-            )
-        }
-
-        item {
-            QuickActionsSection(
-                onNavigateToSendMoney = onNavigateToSendMoney,
-                onNavigateToSchedulePayment = onNavigateToSchedulePayment,
-                onNavigateToStandingOrder = onNavigateToStandingOrder,
-            )
-        }
-
-        item {
-            Text(
-                text = "Recent",
-                style = KptTheme.typography.titleMedium,
-                color = KptTheme.colorScheme.onSurface,
-            )
-        }
-
-        if (current.activityItems.isEmpty()) {
-            item { EmptyActivity() }
-        } else {
-            items(current.activityItems, key = { it.id }) { item ->
-                ActivityCard(
-                    item = item,
-                    onClick = {
-                        item.domesticPaymentId?.let { onNavigateToPaymentStatus(it) }
-                    },
-                )
-            }
-        }
     }
 }
 
@@ -286,145 +226,6 @@ private fun QuickActionCard(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ActivityCard(item: PaymentHistoryItem, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(PaymentsHubTestTags.activityCard(item.id))
-            .then(if (item.isFailure) Modifier else activityCardBorder())
-            .clickable(enabled = item.domesticPaymentId != null) { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (item.isFailure) {
-                KptTheme.colorScheme.errorContainer
-            } else {
-                KptTheme.colorScheme.surface
-            },
-        ),
-        shape = KptTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(KptTheme.spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ActivityAvatar(item)
-            Spacer(Modifier.width(KptTheme.spacing.md))
-            ActivityInfo(item, modifier = Modifier.weight(1f))
-            ActivityAmount(item)
-        }
-    }
-}
-
-@Composable
-private fun activityCardBorder() =
-    Modifier.border(CardBorderThickness, KptTheme.colorScheme.outlineVariant, KptTheme.shapes.medium)
-
-@Composable
-private fun ActivityAvatar(item: PaymentHistoryItem) {
-    val bg = when {
-        item.isFailure -> KptTheme.colorScheme.error.copy(alpha = 0.1f)
-        item.isInFlight -> KptTheme.colorScheme.surfaceContainerHighest
-        else -> KptTheme.colorScheme.secondaryContainer
-    }
-    val iconColor = when {
-        item.isFailure -> KptTheme.colorScheme.error
-        item.isInFlight -> KptTheme.colorScheme.onSurfaceVariant
-        else -> KptTheme.colorScheme.onSecondaryContainer
-    }
-    Box(
-        modifier = Modifier.size(ActivityAvatarSize).clip(CircleShape).background(bg),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (item.isFailure || item.isInFlight) {
-            Text(
-                text = item.creditorName.take(1).uppercase(),
-                style = KptTheme.typography.labelMedium,
-                color = iconColor,
-            )
-        } else {
-            Icon(
-                Icons.Filled.CheckCircle,
-                contentDescription = null,
-                tint = KptTheme.colorScheme.primary,
-                modifier = Modifier.size(SuccessCheckSize),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ActivityInfo(item: PaymentHistoryItem, modifier: Modifier = Modifier) {
-    val textColor = if (item.isFailure) {
-        KptTheme.colorScheme.onErrorContainer
-    } else {
-        KptTheme.colorScheme.onSurface
-    }
-
-    val statusColor = when {
-        item.isFailure -> KptTheme.colorScheme.error
-        item.isInFlight -> KptTheme.colorScheme.outline
-        else -> KptTheme.colorScheme.primary
-    }
-
-    Column(modifier = modifier) {
-        Text(
-            text = item.creditorName,
-            style = KptTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = textColor,
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (item.isInFlight) {
-                Box(
-                    modifier = Modifier.size(StatusDotSize)
-                        .clip(CircleShape)
-                        .background(KptTheme.colorScheme.outline),
-                )
-                Spacer(Modifier.width(KptTheme.spacing.xs))
-            }
-            Text(
-                text = item.statusLabel,
-                style = KptTheme.typography.bodySmall,
-                color = statusColor,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ActivityAmount(item: PaymentHistoryItem) {
-    val prefix = if (item.isFailure) "" else "-"
-    val color = if (item.isFailure) {
-        KptTheme.colorScheme.onErrorContainer
-    } else {
-        KptTheme.colorScheme.onSurface
-    }
-    Text(
-        text = "$prefix${formatMinorUnits(item.amountMinorUnits, item.currency)}",
-        style = KptTheme.typography.titleMedium,
-        color = color,
-    )
-}
-
-@Composable
-private fun EmptyActivity() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = KptTheme.spacing.xl)
-            .testTag(PaymentsHubTestTags.EMPTY_ACTIVITY),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "No payments yet",
-                style = KptTheme.typography.bodyLarge,
-                color = KptTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
