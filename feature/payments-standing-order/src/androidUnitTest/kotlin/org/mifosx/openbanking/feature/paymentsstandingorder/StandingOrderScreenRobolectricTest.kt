@@ -14,12 +14,14 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderAction
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderDateRole
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderErrorKind
@@ -136,6 +138,23 @@ class StandingOrderScreenRobolectricTest {
         render(StandingOrderFixtures.formState())
 
         composeRule.onNodeWithTag(StandingOrderTestTags.REFERENCE_FIELD).performScrollTo().assertIsDisplayed()
+    }
+
+    /**
+     * The collapsed dropdown must read the choice, not its caption.
+     *
+     * It rendered whatever `label` it was handed, so the frequency field showed "How often" forever
+     * while the charge picker — which happened to pass its selected value as the label — looked fine.
+     * Every existing test passed throughout: they asserted the field was displayed, and it was.
+     */
+    @Test
+    fun theFrequencyFieldShowsTheChosenFrequency() {
+        render(StandingOrderFixtures.formState(frequency = StandingOrderFrequency.Quarterly))
+
+        composeRule.onNodeWithTag(StandingOrderTestTags.FREQUENCY_FIELD).performScrollTo()
+        // The chosen value, and the caption still above it — the anchor shows one, not the other.
+        composeRule.onNodeWithText("Quarterly").assertIsDisplayed()
+        composeRule.onNodeWithText("How often").assertIsDisplayed()
     }
 
     /** Pinned below the scroll, so the action does not need scrolling to. */

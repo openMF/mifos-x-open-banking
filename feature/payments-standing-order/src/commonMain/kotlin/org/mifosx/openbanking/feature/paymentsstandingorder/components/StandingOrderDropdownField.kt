@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,59 +70,75 @@ private val ChipIconSize = 18.dp
  * ViewModel has to collapse it on a selection made elsewhere; nothing collapses these but their own
  * menu, so putting them on the state would be presentation state the form has no rule about.
  *
- * @param label What the anchor reads. Separate from [optionLabel] because the two are not always the
- *   same string: the amount card's control shows the bare code beside the figure, while its menu
- *   spells the currency out.
- * @param selected Marked in the menu's semantics, so a screen reader says which of the options is
- *   the current one rather than reading nineteen equal-sounding rows.
+ * **The anchor reads the selection, not a fixed caption.** It used to render whatever [label] was
+ * given, which made the control's correctness depend on what each caller happened to pass: the charge
+ * picker passed `chargeBearerLabel(selected)` and so appeared to work, while the frequency field
+ * passed the static "How often" and never changed no matter what was chosen. One parameter carrying
+ * two meanings, and only one caller holding it right. The anchor now derives its text from [selected]
+ * through [optionLabel], which is the same function the menu rows use, so the two cannot disagree.
+ *
+ * @param label The caption above the field, in the shape `DateField` uses. Null where a section
+ *   heading already names the control and a caption would repeat it.
+ * @param selected What the anchor displays, and marked in the menu's semantics so a screen reader
+ *   says which of the options is the current one rather than reading nineteen equal-sounding rows.
  */
 @Composable
 internal fun <T> StandingOrderDropdownField(
-    label: String,
     selected: T,
     options: List<T>,
     optionLabel: @Composable (T) -> String,
     optionTestTag: (T) -> String,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    label: String? = null,
 ) {
-    DropdownHost(
-        selected = selected,
-        options = options,
-        optionLabel = optionLabel,
-        optionTestTag = optionTestTag,
-        onSelect = onSelect,
-        modifier = modifier.fillMaxWidth(),
-    ) { onOpen ->
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(CardCorner))
-                .border(
-                    width = CardBorder,
-                    color = KptTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(CardCorner),
-                )
-                .background(KptTheme.colorScheme.surfaceContainerLowest)
-                .clickable(role = Role.DropdownList, onClick = onOpen)
-                .heightIn(min = FieldMinHeight)
-                .padding(horizontal = CardPadding, vertical = RowGap),
-            horizontalArrangement = Arrangement.spacedBy(RowGap),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (label != null) {
             Text(
                 text = label,
-                style = KptTheme.typography.bodyLarge,
-                color = KptTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                style = KptTheme.typography.bodySmall,
+                color = KptTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = CaptionGap, start = CardPadding),
             )
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = KptTheme.colorScheme.onSurfaceVariant,
-            )
+        }
+        DropdownHost(
+            selected = selected,
+            options = options,
+            optionLabel = optionLabel,
+            optionTestTag = optionTestTag,
+            onSelect = onSelect,
+            modifier = Modifier.fillMaxWidth(),
+        ) { onOpen ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(CardCorner))
+                    .border(
+                        width = CardBorder,
+                        color = KptTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(CardCorner),
+                    )
+                    .background(KptTheme.colorScheme.surfaceContainerLowest)
+                    .clickable(role = Role.DropdownList, onClick = onOpen)
+                    .heightIn(min = FieldMinHeight)
+                    .padding(horizontal = CardPadding, vertical = RowGap),
+                horizontalArrangement = Arrangement.spacedBy(RowGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = optionLabel(selected),
+                    style = KptTheme.typography.bodyLarge,
+                    color = KptTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = KptTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -229,3 +246,6 @@ private fun <T> DropdownHost(
         }
     }
 }
+
+/** Matches `DateField`'s label gap, so a captioned dropdown lines up with a captioned date row. */
+private val CaptionGap = 4.dp

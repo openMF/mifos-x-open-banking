@@ -659,8 +659,8 @@ private fun ChargesSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(HeadingGap)) {
         SectionHeading(stringResource(Res.string.feature_payments_standing_order_charges_heading))
+        // No caption: the section heading above already names this control.
         StandingOrderDropdownField(
-            label = chargeBearerLabel(state.chargeBearer),
             selected = state.chargeBearer,
             options = OFFERED_CHARGE_BEARERS,
             optionLabel = { chargeBearerLabel(it) },

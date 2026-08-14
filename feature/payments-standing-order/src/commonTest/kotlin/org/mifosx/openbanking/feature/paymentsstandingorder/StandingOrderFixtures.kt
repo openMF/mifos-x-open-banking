@@ -22,6 +22,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.OFFERED_CURRENCIES
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderAccountRow
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderAmountProblem
@@ -274,6 +275,7 @@ object StandingOrderFixtures {
      */
     fun formState(
         rail: PaymentRail = PaymentRail.Domestic,
+        frequency: StandingOrderFrequency = StandingOrderFrequency.Monthly,
         firstPaymentDate: LocalDate? = null,
         datePickerVisible: Boolean = false,
         beneficiaries: List<StandingOrderPickerRow> = payeesFor(rail),
@@ -295,6 +297,7 @@ object StandingOrderFixtures {
         uiState = StandingOrderUiState.Content(
             step = StandingOrderStep.Form,
             rail = rail,
+            frequency = frequency,
             // The production list, not a hand-written pair. A fixture that carried its own two-value
             // list is what let the picker's "only USD and EUR" claim survive being disproved.
             offeredCurrencies = if (rail == PaymentRail.International) OFFERED_CURRENCIES else emptyList(),
