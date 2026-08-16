@@ -12,7 +12,6 @@ package org.mifosx.openbanking.core.database.migration
 import androidx.room3.RoomDatabase
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.execSQL
 import org.mifosx.openbanking.core.database.AppDatabase
 
 /**
@@ -31,17 +30,17 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         // Renamed because international payments have always been stored here too, so the old name
         // was never accurate. RENAME COLUMN needs SQLite 3.25+, which BundledSQLiteDriver ships on
         // every target this app builds for, and it leaves the rows themselves untouched.
-        connection.execSQL("ALTER TABLE payment_history RENAME COLUMN domesticPaymentId TO paymentId")
+        connection.runSql("ALTER TABLE payment_history RENAME COLUMN domesticPaymentId TO paymentId")
 
         // OBIE returns one CreationDateTime and no per-stage history, so the timeline can only be
         // built from what this app observed. Existing rows get NULL: their stages happened before
         // anything recorded them, and a made-up timestamp would read as fact.
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN approvedAt TEXT")
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN submittedAt TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN approvedAt TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN submittedAt TEXT")
 
         // International-only. NULL on a domestic row, and on every row written before v5.
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN chargeBearer TEXT")
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN currencyOfTransfer TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN chargeBearer TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN currencyOfTransfer TEXT")
     }
 }
 
@@ -56,7 +55,7 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
  */
 val MIGRATION_5_6 = object : Migration(5, 6) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.execSQL("ALTER TABLE accounts ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+        connection.runSql("ALTER TABLE accounts ADD COLUMN description TEXT NOT NULL DEFAULT ''")
     }
 }
 
@@ -65,7 +64,7 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         // Scheduled payments only. NULL on every existing row, and on every immediate payment
         // written after this: an immediate payment has no future date, and defaulting one would
         // make the hub claim a payment is due later than it was actually made.
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN requestedExecutionDateTime TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN requestedExecutionDateTime TEXT")
     }
 }
 
@@ -79,8 +78,8 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
  */
 val MIGRATION_7_8 = object : Migration(7, 8) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN frequency TEXT")
-        connection.execSQL("ALTER TABLE payment_history ADD COLUMN finalPaymentDateTime TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN frequency TEXT")
+        connection.runSql("ALTER TABLE payment_history ADD COLUMN finalPaymentDateTime TEXT")
     }
 }
 
