@@ -30,7 +30,6 @@ private const val EXPIRY_MARGIN_SECONDS = 10
 class VrpTokenProviderImpl(
     private val oauth: OAuth,
     private val session: VrpAuthSession,
-    private val clock: Clock,
 ) : VrpTokenProvider {
 
     private data class HeldToken(val accessToken: String, val expiresAt: Instant)
@@ -41,7 +40,7 @@ class VrpTokenProviderImpl(
     override suspend fun accessToken(consentId: String): NetworkResult<String, NetworkError> =
         mutex.withLock {
             val current = held[consentId]
-            if (current != null && clock.now() < current.expiresAt) {
+            if (current != null && Clock.System.now() < current.expiresAt) {
                 NetworkResult.Success(current.accessToken)
             } else {
                 redeem(consentId)
@@ -76,7 +75,7 @@ class VrpTokenProviderImpl(
                     val lifetime = result.data.expiresIn ?: 0
                     held[consentId] = HeldToken(
                         accessToken = accessToken,
-                        expiresAt = clock.now() + (lifetime - EXPIRY_MARGIN_SECONDS).seconds,
+                        expiresAt = Clock.System.now() + (lifetime - EXPIRY_MARGIN_SECONDS).seconds,
                     )
                     NetworkResult.Success(accessToken)
                 }

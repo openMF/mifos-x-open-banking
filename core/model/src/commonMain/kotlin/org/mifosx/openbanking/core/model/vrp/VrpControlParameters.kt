@@ -28,15 +28,15 @@ data class PeriodicLimit(
  * The limits the customer approved. They bound this consent, not the account behind it.
  *
  * @property maximumIndividualAmount The most any single payment may be. Checked before
- *   [periodicLimit].
- * @property periodicLimit The recurring cap. Exactly one: the API permits up to six, one per period
- *   type, but this feature offers a single cap.
+ *   [periodicLimits].
+ * @property periodicLimits The recurring caps, at most one per period type. Amounts ascend with the
+ *   period: each is greater than [maximumIndividualAmount] and than every shorter period's.
  * @property interactionType Whether the customer is expected to be present, as echoed by the bank —
  *   `InSession` or `OffSession`. Fixed at staging; there is no amend endpoint.
  */
 @Serializable
 data class VrpControlParameters(
     val maximumIndividualAmount: Money,
-    val periodicLimit: PeriodicLimit,
+    val periodicLimits: List<PeriodicLimit>,
     val interactionType: String? = null,
 )

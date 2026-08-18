@@ -28,26 +28,26 @@ import template.core.base.network.NetworkResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 
 private const val TOKEN_URL = "https://secure.example.test/oauth2/token"
-private const val TOKEN_LIFETIME_SECONDS = 299
 
 class VrpTokenProviderImplTest {
 
-    private class FixedClock(var instant: Instant) : Clock {
-        override fun now(): Instant = instant
-    }
-
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
-    private fun tokenJson(accessToken: String, refreshToken: String = "returned-refresh") = """
+    /**
+     * @param lifetimeSeconds `expires_in` on every response. Zero makes the token spent on arrival,
+     *   which is how expiry is exercised without waiting or reaching for the clock.
+     */
+    private fun tokenJson(
+        accessToken: String,
+        refreshToken: String = "returned-refresh",
+        lifetimeSeconds: Int = 299,
+    ) = """
         {
           "access_token": "$accessToken",
           "token_type": "Bearer",
-          "expires_in": $TOKEN_LIFETIME_SECONDS,
+          "expires_in": $lifetimeSeconds,
           "refresh_token": "$refreshToken",
           "scope": "openid payments"
         }
@@ -55,7 +55,6 @@ class VrpTokenProviderImplTest {
 
     private suspend fun provider(
         settings: MapSettings = MapSettings(),
-        clock: FixedClock = FixedClock(Instant.fromEpochSeconds(0)),
         respondWith: (Int) -> String = { tokenJson("access-$it") },
     ): Triple<VrpTokenProviderImpl, MapSettings, MutableList<String>> {
         val calls = mutableListOf<String>()
@@ -69,7 +68,7 @@ class VrpTokenProviderImplTest {
         }
         val oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem())
         val session = SettingsVrpAuthSession(secureSettings = settings)
-        return Triple(VrpTokenProviderImpl(oauth, session, clock), settings, calls)
+        return Triple(VrpTokenProviderImpl(oauth, session), settings, calls)
     }
 
     @Test
@@ -88,12 +87,12 @@ class VrpTokenProviderImplTest {
 
     @Test
     fun redeemsAgainOnceTheHeldTokenHasExpired() = runTest {
-        val clock = FixedClock(Instant.fromEpochSeconds(0))
-        val (tokens, settings, calls) = provider(clock = clock)
+        val (tokens, settings, calls) = provider(
+            respondWith = { tokenJson("access-$it", lifetimeSeconds = 0) },
+        )
         SettingsVrpAuthSession(settings).saveRefreshToken("45365", "stored-refresh")
 
         val first = tokens.accessToken("45365")
-        clock.instant = clock.instant + TOKEN_LIFETIME_SECONDS.seconds
         val second = tokens.accessToken("45365")
 
         assertIs<NetworkResult.Success<String>>(first)

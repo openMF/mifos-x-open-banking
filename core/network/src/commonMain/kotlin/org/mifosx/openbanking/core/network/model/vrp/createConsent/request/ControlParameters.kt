@@ -14,6 +14,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ControlParameters(
+    @SerialName("ValidFromDateTime")
+    val validFromDateTime: String? = null,
+    @SerialName("ValidToDateTime")
+    val validToDateTime: String? = null,
     @SerialName("MaximumIndividualAmount")
     val maximumIndividualAmount: MaximumIndividualAmount,
     @SerialName("PSUAuthenticationMethods")

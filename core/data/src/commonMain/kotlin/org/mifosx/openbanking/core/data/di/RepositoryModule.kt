@@ -106,7 +106,6 @@ val DataModule = module {
         VrpTokenProviderImpl(
             oauth = get(),
             session = get(),
-            clock = Clock.System,
         )
     }
 

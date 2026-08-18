@@ -11,7 +11,7 @@ package org.mifosx.openbanking.core.model.vrp
 
 import kotlinx.serialization.Serializable
 
-/** The period a recurring limit is measured over. */
+/** The period a recurring limit is measured over. Declared shortest to longest. */
 @Serializable
 enum class PeriodType {
     Day,
