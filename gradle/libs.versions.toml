@@ -126,8 +126,18 @@ store = "5.1.0-alpha08"
 
 #Room 3
 room = "3.0.0-alpha05"
-sqliteBundled = "2.6.2"
-sqliteWeb = "2.6.2"
+# Pinned to what room3 3.0.0-alpha05 requires -- its POM declares androidx.sqlite 2.7.0-alpha05.
+#
+# Both were 2.6.2, and the two artifacts failed differently for it. sqlite-bundled 2.6.2 EXISTS, so
+# Gradle's conflict resolution silently upgraded it to Room's 2.7.0-alpha05 and the wrong version
+# never showed. sqlite-web has no 2.6.2 at all -- the artifact only starts at 2.7.0-alpha01 -- and
+# nothing else in the graph depends on it, so there was no conflict to resolve and it 404'd from
+# every repository.
+#
+# Keep these two and `room` moving together. A version that resolves is not evidence it is the right
+# one; check Room's POM.
+sqliteBundled = "2.7.0-alpha05"
+sqliteWeb = "2.7.0-alpha05"
 
 [libraries]
 components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "componentsResources" }
