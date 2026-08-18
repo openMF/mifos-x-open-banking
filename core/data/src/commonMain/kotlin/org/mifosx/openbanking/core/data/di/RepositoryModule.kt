@@ -54,6 +54,8 @@ import org.mifosx.openbanking.core.data.vrp.SettingsVrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepositoryImpl
+import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepository
+import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepositoryImpl
 import org.mifosx.openbanking.core.data.vrp.VrpTokenProvider
 import org.mifosx.openbanking.core.data.vrp.VrpTokenProviderImpl
 import org.mifosx.openbanking.core.database.AppDatabase
@@ -117,6 +119,16 @@ val DataModule = module {
             oauth = get(),
             dao = get(),
             session = get(),
+            tokens = get(),
+        )
+    }
+
+    single<VrpPaymentRepository> {
+        VrpPaymentRepositoryImpl(
+            vrp = get(),
+            oauth = get(),
+            consentDao = get(),
+            paymentDao = get(),
             tokens = get(),
         )
     }

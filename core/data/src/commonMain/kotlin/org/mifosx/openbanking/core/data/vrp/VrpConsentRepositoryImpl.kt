@@ -108,9 +108,6 @@ class VrpConsentRepositoryImpl(
 
     /**
      * Writes [consent] once it is authorised, and keeps an already-stored one current afterwards.
-     *
-     * A consent the customer never approved is not stored: it can never be paid under, and the
-     * identifier needed to resume it is held in the session for the round trip.
      */
     private suspend fun store(consent: VrpConsent) {
         val alreadyStored = dao.findById(consent.consentId) != null
