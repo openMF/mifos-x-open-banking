@@ -57,8 +57,10 @@ class AppDatabaseTest {
         // current account and is offered as a payer the bank refuses; 7 added the scheduled execution
         // date; 8 added the standing-order frequency and end date, without which a mandate row is
         // indistinguishable from a one-off payment — and that row is the only record the app keeps,
-        // since a mandate cannot be found again through the AIS read side.
-        assertEquals(8, AppDatabase.VERSION)
+        // since a mandate cannot be found again through the AIS read side; 9 added the VRP consent
+        // and payment tables — a consent is the only handle on a standing authority, because no
+        // endpoint lists them.
+        assertEquals(9, AppDatabase.VERSION)
     }
 
     /**

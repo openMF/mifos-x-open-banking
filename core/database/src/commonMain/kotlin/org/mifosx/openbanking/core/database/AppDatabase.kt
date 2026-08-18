@@ -27,6 +27,10 @@ import org.mifosx.openbanking.core.database.infra.entity.DraftEntity
 import org.mifosx.openbanking.core.database.infra.entity.FetchedAtEntity
 import org.mifosx.openbanking.core.database.sample.dao.SampleDao
 import org.mifosx.openbanking.core.database.sample.entity.SampleEntity
+import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
+import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
+import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
+import org.mifosx.openbanking.core.database.vrp.entity.VrpPaymentEntity
 
 /**
  * KSP-generated constructor bridge for [AppDatabase].
@@ -71,6 +75,8 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
         AccountEntity::class,
         TransactionEntity::class,
         PaymentHistoryEntity::class,
+        VrpConsentEntity::class,
+        VrpPaymentEntity::class,
     ],
     version = AppDatabase.VERSION,
     exportSchema = true,
@@ -85,9 +91,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val accountDao: AccountDao
     abstract val transactionDao: TransactionDao
     abstract val paymentHistoryDao: PaymentHistoryDao
+    abstract val vrpConsentDao: VrpConsentDao
+    abstract val vrpPaymentDao: VrpPaymentDao
 
     companion object {
-        const val VERSION = 8
+        const val VERSION = 9
         const val DATABASE_NAME = "mifos_database.db"
     }
 }

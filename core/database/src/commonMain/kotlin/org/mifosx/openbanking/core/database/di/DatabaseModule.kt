@@ -31,6 +31,8 @@ val DatabaseModule = module {
     single { get<AppDatabase>().accountDao }
     single { get<AppDatabase>().transactionDao }
     single { get<AppDatabase>().paymentHistoryDao }
+    single { get<AppDatabase>().vrpConsentDao }
+    single { get<AppDatabase>().vrpPaymentDao }
 }
 
 /**

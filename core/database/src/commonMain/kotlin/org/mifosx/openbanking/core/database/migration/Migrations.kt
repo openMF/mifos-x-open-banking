@@ -83,9 +83,77 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+/**
+ * Adds the two tables variable recurring payments need.
+ *
+ * A consent carries its caps as one nullable column per period rather than a child table: each
+ * period may appear at most once, so the six columns are the whole set. Payments reference their
+ * consent and go with it.
+ */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override suspend fun migrate(connection: SQLiteConnection) {
+        connection.runSql(
+            """
+            CREATE TABLE IF NOT EXISTS `vrp_consent` (
+                `consentId` TEXT NOT NULL,
+                `status` TEXT NOT NULL,
+                `createdAt` TEXT NOT NULL,
+                `validFrom` TEXT,
+                `validTo` TEXT,
+                `maxIndividualAmountMinor` INTEGER NOT NULL,
+                `currency` TEXT NOT NULL,
+                `interactionType` TEXT,
+                `payerScheme` TEXT,
+                `payerIdentification` TEXT,
+                `payerName` TEXT,
+                `payeeScheme` TEXT NOT NULL,
+                `payeeIdentification` TEXT NOT NULL,
+                `payeeName` TEXT NOT NULL,
+                `dayLimitMinor` INTEGER,
+                `weekLimitMinor` INTEGER,
+                `fortnightLimitMinor` INTEGER,
+                `monthLimitMinor` INTEGER,
+                `halfYearLimitMinor` INTEGER,
+                `yearLimitMinor` INTEGER,
+                `reference` TEXT,
+                `revokedAt` TEXT,
+                `syncedAt` TEXT,
+                PRIMARY KEY(`consentId`)
+            )
+            """.trimIndent(),
+        )
+        connection.runSql(
+            """
+            CREATE TABLE IF NOT EXISTS `vrp_payment` (
+                `localId` TEXT NOT NULL,
+                `consentId` TEXT NOT NULL,
+                `paymentId` TEXT,
+                `amountMinor` INTEGER NOT NULL,
+                `currency` TEXT NOT NULL,
+                `status` TEXT NOT NULL,
+                `createdAt` TEXT NOT NULL,
+                `submittedAt` TEXT,
+                `settledAt` TEXT,
+                `reference` TEXT,
+                `errorKind` TEXT,
+                `errorDescription` TEXT,
+                `supportReference` TEXT,
+                `syncedAt` TEXT,
+                PRIMARY KEY(`localId`),
+                FOREIGN KEY(`consentId`) REFERENCES `vrp_consent`(`consentId`)
+                    ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        connection.runSql(
+            "CREATE INDEX IF NOT EXISTS `index_vrp_payment_consentId` ON `vrp_payment` (`consentId`)",
+        )
+    }
+}
+
 /** Every migration the database knows about, in the order Room should consider them. */
 val ALL_MIGRATIONS: Array<Migration> =
-    arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+    arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
 
 /**
  * Registers every migration on a builder.

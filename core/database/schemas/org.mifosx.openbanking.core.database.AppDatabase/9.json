@@ -1,0 +1,658 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 9,
+    "identityHash": "18398523e55af1e0c1980072b1f201d4",
+    "entities": [
+      {
+        "tableName": "samples",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "store_bookkeeper",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `lastFailedSync` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFailedSync",
+            "columnName": "lastFailedSync",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      },
+      {
+        "tableName": "framework_fetched_at",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`storeKey` TEXT NOT NULL, `lastFetchedMillis` INTEGER NOT NULL, PRIMARY KEY(`storeKey`))",
+        "fields": [
+          {
+            "fieldPath": "storeKey",
+            "columnName": "storeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFetchedMillis",
+            "columnName": "lastFetchedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "storeKey"
+          ]
+        }
+      },
+      {
+        "tableName": "framework_submit_drafts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `formKey` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAtMs` INTEGER NOT NULL, `updatedAtMs` INTEGER NOT NULL, `errorMessage` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "formKey",
+            "columnName": "formKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtMs",
+            "columnName": "createdAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtMs",
+            "columnName": "updatedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorMessage",
+            "columnName": "errorMessage",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `nickname` TEXT NOT NULL, `accountSubType` TEXT NOT NULL, `currency` TEXT NOT NULL, `sortCode` TEXT NOT NULL, `accountNumber` TEXT NOT NULL, `rawIdentification` TEXT NOT NULL, `description` TEXT NOT NULL, PRIMARY KEY(`accountId`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nickname",
+            "columnName": "nickname",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountSubType",
+            "columnName": "accountSubType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortCode",
+            "columnName": "sortCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountNumber",
+            "columnName": "accountNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawIdentification",
+            "columnName": "rawIdentification",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountId"
+          ]
+        }
+      },
+      {
+        "tableName": "transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `transactionId` TEXT NOT NULL, `accountId` TEXT NOT NULL, `description` TEXT NOT NULL, `bookingDateTime` TEXT NOT NULL, `amount` TEXT NOT NULL, `currency` TEXT NOT NULL, `isCredit` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transactionId",
+            "columnName": "transactionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "accountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookingDateTime",
+            "columnName": "bookingDateTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCredit",
+            "columnName": "isCredit",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_transactions_accountId",
+            "unique": false,
+            "columnNames": [
+              "accountId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_accountId` ON `${TABLE_NAME}` (`accountId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "payment_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `paymentId` TEXT, `errorKind` TEXT, `errorDescription` TEXT, `status` TEXT, `debtorAccountId` TEXT NOT NULL, `debtorName` TEXT NOT NULL, `debtorIdentification` TEXT NOT NULL, `creditorName` TEXT NOT NULL, `creditorIdentification` TEXT NOT NULL, `amountMinorUnits` INTEGER NOT NULL, `currency` TEXT NOT NULL, `reference` TEXT, `creationDateTime` TEXT NOT NULL, `approvedAt` TEXT, `submittedAt` TEXT, `settlementDateTime` TEXT, `chargeBearer` TEXT, `currencyOfTransfer` TEXT, `requestedExecutionDateTime` TEXT, `frequency` TEXT, `finalPaymentDateTime` TEXT, `paymentType` TEXT NOT NULL, `syncedAt` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentId",
+            "columnName": "paymentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorKind",
+            "columnName": "errorKind",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorDescription",
+            "columnName": "errorDescription",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "debtorAccountId",
+            "columnName": "debtorAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "debtorName",
+            "columnName": "debtorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "debtorIdentification",
+            "columnName": "debtorIdentification",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creditorName",
+            "columnName": "creditorName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "creditorIdentification",
+            "columnName": "creditorIdentification",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountMinorUnits",
+            "columnName": "amountMinorUnits",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reference",
+            "columnName": "reference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "creationDateTime",
+            "columnName": "creationDateTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "approvedAt",
+            "columnName": "approvedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "submittedAt",
+            "columnName": "submittedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "settlementDateTime",
+            "columnName": "settlementDateTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "chargeBearer",
+            "columnName": "chargeBearer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "currencyOfTransfer",
+            "columnName": "currencyOfTransfer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "requestedExecutionDateTime",
+            "columnName": "requestedExecutionDateTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "frequency",
+            "columnName": "frequency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "finalPaymentDateTime",
+            "columnName": "finalPaymentDateTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentType",
+            "columnName": "paymentType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "syncedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "vrp_consent",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`consentId` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `validFrom` TEXT, `validTo` TEXT, `maxIndividualAmountMinor` INTEGER NOT NULL, `currency` TEXT NOT NULL, `interactionType` TEXT, `payerScheme` TEXT, `payerIdentification` TEXT, `payerName` TEXT, `payeeScheme` TEXT NOT NULL, `payeeIdentification` TEXT NOT NULL, `payeeName` TEXT NOT NULL, `dayLimitMinor` INTEGER, `weekLimitMinor` INTEGER, `fortnightLimitMinor` INTEGER, `monthLimitMinor` INTEGER, `halfYearLimitMinor` INTEGER, `yearLimitMinor` INTEGER, `reference` TEXT, `revokedAt` TEXT, `syncedAt` TEXT, PRIMARY KEY(`consentId`))",
+        "fields": [
+          {
+            "fieldPath": "consentId",
+            "columnName": "consentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validFrom",
+            "columnName": "validFrom",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "validTo",
+            "columnName": "validTo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "maxIndividualAmountMinor",
+            "columnName": "maxIndividualAmountMinor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interactionType",
+            "columnName": "interactionType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payerScheme",
+            "columnName": "payerScheme",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payerIdentification",
+            "columnName": "payerIdentification",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payerName",
+            "columnName": "payerName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payeeScheme",
+            "columnName": "payeeScheme",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payeeIdentification",
+            "columnName": "payeeIdentification",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payeeName",
+            "columnName": "payeeName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dayLimitMinor",
+            "columnName": "dayLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "weekLimitMinor",
+            "columnName": "weekLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fortnightLimitMinor",
+            "columnName": "fortnightLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "monthLimitMinor",
+            "columnName": "monthLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "halfYearLimitMinor",
+            "columnName": "halfYearLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "yearLimitMinor",
+            "columnName": "yearLimitMinor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "reference",
+            "columnName": "reference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "revokedAt",
+            "columnName": "revokedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "syncedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "consentId"
+          ]
+        }
+      },
+      {
+        "tableName": "vrp_payment",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`localId` TEXT NOT NULL, `consentId` TEXT NOT NULL, `paymentId` TEXT, `amountMinor` INTEGER NOT NULL, `currency` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `submittedAt` TEXT, `settledAt` TEXT, `reference` TEXT, `errorKind` TEXT, `errorDescription` TEXT, `supportReference` TEXT, `syncedAt` TEXT, PRIMARY KEY(`localId`), FOREIGN KEY(`consentId`) REFERENCES `vrp_consent`(`consentId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "localId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "consentId",
+            "columnName": "consentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentId",
+            "columnName": "paymentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "amountMinor",
+            "columnName": "amountMinor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "submittedAt",
+            "columnName": "submittedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "settledAt",
+            "columnName": "settledAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reference",
+            "columnName": "reference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorKind",
+            "columnName": "errorKind",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "errorDescription",
+            "columnName": "errorDescription",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supportReference",
+            "columnName": "supportReference",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncedAt",
+            "columnName": "syncedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "localId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vrp_payment_consentId",
+            "unique": false,
+            "columnNames": [
+              "consentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vrp_payment_consentId` ON `${TABLE_NAME}` (`consentId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "vrp_consent",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "consentId"
+            ],
+            "referencedColumns": [
+              "consentId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18398523e55af1e0c1980072b1f201d4')"
+    ]
+  }
+}
