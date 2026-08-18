@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.core.data.banking.impl
 
-import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.StandingOrderInitiationRepository
 import org.mifosx.openbanking.core.data.banking.mapper.intlStandingOrderConsentIdOrNull
@@ -23,13 +22,10 @@ import org.mifosx.openbanking.core.data.banking.mapper.toStandingOrderConsentReq
 import org.mifosx.openbanking.core.data.banking.mapper.toStandingOrderReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toStandingOrderRequest
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
-import org.mifosx.openbanking.core.data.util.isDebtorAccountRefusal
-import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
-import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.ConsentCreationScope
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -52,7 +48,6 @@ internal class StandingOrderInitiationRepositoryImpl(
     private val pisp: Pisp,
     private val oauth: OAuth,
     private val paymentAuthSession: PaymentAuthSession,
-    private val capabilityRegistry: AccountCapabilityRegistry,
     private val signingKeyPem: String,
     private val clientId: String,
     private val kid: String,
@@ -166,7 +161,7 @@ internal class StandingOrderInitiationRepositoryImpl(
                 NetworkResult.Success(id to result.data.standingOrderStatusOrEmpty())
             }
 
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
+            is NetworkResult.Error -> result
         }
     }
 
@@ -186,33 +181,7 @@ internal class StandingOrderInitiationRepositoryImpl(
                 NetworkResult.Success(id to result.data.intlStandingOrderStatusOrEmpty())
             }
 
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
-        }
-    }
-
-    /**
-     * Remembers a payer the bank refused, so the picker stops offering it.
-     *
-     * Matched on the OBIE error **path** rather than the code, which is what makes it work unchanged
-     * on a third product: this rail refuses a card with `U027` at `DebtorAccount.SchemeName` on the
-     * domestic side and `U002` at `DebtorAccount.Identification` on the international one, and
-     * neither code needs enumerating.
-     *
-     * The registry is keyed by account and endpoint rather than by product, so a refusal learned here
-     * improves the payer picker on send-money and schedule-payment too.
-     *
-     * Nothing is recorded when the app named no debtor: the bank was rejecting the payer it chose
-     * itself, not one this app offered.
-     */
-    private fun NetworkResult.Error<NetworkError>.alsoRecordRefusedPayer(
-        draft: StandingOrderDraft,
-    ): NetworkResult.Error<NetworkError> = also {
-        val refusedAccountId = draft.debtorAccount?.accountId ?: return@also
-        if (error.toThrowable().isDebtorAccountRefusal()) {
-            capabilityRegistry.markUnsupported(
-                accountId = refusedAccountId,
-                endpoint = AccountEndpoint.PaymentDebtor,
-            )
+            is NetworkResult.Error -> result
         }
     }
 

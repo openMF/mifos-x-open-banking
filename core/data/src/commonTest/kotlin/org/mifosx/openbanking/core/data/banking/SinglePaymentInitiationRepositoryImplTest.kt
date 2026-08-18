@@ -37,7 +37,6 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
-import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
 import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
@@ -62,15 +61,6 @@ private const val CONSENT_JSON =
     """{"Data":{"ConsentId":"$CONSENT_ID","Status":"AwaitingAuthorisation"}}"""
 private const val FUNDS_JSON = """{"Data":{"FundsAvailableResult":{"FundsAvailable":true}}}"""
 
-/** The Global Money refusal, verbatim from the sandbox. */
-private const val DEBTOR_REFUSAL_BODY =
-    """{"Code":"400","Id":"ref-1","Message":"Bad Request","Errors":[{"ErrorCode":"U002",""" +
-        """"Message":"Invalid Field","Path":"Data.Initiation.DebtorAccount.Identification"}]}"""
-
-/** Same code, different field — must not be read as a statement about the payer. */
-private const val CREDITOR_REFUSAL_BODY =
-    """{"Code":"400","Id":"ref-2","Message":"Bad Request","Errors":[{"ErrorCode":"U002",""" +
-        """"Message":"Invalid Field","Path":"Data.Initiation.CreditorAccount.Identification"}]}"""
 private const val INTL_PAYMENT_JSON =
     """{"Data":{"InternationalPaymentId":"$PAYMENT_ID","ConsentId":"$CONSENT_ID",""" +
         """"Status":"AcceptedSettlementInProcess"}}"""
@@ -98,8 +88,6 @@ class SinglePaymentInitiationRepositoryImplTest {
     )
 
     private val captured = mutableListOf<Recorded>()
-
-    private val registry = FakeAccountCapabilityRegistry()
 
     private fun draft() = PaymentDraft(
         debtorAccount = BankAccount(
@@ -176,7 +164,6 @@ class SinglePaymentInitiationRepositoryImplTest {
             ),
             oauth = OAuth(client, "https://sandbox.test/oauth2/token", "test-client", "test-kid", signingKey),
             paymentAuthSession = session,
-            capabilityRegistry = registry,
             signingKeyPem = signingKey,
             clientId = "test-client",
             kid = "test-kid",
@@ -357,46 +344,6 @@ class SinglePaymentInitiationRepositoryImplTest {
         repository(session).stagePayment(draft())
 
         assertNull(session.paymentToken())
-    }
-
-    // endregion
-
-    // region — learning which accounts cannot pay
-
-    /**
-     * The bank names the field it refused, so a refusal on the debtor is attributable to the
-     * account rather than the instruction. Recording it is what lets the picker stop offering an
-     * account the product matrix could not predict — a Global Money wallet reports
-     * `AccountTypeCode: CACC` and is indistinguishable from a current account until this happens.
-     */
-    @Test
-    fun aRefusalNamingTheDebtorMarksThatAccountUnpayable() = runTest {
-        val repository = repository(errorBody = DEBTOR_REFUSAL_BODY, status = HttpStatusCode.BadRequest)
-
-        repository.stagePayment(draft())
-
-        assertEquals(
-            listOf("acc-1" to AccountEndpoint.PaymentDebtor),
-            registry.marked,
-        )
-    }
-
-    /** A refusal about some other field says nothing about the payer, so nothing is recorded. */
-    @Test
-    fun aRefusalNamingAnotherFieldLeavesTheAccountAlone() = runTest {
-        val repository = repository(errorBody = CREDITOR_REFUSAL_BODY, status = HttpStatusCode.BadRequest)
-
-        repository.stagePayment(draft())
-
-        assertTrue(registry.marked.isEmpty())
-    }
-
-    /** A successful staging must not mark anything — the guard is on the error path only. */
-    @Test
-    fun aSuccessfulStagingMarksNothing() = runTest {
-        repository().stagePayment(draft())
-
-        assertTrue(registry.marked.isEmpty())
     }
 
     // endregion

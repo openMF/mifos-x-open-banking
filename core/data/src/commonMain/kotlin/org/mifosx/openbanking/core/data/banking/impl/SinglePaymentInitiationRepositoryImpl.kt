@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.core.data.banking.impl
 
-import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.mapper.consentIdOrNull
@@ -23,13 +22,10 @@ import org.mifosx.openbanking.core.data.banking.mapper.toIntlPaymentRequest
 import org.mifosx.openbanking.core.data.banking.mapper.toPaymentReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toPaymentRequest
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
-import org.mifosx.openbanking.core.data.util.isDebtorAccountRefusal
-import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
-import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.ConsentCreationScope
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -45,7 +41,6 @@ internal class SinglePaymentInitiationRepositoryImpl(
     private val pisp: Pisp,
     private val oauth: OAuth,
     private val paymentAuthSession: PaymentAuthSession,
-    private val capabilityRegistry: AccountCapabilityRegistry,
     private val signingKeyPem: String,
     private val clientId: String,
     private val kid: String,
@@ -123,7 +118,7 @@ internal class SinglePaymentInitiationRepositoryImpl(
                     ?: return NetworkResult.Error(NetworkError.Client.BadRequest("no ConsentId"))
                 NetworkResult.Success(id to result.data.statusOrEmpty())
             }
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
+            is NetworkResult.Error -> result
         }
     }
 
@@ -142,7 +137,7 @@ internal class SinglePaymentInitiationRepositoryImpl(
                     ?: return NetworkResult.Error(NetworkError.Client.BadRequest("no ConsentId"))
                 NetworkResult.Success(id to result.data.intlStatusOrEmpty())
             }
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
+            is NetworkResult.Error -> result
         }
     }
 
@@ -184,20 +179,6 @@ internal class SinglePaymentInitiationRepositoryImpl(
             is NetworkResult.Success ->
                 NetworkResult.Success(result.data.data?.fundsAvailableResult?.fundsAvailable == true)
             is NetworkResult.Error -> result
-        }
-    }
-
-    private fun NetworkResult.Error<NetworkError>.alsoRecordRefusedPayer(
-        draft: PaymentDraft,
-    ): NetworkResult.Error<NetworkError> = also {
-        // A refusal with no debtor cannot be attributed to an account: the bank was rejecting the
-        // payer it selected itself, not one this app offered, so there is nothing to remember.
-        val refusedAccountId = draft.debtorAccount?.accountId ?: return@also
-        if (error.toThrowable().isDebtorAccountRefusal()) {
-            capabilityRegistry.markUnsupported(
-                accountId = refusedAccountId,
-                endpoint = AccountEndpoint.PaymentDebtor,
-            )
         }
     }
 

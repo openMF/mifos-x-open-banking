@@ -52,6 +52,8 @@ import org.mifosx.openbanking.core.data.user.impl.UserDataRepositoryImpl
 import org.mifosx.openbanking.core.data.user.impl.UserLogoutManagerImpl
 import org.mifosx.openbanking.core.data.vrp.SettingsVrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
+import org.mifosx.openbanking.core.data.vrp.VrpConsentRepositoryImpl
 import org.mifosx.openbanking.core.data.vrp.VrpTokenProvider
 import org.mifosx.openbanking.core.data.vrp.VrpTokenProviderImpl
 import org.mifosx.openbanking.core.database.AppDatabase
@@ -109,6 +111,16 @@ val DataModule = module {
         )
     }
 
+    single<VrpConsentRepository> {
+        VrpConsentRepositoryImpl(
+            vrp = get(),
+            oauth = get(),
+            dao = get(),
+            session = get(),
+            tokens = get(),
+        )
+    }
+
     single<PaymentAuthRepository> {
         PaymentAuthRepositoryImpl(
             oauth = get(),
@@ -123,7 +135,6 @@ val DataModule = module {
             pisp = get(),
             oauth = get(),
             paymentAuthSession = get(),
-            capabilityRegistry = get(),
             signingKeyPem = get(named("hsbcSigningKey")),
             clientId = get(named("hsbcClientId")),
             kid = get(named("hsbcKid")),
@@ -139,7 +150,6 @@ val DataModule = module {
             pisp = get(),
             oauth = get(),
             paymentAuthSession = get(),
-            capabilityRegistry = get(),
             signingKeyPem = get(named("hsbcSigningKey")),
             clientId = get(named("hsbcClientId")),
             kid = get(named("hsbcKid")),
@@ -155,7 +165,6 @@ val DataModule = module {
             pisp = get(),
             oauth = get(),
             paymentAuthSession = get(),
-            capabilityRegistry = get(),
             signingKeyPem = get(named("hsbcSigningKey")),
             clientId = get(named("hsbcClientId")),
             kid = get(named("hsbcKid")),

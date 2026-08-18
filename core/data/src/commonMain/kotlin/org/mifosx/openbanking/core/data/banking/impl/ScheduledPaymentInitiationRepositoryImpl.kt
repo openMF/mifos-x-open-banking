@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.core.data.banking.impl
 
-import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.mapper.intlScheduledConsentIdOrNull
@@ -23,13 +22,10 @@ import org.mifosx.openbanking.core.data.banking.mapper.toScheduledConsentRequest
 import org.mifosx.openbanking.core.data.banking.mapper.toScheduledPaymentReceipt
 import org.mifosx.openbanking.core.data.banking.mapper.toScheduledPaymentRequest
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
-import org.mifosx.openbanking.core.data.util.isDebtorAccountRefusal
-import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
-import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.ConsentCreationScope
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
@@ -52,7 +48,6 @@ internal class ScheduledPaymentInitiationRepositoryImpl(
     private val pisp: Pisp,
     private val oauth: OAuth,
     private val paymentAuthSession: PaymentAuthSession,
-    private val capabilityRegistry: AccountCapabilityRegistry,
     private val signingKeyPem: String,
     private val clientId: String,
     private val kid: String,
@@ -165,7 +160,7 @@ internal class ScheduledPaymentInitiationRepositoryImpl(
                     ?: return NetworkResult.Error(NetworkError.Client.BadRequest("no ConsentId"))
                 NetworkResult.Success(id to result.data.scheduledStatusOrEmpty())
             }
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
+            is NetworkResult.Error -> result
         }
     }
 
@@ -184,29 +179,7 @@ internal class ScheduledPaymentInitiationRepositoryImpl(
                     ?: return NetworkResult.Error(NetworkError.Client.BadRequest("no ConsentId"))
                 NetworkResult.Success(id to result.data.intlScheduledStatusOrEmpty())
             }
-            is NetworkResult.Error -> result.alsoRecordRefusedPayer(draft)
-        }
-    }
-
-    /**
-     * Remembers a payer the bank refused, so the picker stops offering it.
-     *
-     * Matched on the OBIE error **path** rather than the code, which is what makes it work unchanged
-     * here: this rail refuses a card with `U027` at `DebtorAccount.SchemeName` and a Global Money
-     * wallet with `U002` at `DebtorAccount.Identification`, and neither code needs to be enumerated.
-     *
-     * Nothing is recorded when the app named no debtor: the bank was rejecting the payer it chose
-     * itself, not one this app offered.
-     */
-    private fun NetworkResult.Error<NetworkError>.alsoRecordRefusedPayer(
-        draft: ScheduledPaymentDraft,
-    ): NetworkResult.Error<NetworkError> = also {
-        val refusedAccountId = draft.debtorAccount?.accountId ?: return@also
-        if (error.toThrowable().isDebtorAccountRefusal()) {
-            capabilityRegistry.markUnsupported(
-                accountId = refusedAccountId,
-                endpoint = AccountEndpoint.PaymentDebtor,
-            )
+            is NetworkResult.Error -> result
         }
     }
 

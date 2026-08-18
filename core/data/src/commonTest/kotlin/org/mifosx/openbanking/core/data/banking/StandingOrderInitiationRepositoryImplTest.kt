@@ -39,7 +39,6 @@ import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
-import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
 import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
@@ -65,16 +64,6 @@ private const val STANDING_ORDER_JSON =
 private const val INTL_STANDING_ORDER_JSON =
     """{"Data":{"InternationalStandingOrderId":"19917","ConsentId":"$CONSENT_ID","Status":"INCO"}}"""
 
-/** The card refusal on the domestic rail: a scheme the product cannot express. */
-private const val CARD_REFUSAL_BODY =
-    """{"Code":"400","Id":"ref-1","Message":"Bad Request","Errors":[{"ErrorCode":"U027",""" +
-        """"Message":"Unsupported scheme","Path":"Data.Initiation.DebtorAccount.SchemeName"}]}"""
-
-/** A refusal about the payee, which must not be read as a statement about the payer. */
-private const val CREDITOR_REFUSAL_BODY =
-    """{"Code":"400","Id":"ref-2","Message":"Bad Request","Errors":[{"ErrorCode":"U027",""" +
-        """"Message":"Unsupported scheme","Path":"Data.Initiation.CreditorAccount.SchemeName"}]}"""
-
 /**
  * The standing-order write path at the wire, with one recurring question: **did it reach the
  * standing-order endpoint rather than one of the other four?**
@@ -97,8 +86,6 @@ class StandingOrderInitiationRepositoryImplTest {
     )
 
     private val captured = mutableListOf<Recorded>()
-
-    private val registry = FakeAccountCapabilityRegistry()
 
     private fun draft(
         debtor: BankAccount? = BankAccount(
@@ -198,7 +185,6 @@ class StandingOrderInitiationRepositoryImplTest {
             ),
             oauth = OAuth(client, "https://sandbox.test/oauth2/token", "test-client", "test-kid", signingKey),
             paymentAuthSession = session,
-            capabilityRegistry = registry,
             signingKeyPem = signingKey,
             clientId = "test-client",
             kid = "test-kid",
@@ -392,38 +378,6 @@ class StandingOrderInitiationRepositoryImplTest {
         val result = repository(errorBody = """{"Data":{"Status":"AWAU"}}""").stageStandingOrder(draft())
 
         assertIs<NetworkResult.Error<*>>(result)
-    }
-
-    /**
-     * A refused payer is remembered so the picker stops offering it.
-     *
-     * Matched on the OBIE **path**, which is why the same helper works unchanged on a third product
-     * whose refusal codes differ from both siblings'.
-     */
-    @Test
-    fun aRefusedPayerIsRecordedAgainstTheAccount() = runTest {
-        repository(errorBody = CARD_REFUSAL_BODY, status = HttpStatusCode.BadRequest)
-            .stageStandingOrder(draft())
-
-        assertEquals(listOf("acc-1" to AccountEndpoint.PaymentDebtor), registry.marked)
-    }
-
-    /** A refusal naming the payee says nothing about the payer, and must not disable their account. */
-    @Test
-    fun aRefusalAboutThePayeeDoesNotDisableThePayer() = runTest {
-        repository(errorBody = CREDITOR_REFUSAL_BODY, status = HttpStatusCode.BadRequest)
-            .stageStandingOrder(draft())
-
-        assertTrue(registry.marked.isEmpty(), "nothing should have been marked unsupported")
-    }
-
-    /** With no debtor named, the bank was refusing its own choice — there is nothing to remember. */
-    @Test
-    fun aRefusalWithNoNamedDebtorRecordsNothing() = runTest {
-        repository(errorBody = CARD_REFUSAL_BODY, status = HttpStatusCode.BadRequest)
-            .stageStandingOrder(draft(debtor = null))
-
-        assertTrue(registry.marked.isEmpty(), "nothing should have been marked unsupported")
     }
 
     // endregion
