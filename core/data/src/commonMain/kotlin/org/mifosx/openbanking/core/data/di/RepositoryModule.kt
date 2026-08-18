@@ -50,6 +50,10 @@ import org.mifosx.openbanking.core.data.user.UserLogoutManager
 import org.mifosx.openbanking.core.data.user.impl.AppLogoutImpl
 import org.mifosx.openbanking.core.data.user.impl.UserDataRepositoryImpl
 import org.mifosx.openbanking.core.data.user.impl.UserLogoutManagerImpl
+import org.mifosx.openbanking.core.data.vrp.SettingsVrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpTokenProvider
+import org.mifosx.openbanking.core.data.vrp.VrpTokenProviderImpl
 import org.mifosx.openbanking.core.database.AppDatabase
 import org.mifosx.openbanking.core.database.di.DatabaseModule
 import org.mifosx.openbanking.core.datastore.di.DatastoreModule
@@ -95,6 +99,16 @@ val DataModule = module {
     }
 
     single<PaymentAuthSession> { SettingsPaymentAuthSession(secureSettings = get<Settings>(named("secure"))) }
+
+    single<VrpAuthSession> { SettingsVrpAuthSession(secureSettings = get<Settings>(named("secure"))) }
+
+    single<VrpTokenProvider> {
+        VrpTokenProviderImpl(
+            oauth = get(),
+            session = get(),
+            clock = Clock.System,
+        )
+    }
 
     single<PaymentAuthRepository> {
         PaymentAuthRepositoryImpl(
