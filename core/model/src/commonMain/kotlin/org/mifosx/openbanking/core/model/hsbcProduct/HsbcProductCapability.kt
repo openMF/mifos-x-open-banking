@@ -31,6 +31,9 @@ enum class AccountEndpoint {
 
     /** Whether the account may appear as `DebtorAccount` on a domestic payment. */
     PaymentDebtor,
+
+    /** Whether the account may be named as the payer on a variable recurring payment. */
+    VrpPayer,
 }
 
 /**
@@ -126,6 +129,11 @@ data class HsbcProductCapability(
             // payer has ever been tested, so excluding one would be a guess.
             HsbcProductCapability(
                 AccountEndpoint.PaymentDebtor,
+                ALL_PRODUCTS - HsbcProductType.CreditCard - HsbcProductType.GlobalMoney,
+            ),
+
+            HsbcProductCapability(
+                AccountEndpoint.VrpPayer,
                 ALL_PRODUCTS - HsbcProductType.CreditCard - HsbcProductType.GlobalMoney,
             ),
         )

@@ -70,6 +70,7 @@ import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_a11y
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_authorised
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_awaiting
+import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_cancelled
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_consumed
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_expired
 import org.mifosx.openbanking.feature.consentdetail.generated.resources.feature_consent_detail_status_rejected
@@ -441,6 +442,7 @@ private fun ConsentStatus.labelResource(): StringResource = when (this) {
     ConsentStatus.Authorised -> Res.string.feature_consent_detail_status_authorised
     ConsentStatus.Expired -> Res.string.feature_consent_detail_status_expired
     ConsentStatus.Revoked -> Res.string.feature_consent_detail_status_revoked
+    ConsentStatus.Cancelled -> Res.string.feature_consent_detail_status_cancelled
     ConsentStatus.Rejected -> Res.string.feature_consent_detail_status_rejected
     ConsentStatus.AwaitingAuthorisation -> Res.string.feature_consent_detail_status_awaiting
     ConsentStatus.Consumed -> Res.string.feature_consent_detail_status_consumed

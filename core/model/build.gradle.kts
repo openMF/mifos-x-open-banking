@@ -22,6 +22,10 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core.common)
             implementation(libs.kotlinx.serialization.json)
+
+            // `api`, not `implementation`: LocalDate appears in the public signatures of the VRP
+            // domain types (ValidityWindow), so every consumer needs the type on its compile path.
+            api(libs.kotlinx.datetime)
         }
     }
 }

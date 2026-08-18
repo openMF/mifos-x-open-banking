@@ -9,22 +9,44 @@
  */
 package org.mifosx.openbanking.core.model.callback
 
+/**
+ * The state of a consent resource, shared by every consent-based API.
+ *
+ * The wire carries either a four-letter code or the long name depending on the endpoint;
+ * [fromString] accepts both.
+ */
 enum class ConsentStatus {
+    /** Staged, not yet approved by the customer. */
     AwaitingAuthorisation,
+
+    /** Approved. The consent may be used. */
     Authorised,
+
+    /** The customer declined at the approval step. */
     Rejected,
+
+    /** Withdrawn by the customer after approval. */
     Revoked,
+
+    /** Cancelled by the bank. */
+    Cancelled,
+
+    /** Past its validity date. */
     Expired,
+
+    /** A one-off consent that has been used. */
+
     Consumed,
     ;
 
     companion object {
         fun fromString(raw: String): ConsentStatus = when (raw) {
-            "AWAU", "AwaitingAuthorisation" -> AwaitingAuthorisation
+            "AWAU", "AwaitingAuthorisation", "Awaiting authorisation" -> AwaitingAuthorisation
             "AUTH", "Authorised" -> Authorised
-            "Rejected" -> Rejected
+            "RJCT", "Rejected" -> Rejected
             "Revoked" -> Revoked
-            "Expired" -> Expired
+            "CANC", "Cancelled" -> Cancelled
+            "EXPD", "Expired" -> Expired
             "Consumed" -> Consumed
             else -> Rejected
         }

@@ -169,6 +169,28 @@ class PaymentMapperTest {
     }
 
     /**
+     * A settled payment must resolve to a terminal success whichever spelling arrives, or it reads
+     * as still in progress for ever.
+     */
+    @Test
+    fun resolvesEverySettledSpellingOntoATerminalSuccess() {
+        val settled = listOf(
+            "ACCC",
+            "AcceptedCreditSettlementCompleted",
+            "AcceptedSettlementCompletedCreditorAccount",
+        )
+        settled.forEach { raw ->
+            assertEquals(PaymentStatus.AcceptedCreditSettlementCompleted, PaymentStatus.fromWire(raw), raw)
+            assertEquals(PaymentDisposition.TerminalSuccess, PaymentStatus.fromWire(raw).disposition, raw)
+        }
+
+        assertEquals(
+            PaymentStatus.AcceptedSettlementCompleted,
+            PaymentStatus.fromWire("AcceptedSettlementCompletedDebitorAccount"),
+        )
+    }
+
+    /**
      * An unrecognised status reads as still in progress. Reporting a settlement that may not have
      * happened is the worse of the two ways to be wrong.
      */

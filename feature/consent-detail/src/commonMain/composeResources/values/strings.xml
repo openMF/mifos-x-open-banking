@@ -60,6 +60,7 @@
     <string name="feature_consent_detail_status_authorised">Authorised</string>
     <string name="feature_consent_detail_status_expired">Expired</string>
     <string name="feature_consent_detail_status_revoked">Revoked</string>
+    <string name="feature_consent_detail_status_cancelled">Cancelled</string>
     <string name="feature_consent_detail_status_rejected">Rejected</string>
     <string name="feature_consent_detail_status_awaiting">Awaiting authorisation</string>
     <string name="feature_consent_detail_status_consumed">Consumed</string>

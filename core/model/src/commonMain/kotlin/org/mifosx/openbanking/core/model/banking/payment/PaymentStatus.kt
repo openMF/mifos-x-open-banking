@@ -82,19 +82,28 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
     ;
 
     companion object {
-        fun fromWire(raw: String?): PaymentStatus = when (raw?.trim()?.uppercase()) {
-            "RCVD", "RECEIVED" -> Received
-            "PDNG", "PENDING" -> Pending
-            "ACSP", "ACCEPTEDSETTLEMENTINPROCESS" -> AcceptedSettlementInProcess
-            "ACTC", "ACCEPTEDTECHNICALVALIDATION" -> AcceptedTechnicalValidation
-            "INCO", "INITIATIONCOMPLETED" -> InitiationCompleted
-            "PATC", "PARTIALLYACCEPTEDTECHNICALCORRECT" -> PartiallyAccepted
-            "ACSC", "ACCEPTEDSETTLEMENTCOMPLETED" -> AcceptedSettlementCompleted
-            "ACCC", "ACCEPTEDCREDITSETTLEMENTCOMPLETED" -> AcceptedCreditSettlementCompleted
-            "ACWP", "ACCEPTEDWITHOUTPOSTING" -> AcceptedWithoutPosting
-            "RJCT", "REJECTED" -> Rejected
-            "CANC", "CANCELLED" -> Cancelled
-            "INFA", "INITIATIONFAILED" -> InitiationFailed
+        fun fromWire(raw: String?): PaymentStatus = when (raw?.trim()) {
+            "RCVD", "Received" -> Received
+            "PDNG", "Pending" -> Pending
+            "ACSP", "AcceptedSettlementInProcess" -> AcceptedSettlementInProcess
+            "ACTC", "AcceptedTechnicalValidation" -> AcceptedTechnicalValidation
+            "INCO", "InitiationCompleted", "Initiation Completed" -> InitiationCompleted
+            "PATC", "PartiallyAcceptedTechnicalCorrect" -> PartiallyAccepted
+
+            "ACSC",
+            "AcceptedSettlementCompleted",
+            "AcceptedSettlementCompletedDebitorAccount",
+            -> AcceptedSettlementCompleted
+
+            "ACCC",
+            "AcceptedCreditSettlementCompleted",
+            "AcceptedSettlementCompletedCreditorAccount",
+            -> AcceptedCreditSettlementCompleted
+
+            "ACWP", "AcceptedWithoutPosting" -> AcceptedWithoutPosting
+            "RJCT", "Rejected" -> Rejected
+            "CANC", "Cancelled" -> Cancelled
+            "INFA", "InitiationFailed" -> InitiationFailed
             else -> Unknown
         }
     }
