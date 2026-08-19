@@ -24,7 +24,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.feature.vrpcallback.generated.resources.Res
 import org.mifosx.openbanking.feature.vrpcallback.generated.resources.feature_vrp_callback_confirming
 import org.mifosx.openbanking.feature.vrpcallback.generated.resources.feature_vrp_callback_exchanging
-import org.mifosx.openbanking.feature.vrpcallback.generated.resources.feature_vrp_callback_saving
 import org.mifosx.openbanking.feature.vrpcallback.generated.resources.feature_vrp_callback_validating
 import template.core.base.designsystem.theme.KptTheme
 
@@ -61,6 +60,5 @@ internal fun VrpCallbackWorkingPage(stage: CallbackStage) {
 private fun CallbackStage.message(): String = when (this) {
     CallbackStage.Validating -> stringResource(Res.string.feature_vrp_callback_validating)
     CallbackStage.Exchanging -> stringResource(Res.string.feature_vrp_callback_exchanging)
-    CallbackStage.Saving -> stringResource(Res.string.feature_vrp_callback_saving)
     CallbackStage.Confirming -> stringResource(Res.string.feature_vrp_callback_confirming)
 }

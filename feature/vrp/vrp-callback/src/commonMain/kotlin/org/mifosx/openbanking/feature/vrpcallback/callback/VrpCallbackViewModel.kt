@@ -30,11 +30,16 @@ private const val SORT_CODE_ACCOUNT_NUMBER = "UK.OBIE.SortCodeAccountNumber"
 /** The length a sort-code-and-account-number identification always has. */
 private const val PAYER_IDENTIFICATION_LENGTH = 14
 
-/** Which of the four ordered steps is running. */
+/**
+ * Which step is running.
+ *
+ * Storing the credential has no stage of its own: it happens inside the exchange call, so
+ * [Exchanging] covers both. [Validating] is the state the screen is built with and is replaced
+ * before the first frame, since validation makes no call.
+ */
 enum class CallbackStage {
     Validating,
     Exchanging,
-    Saving,
     Confirming,
 }
 

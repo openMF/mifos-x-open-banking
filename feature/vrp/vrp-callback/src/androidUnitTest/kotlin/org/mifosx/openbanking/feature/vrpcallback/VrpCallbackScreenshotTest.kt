@@ -49,9 +49,6 @@ class VrpCallbackScreenshotTest {
         capture("exchanging", VrpCallbackFixtures.workingState(CallbackStage.Exchanging))
 
     @Test
-    fun savingGolden() = capture("saving", VrpCallbackFixtures.workingState(CallbackStage.Saving))
-
-    @Test
     fun confirmingGolden() =
         capture("confirming", VrpCallbackFixtures.workingState(CallbackStage.Confirming))
 

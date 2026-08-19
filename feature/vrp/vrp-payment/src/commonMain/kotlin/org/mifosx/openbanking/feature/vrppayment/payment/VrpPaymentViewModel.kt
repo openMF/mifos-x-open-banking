@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.mifosx.openbanking.core.common.parseMinorUnits
+import org.mifosx.openbanking.core.data.util.isOutsideControlParameters
 import org.mifosx.openbanking.core.data.util.obieSupportReference
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepository
@@ -121,9 +122,8 @@ sealed interface SubmissionUi {
     ) : SubmissionUi
 }
 
-/** Why an entered amount cannot be sent. */
+/** Why an entered amount cannot be sent. A blank field carries no problem; it is simply not usable. */
 enum class AmountProblem {
-    Missing,
     NotANumber,
     BelowMinimum,
 
@@ -450,10 +450,11 @@ private fun VrpConsent.isPayable(): Boolean {
  * A `2xx` that would not decode is [PaymentFailureKind.Unconfirmed]: the money may have moved and
  * the app cannot tell, so it must never be resent automatically.
  */
-private fun NetworkError.toFailureKind(): PaymentFailureKind = when (this) {
-    is NetworkError.Network -> PaymentFailureKind.NetworkUnavailable
-    is NetworkError.Serialization -> PaymentFailureKind.Unconfirmed
-    is NetworkError.Client.Unauthorized -> PaymentFailureKind.NeedsReauthorisation
-    is NetworkError.Client.Forbidden -> PaymentFailureKind.ConsentUnusable
+private fun NetworkError.toFailureKind(): PaymentFailureKind = when {
+    this is NetworkError.Network -> PaymentFailureKind.NetworkUnavailable
+    this is NetworkError.Serialization -> PaymentFailureKind.Unconfirmed
+    isOutsideControlParameters() -> PaymentFailureKind.OverLimit
+    this is NetworkError.Client.Unauthorized -> PaymentFailureKind.NeedsReauthorisation
+    this is NetworkError.Client.Forbidden -> PaymentFailureKind.ConsentUnusable
     else -> PaymentFailureKind.Rejected
 }

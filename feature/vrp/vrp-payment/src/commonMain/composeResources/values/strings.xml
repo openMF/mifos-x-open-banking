@@ -15,7 +15,6 @@
     <string name="feature_vrp_payment_per_payment_limit">Up to %1$s in one payment</string>
     <string name="feature_vrp_payment_remaining">%1$s left this %2$s</string>
     <string name="feature_vrp_payment_remaining_note">Based on payments made in this app. Your bank has the final say.</string>
-    <string name="feature_vrp_payment_amount_error_missing">Enter an amount.</string>
     <string name="feature_vrp_payment_amount_error_min">Enter at least £0.01.</string>
     <string name="feature_vrp_payment_amount_error_decimals">Use pounds and pence, for example 50.00.</string>
     <string name="feature_vrp_payment_amount_error_per_payment">That is more than the %1$s limit for a single payment.</string>

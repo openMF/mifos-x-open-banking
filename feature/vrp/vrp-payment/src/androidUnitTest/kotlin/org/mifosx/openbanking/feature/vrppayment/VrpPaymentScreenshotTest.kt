@@ -88,6 +88,22 @@ class VrpPaymentScreenshotTest {
         capture("failed_network", VrpPaymentFixtures.failedState(PaymentFailureKind.NetworkUnavailable))
 
     @Test
+    fun overLimitGolden() = capture(
+        "failed_over_limit",
+        VrpPaymentFixtures.failedState(PaymentFailureKind.OverLimit, VrpPaymentFixtures.SUPPORT_REFERENCE),
+    )
+
+    @Test
+    fun consentUnusableGolden() =
+        capture("failed_consent_unusable", VrpPaymentFixtures.failedState(PaymentFailureKind.ConsentUnusable))
+
+    @Test
+    fun needsReauthorisationGolden() = capture(
+        "failed_needs_reauthorisation",
+        VrpPaymentFixtures.failedState(PaymentFailureKind.NeedsReauthorisation),
+    )
+
+    @Test
     fun unusableGolden() = capture("unusable", VrpPaymentFixtures.unusableState())
 
     @Test

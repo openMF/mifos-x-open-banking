@@ -12,7 +12,6 @@
     <string name="feature_vrp_callback_title">Setting up</string>
     <string name="feature_vrp_callback_validating">Checking your approval…</string>
     <string name="feature_vrp_callback_exchanging">Confirming with your bank…</string>
-    <string name="feature_vrp_callback_saving">Saving your VRP…</string>
     <string name="feature_vrp_callback_confirming">Almost done…</string>
 
     <string name="feature_vrp_callback_success_title">VRP set up</string>

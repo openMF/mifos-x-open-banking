@@ -34,7 +34,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.Res
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_decimals
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_min
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_missing
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_per_payment
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_remaining
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_check_funds
@@ -203,7 +202,6 @@ private fun FundsWarning() {
 @Composable
 private fun PaymentFormUi.errorMessage(): String? = when (problem) {
     null -> null
-    AmountProblem.Missing -> stringResource(Res.string.feature_vrp_payment_amount_error_missing)
     AmountProblem.NotANumber -> stringResource(Res.string.feature_vrp_payment_amount_error_decimals)
     AmountProblem.BelowMinimum -> stringResource(Res.string.feature_vrp_payment_amount_error_min)
 

@@ -23,6 +23,14 @@ import template.core.base.network.NetworkError
  */
 const val OBIE_UNSUPPORTED_PRODUCT_CODE = "U000"
 
+/**
+ * HSBC's code for "payment outside control parameters".
+ *
+ * Covers both a breach of `MaximumIndividualAmount` and a breach of a periodic cap. The two share a
+ * request path and differ only in the message, so the code identifies the pair, not either half.
+ */
+const val OBIE_OUTSIDE_CONTROL_PARAMETERS_CODE = "U014"
+
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
 /**
@@ -65,6 +73,16 @@ fun NetworkError.obieErrorCode(): String? = body?.parseObError()
 
 /** As [obieErrorCode], unwrapping [RemoteException]. */
 fun Throwable.obieErrorCode(): String? = (this as? RemoteException)?.networkError?.obieErrorCode()
+
+/**
+ * Whether the bank refused a payment for breaching the consent's own limits.
+ *
+ * Matched on the code rather than the status: it arrives as a `400`, the same as a malformed request
+ * and a refused payer, and only the code separates a limit the customer can work within from a
+ * failure they cannot act on.
+ */
+fun NetworkError.isOutsideControlParameters(): Boolean =
+    obieErrorCode() == OBIE_OUTSIDE_CONTROL_PARAMETERS_CODE
 
 /**
  * The envelope's top-level `Id` — the bank's own reference for this failure.
