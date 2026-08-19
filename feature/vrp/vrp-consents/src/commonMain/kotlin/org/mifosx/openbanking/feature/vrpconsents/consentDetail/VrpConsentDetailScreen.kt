@@ -88,7 +88,6 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vr
 import org.mifosx.openbanking.feature.vrpconsents.paymentStatusLabel
 import org.mifosx.openbanking.feature.vrpconsents.periodLabel
 import org.mifosx.openbanking.feature.vrpconsents.timeElapsedSince
-import template.core.base.designsystem.component.KptTopAppBar
 import template.core.base.designsystem.theme.KptTheme
 import template.core.base.ui.effects.EventsEffect
 

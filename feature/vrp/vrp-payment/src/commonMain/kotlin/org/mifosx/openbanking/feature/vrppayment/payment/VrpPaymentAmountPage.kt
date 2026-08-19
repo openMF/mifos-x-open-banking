@@ -39,12 +39,12 @@ import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.Res
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_decimals
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_resting
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_currency_sign
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_min
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_per_payment
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_remaining
+import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_resting
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_check_funds
+import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_currency_sign
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_from
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_funds_warning
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_per_payment_limit
@@ -54,12 +54,7 @@ import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp
 import org.mifosx.openbanking.feature.vrppayment.periodLabel
 import template.core.base.designsystem.theme.KptTheme
 
-/**
- * The entry phase: how much, against the two ceilings.
- *
- * The figure carries no currency mark. Sterling is already stated as a fact directly beneath it, and
- * a mark inside the field states the unit twice.
- */
+/** The entry phase: how much, against the two ceilings. */
 @Composable
 internal fun VrpPaymentAmountPage(
     form: PaymentFormUi,
