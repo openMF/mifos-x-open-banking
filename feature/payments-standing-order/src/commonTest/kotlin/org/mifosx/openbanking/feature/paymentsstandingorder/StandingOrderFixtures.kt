@@ -61,11 +61,13 @@ object StandingOrderFixtures {
     const val SAVINGS_ACCOUNT_ID = "1123456841"
     const val CREDIT_CARD_ID = "1123456842"
     const val GLOBAL_MONEY_ID = "1123456843"
-    const val JAMESON_ID = "BEN-001"
-    const val SHARMA_ID = "BEN-002"
-    const val EDF_ID = "BEN-003"
-    const val WEISS_ID = "BEN-101"
-    const val DUPONT_ID = "BEN-102"
+
+    /** The payee keys the picker selects by: the destination account. */
+    const val JAMESON_ID = "40120965872310"
+    const val SHARMA_ID = "23058011223344"
+    const val EDF_ID = "60000199887766"
+    const val WEISS_ID = "DE89370400440532013000"
+    const val DUPONT_ID = "FR1420041010050500013M02606"
     const val CONSENT_ID = "812774903"
     const val PAYMENT_ID = "PMT-812774903-01"
     const val SUPPORT_REFERENCE = "9b7e4d20-1a6c-4f88-9d3a-2c5b7e10f4a6"

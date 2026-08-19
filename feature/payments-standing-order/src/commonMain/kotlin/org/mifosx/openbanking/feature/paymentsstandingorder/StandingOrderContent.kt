@@ -307,7 +307,7 @@ private fun PayeeSection(
             // the previous account's, and showing them under a payer that no longer exists is the
             // defect this guard closes.
             payees = if (state.payeesUnavailable) emptyList() else state.beneficiaries,
-            selectedId = state.creditor?.beneficiaryId,
+            selectedId = state.creditor?.identification,
             selectedLabel = stringResource(Res.string.feature_payments_standing_order_selected_a11y),
             onSelect = { onAction(StandingOrderAction.SelectCreditor(it)) },
             onPayNew = { onAction(StandingOrderAction.ShowManualCreditorEntry) },

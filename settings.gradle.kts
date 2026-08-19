@@ -137,6 +137,7 @@ include(":feature:payments-schedule-payment")
 include(":feature:payments-standing-order")
 
 include(":feature:vrp:vrp-consents")
+include(":feature:vrp:vrp-setup")
 
 include(":core-base:analytics")
 include(":core-base:common")

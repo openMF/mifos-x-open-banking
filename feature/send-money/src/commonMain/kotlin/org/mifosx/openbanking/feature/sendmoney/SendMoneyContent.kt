@@ -231,7 +231,7 @@ private fun PayeeSection(
             // the previous account's, and showing them under a payer that no longer exists is the
             // defect this guard closes.
             payees = if (state.payeesUnavailable) emptyList() else state.beneficiaries,
-            selectedId = state.creditor?.beneficiaryId,
+            selectedId = state.creditor?.identification,
             selectedLabel = stringResource(Res.string.feature_send_money_selected_a11y),
             onSelect = { onAction(SendMoneyAction.SelectCreditor(it)) },
             onPayNew = { onAction(SendMoneyAction.ShowManualCreditorEntry) },

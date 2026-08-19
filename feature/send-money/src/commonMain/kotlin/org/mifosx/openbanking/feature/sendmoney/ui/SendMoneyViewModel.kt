@@ -368,8 +368,8 @@ class SendMoneyViewModel(
         )
     }
 
-    private fun selectCreditor(beneficiaryId: String) {
-        val payee = beneficiaries().firstOrNull { it.beneficiaryId == beneficiaryId } ?: return
+    private fun selectCreditor(identification: String) {
+        val payee = beneficiaries().firstOrNull { it.identification == identification } ?: return
         form.value = form.value.copy(
             creditor = CreditorSelection(
                 name = payee.creditorName,
@@ -772,7 +772,7 @@ private fun BankAccount.canFundAPayment(): Boolean = HsbcProductCapability.suppo
 )
 
 private fun BeneficiaryItem.toPickerRow(): SendMoneyPickerRow = SendMoneyPickerRow(
-    id = beneficiaryId,
+    id = identification,
     initials = initialsOf(creditorName),
     headline = creditorName,
     supporting = schemeLabelFor(scheme, identification),
