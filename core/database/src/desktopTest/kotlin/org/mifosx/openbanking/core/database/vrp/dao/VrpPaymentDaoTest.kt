@@ -141,6 +141,22 @@ class VrpPaymentDaoTest {
         assertTrue(dao.findForConsent("45365").isEmpty())
     }
 
+    /**
+     * The counterpart to the cascade above, and the reason the consent is written with `@Upsert`.
+     *
+     * `@Insert(REPLACE)` is a delete and an insert in SQLite, so re-storing a consent — which every
+     * status read-back does — took its whole payment history down with it.
+     */
+    @Test
+    fun keepsAConsentsPaymentsWhenTheConsentIsStoredAgain() = runTest {
+        consentDao.upsert(consent("45365"))
+        dao.upsert(payment("local-1"))
+
+        consentDao.upsert(consent("45365").copy(status = "EXPD"))
+
+        assertEquals(listOf("local-1"), dao.findForConsent("45365").map { it.localId })
+    }
+
     @Test
     fun replacesAPaymentOnUpsert() = runTest {
         consentDao.upsert(consent("45365"))

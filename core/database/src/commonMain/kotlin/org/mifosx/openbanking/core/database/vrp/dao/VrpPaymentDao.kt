@@ -10,9 +10,8 @@
 package org.mifosx.openbanking.core.database.vrp.dao
 
 import androidx.room3.Dao
-import androidx.room3.Insert
-import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import org.mifosx.openbanking.core.database.vrp.entity.VrpPaymentEntity
 
@@ -30,7 +29,8 @@ interface VrpPaymentDao {
     @Query("SELECT * FROM vrp_payment WHERE localId = :localId")
     suspend fun findByLocalId(localId: String): VrpPaymentEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /** `@Upsert` rather than `@Insert(REPLACE)`, which SQLite performs as a delete and an insert. */
+    @Upsert
     suspend fun upsert(payment: VrpPaymentEntity)
 
     @Query("DELETE FROM vrp_payment")

@@ -199,6 +199,9 @@ class VrpConsentDetailViewModel(
     /** Whether the bank refused the removal this app has already carried out locally. */
     private var bankRefusedRemoval = false
 
+    /** The payments already read back on this visit, so an emission cannot start the read again. */
+    private val readBackPayments = mutableSetOf<String>()
+
     init {
         observeConsent()
         refreshStatus()
@@ -210,8 +213,10 @@ class VrpConsentDetailViewModel(
             VrpConsentDetailAction.RevokeDismissed -> moveRevokeTo(RevokePhase.Idle)
             VrpConsentDetailAction.RevokeConfirmed -> revoke()
 
-            is VrpConsentDetailAction.Internal.ReceiveConsent ->
+            is VrpConsentDetailAction.Internal.ReceiveConsent -> {
                 applyConsent(action.consent, action.payments, action.usage)
+                refreshUnsettledPayments(action.payments)
+            }
 
             is VrpConsentDetailAction.Internal.ReceiveRevokeResult -> applyRevokeResult(action.result)
         }
@@ -237,6 +242,22 @@ class VrpConsentDetailViewModel(
      */
     private fun refreshStatus() {
         viewModelScope.launch { consents.refreshStatus(state.consentId) }
+    }
+
+    /**
+     * Reads back the payments the bank had not finished with.
+     *
+     * A submission reports an interim status, and nothing else ever revisits it: left alone the row
+     * reads as still sending for good, and — because usage counts settled payments only — the money
+     * it consumed is never charged against the ceiling.
+     *
+     * Each payment is read once per visit. The read writes to storage, which emits back into here,
+     * so repeating on every emission would not stop.
+     */
+    private fun refreshUnsettledPayments(made: List<VrpPayment>) {
+        made.filter { it.status.disposition == PaymentDisposition.InProgress }
+            .filter { readBackPayments.add(it.localId) }
+            .forEach { payment -> viewModelScope.launch { payments.refreshStatus(payment) } }
     }
 
     private fun revoke() {

@@ -152,6 +152,42 @@ class VrpConsentDetailViewModelTest {
         )
     }
 
+    /**
+     * A submission reports an interim status and nothing else revisits it, so without this the row
+     * reads as still sending for good and its amount never counts against the ceiling.
+     */
+    @Test
+    fun aPaymentTheBankHasNotFinishedWithIsReadBack() = runTest {
+        payments.emitPayments(listOf(payment(status = PaymentStatus.AcceptedSettlementInProcess)))
+        viewModel()
+        advanceUntilIdle()
+
+        assertContentEquals(listOf("pay-1"), payments.refreshedPayments.map { it.localId })
+    }
+
+    @Test
+    fun aSettledPaymentIsNotReadBackAgain() = runTest {
+        payments.emitPayments(listOf(payment()))
+        viewModel()
+        advanceUntilIdle()
+
+        assertContentEquals(emptyList(), payments.refreshedPayments)
+    }
+
+    /** The read writes to storage, which emits back in, so repeating on every emission never stops. */
+    @Test
+    fun anUnsettledPaymentIsReadBackOnlyOnce() = runTest {
+        val inProgress = payment(status = PaymentStatus.AcceptedSettlementInProcess)
+        payments.emitPayments(listOf(inProgress))
+        viewModel()
+        advanceUntilIdle()
+
+        payments.emitPayments(listOf(inProgress))
+        advanceUntilIdle()
+
+        assertEquals(1, payments.refreshedPayments.size)
+    }
+
     // what the screen allows
 
     @Test
@@ -341,11 +377,12 @@ class VrpConsentDetailViewModelTest {
     private fun payment(
         localId: String = "pay-1",
         minorUnits: Long = 45_00L,
+        status: PaymentStatus = PaymentStatus.AcceptedCreditSettlementCompleted,
     ) = VrpPayment(
         localId = localId,
         consentId = CONSENT_ID,
         amount = Money(minorUnits, "GBP"),
-        status = PaymentStatus.AcceptedCreditSettlementCompleted,
+        status = status,
         createdAt = Instant.parse("2026-08-14T09:00:00Z"),
     )
 }

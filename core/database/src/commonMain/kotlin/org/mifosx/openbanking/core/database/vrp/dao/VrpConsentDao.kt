@@ -10,9 +10,8 @@
 package org.mifosx.openbanking.core.database.vrp.dao
 
 import androidx.room3.Dao
-import androidx.room3.Insert
-import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
 
@@ -34,7 +33,14 @@ interface VrpConsentDao {
     @Query("SELECT * FROM vrp_consent WHERE consentId = :consentId")
     suspend fun findById(consentId: String): VrpConsentEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /**
+     * Writes a consent, keeping the payments made under it.
+     *
+     * `@Upsert`, never `@Insert(REPLACE)`: SQLite implements REPLACE as a delete followed by an
+     * insert, and `vrp_payment` cascades on that delete — so re-storing a consent would take its
+     * whole payment history with it.
+     */
+    @Upsert
     suspend fun upsert(consent: VrpConsentEntity)
 
     @Query("UPDATE vrp_consent SET status = :status, syncedAt = :syncedAt WHERE consentId = :consentId")

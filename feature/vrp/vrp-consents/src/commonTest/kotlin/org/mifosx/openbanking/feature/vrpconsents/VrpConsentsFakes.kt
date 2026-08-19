@@ -112,6 +112,11 @@ class FakeVrpPaymentRepository(
     ): NetworkResult<VrpPayment, NetworkError> =
         NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
 
-    override suspend fun refreshStatus(payment: VrpPayment): NetworkResult<VrpPayment, NetworkError> =
-        NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+    /** Every payment a status read was asked for, in order. */
+    val refreshedPayments = mutableListOf<VrpPayment>()
+
+    override suspend fun refreshStatus(payment: VrpPayment): NetworkResult<VrpPayment, NetworkError> {
+        refreshedPayments += payment
+        return NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+    }
 }
