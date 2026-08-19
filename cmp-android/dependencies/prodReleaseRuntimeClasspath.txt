@@ -44,6 +44,10 @@
 :feature:statements
 :feature:transaction-detail
 :feature:transactions
+:feature:vrp:vrp-callback
+:feature:vrp:vrp-consents
+:feature:vrp:vrp-payment
+:feature:vrp:vrp-setup
 androidx.activity:activity-compose:1.12.2
 androidx.activity:activity-ktx:1.12.2
 androidx.activity:activity:1.12.2

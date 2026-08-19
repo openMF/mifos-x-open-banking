@@ -43,6 +43,10 @@ import org.mifosx.openbanking.feature.statements.StatementFileHandler
 import org.mifosx.openbanking.feature.statements.di.StatementsModule
 import org.mifosx.openbanking.feature.transactiondetail.di.TransactionDetailModule
 import org.mifosx.openbanking.feature.transactions.di.TransactionsModule
+import org.mifosx.openbanking.feature.vrpcallback.di.VrpCallbackModule
+import org.mifosx.openbanking.feature.vrpconsents.di.VrpConsentsModule
+import org.mifosx.openbanking.feature.vrppayment.di.VrpPaymentModule
+import org.mifosx.openbanking.feature.vrpsetup.di.VrpSetupModule
 import template.core.base.analytics.di.analyticsModule
 import template.core.base.common.di.CommonModule
 import template.core.base.platform.di.platformModule
@@ -90,6 +94,10 @@ object KoinModules {
             SendMoneyModule,
             PaymentStatusModule,
             PaymentConsentModule,
+            VrpConsentsModule,
+            VrpSetupModule,
+            VrpCallbackModule,
+            VrpPaymentModule,
         )
 
         // App-layer binding for the statements feature's platform delivery seam; the impl is

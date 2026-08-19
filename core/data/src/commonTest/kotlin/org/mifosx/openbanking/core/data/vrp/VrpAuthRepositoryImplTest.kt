@@ -34,7 +34,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Instant
 
 private const val TOKEN_URL = "https://secure.example.test/oauth2/token"
 private const val CONSENT_ID = "45411"

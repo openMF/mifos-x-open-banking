@@ -37,6 +37,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.mifosx.openbanking.core.data.callback.ConsentRedirectBus
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
+import org.mifosx.openbanking.core.data.vrp.VrpAuthRepository
 import org.mifosx.openbanking.feature.consentcallback.ConsentCallbackRoute
 import org.mifosx.openbanking.feature.consentcallback.consentCallbackDestination
 import org.mifosx.openbanking.feature.consentcallback.navigateToConsentCallback
@@ -47,6 +48,8 @@ import org.mifosx.openbanking.feature.paymentconsent.PaymentConsentRoute
 import org.mifosx.openbanking.feature.paymentconsent.paymentConsentScreen
 import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusRoute
 import org.mifosx.openbanking.feature.paymentstatus.paymentStatusScreen
+import org.mifosx.openbanking.feature.vrpcallback.callback.VrpCallbackRoute
+import org.mifosx.openbanking.feature.vrpcallback.callback.vrpCallbackScreen
 import template.core.base.ui.util.NonNullEnterTransitionProvider
 import template.core.base.ui.util.NonNullExitTransitionProvider
 import template.core.base.ui.util.RootTransitionProviders
@@ -65,6 +68,7 @@ fun RootNavScreen(
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
     val previousStateReference = remember { AtomicReference(state) }
     val paymentAuthRepository: PaymentAuthRepository = koinInject()
+    val vrpAuthRepository: VrpAuthRepository = koinInject()
 
     val isNotSplashScreen = state != RootNavState.Splash
     LaunchedEffect(isNotSplashScreen) {
@@ -122,6 +126,13 @@ fun RootNavScreen(
             },
             onNavigateToLogin = { navController.navigateToAuthGraph(rootNavOptions()) },
         )
+        // The VRP return leg. Registered here rather than in the navbar because the redirect arrives
+        // from outside the Compose tree; both outcomes route back into the authenticated graph,
+        // which then resolves the VRP list.
+        vrpCallbackScreen(
+            onCompleted = { navController.navigateToAuthenticatedGraph(rootNavOptions()) },
+            onAbandoned = { navController.navigateToAuthenticatedGraph(rootNavOptions()) },
+        )
         authenticatedGraph(
             navController = navController,
             onLoggedOut = { navController.navigateToAuthGraph(rootNavOptions()) },
@@ -155,7 +166,15 @@ fun RootNavScreen(
             // account bearer with a payments-scoped token, breaking every read in the app. The test
             // matches the callback's `state` against the payment authorisation in flight — a value
             // only that leg could have minted.
-            if (paymentAuthRepository.isPaymentRedirect(redirectUrl)) {
+            // VRP is asked first. It runs under the PISP role on the same redirect URI, so a VRP
+            // return reaching the payment branch would be exchanged into the payment session and its
+            // per-consent refresh token — the whole point of the product — never stored.
+            if (vrpAuthRepository.isVrpRedirect(redirectUrl)) {
+                navController.navigate(
+                    VrpCallbackRoute(redirectUrl = redirectUrl),
+                    rootNavOptions(),
+                )
+            } else if (paymentAuthRepository.isPaymentRedirect(redirectUrl)) {
                 navController.navigate(
                     PaymentConsentRoute(redirectUrl = redirectUrl),
                     rootNavOptions(),

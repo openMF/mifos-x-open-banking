@@ -84,6 +84,12 @@ import org.mifosx.openbanking.feature.transactiondetail.TransactionDetailRoute
 import org.mifosx.openbanking.feature.transactiondetail.transactionDetailScreen
 import org.mifosx.openbanking.feature.transactions.TransactionsRoute
 import org.mifosx.openbanking.feature.transactions.transactionsScreen
+import org.mifosx.openbanking.feature.vrpconsents.consentList.navigateToVrpConsentList
+import org.mifosx.openbanking.feature.vrpconsents.navigation.vrpConsentsDestination
+import org.mifosx.openbanking.feature.vrppayment.payment.navigateToVrpPayment
+import org.mifosx.openbanking.feature.vrppayment.payment.vrpPaymentScreen
+import org.mifosx.openbanking.feature.vrpsetup.setup.navigateToVrpSetup
+import org.mifosx.openbanking.feature.vrpsetup.setup.vrpSetupScreen
 import template.core.base.ui.util.RootTransitionProviders
 
 @Composable
@@ -173,7 +179,22 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
                 onNavigateToSendMoney = { navController.navigate(SendMoneyRoute) },
                 onNavigateToSchedulePayment = { navController.navigate(SchedulePaymentRoute) },
                 onNavigateToStandingOrder = { navController.navigate(StandingOrderRoute) },
+                onNavigateToVrp = { navController.navigateToVrpConsentList() },
             )
+
+            // The VRP destinations. Siblings of the hub graph, like the payment flows — but only
+            // setup hands off to the browser, and its return leg lands at the root navigator.
+            vrpConsentsDestination(
+                navController = navController,
+                onBack = { navController.popBackStack() },
+                onNavigateToSetup = { navController.navigateToVrpSetup() },
+                onNavigateToPayment = { consentId -> navController.navigateToVrpPayment(consentId) },
+            )
+            vrpSetupScreen(
+                onBack = { navController.popBackStack() },
+                onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
+            )
+            vrpPaymentScreen(onBack = { navController.popBackStack() })
             sendMoneyGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},

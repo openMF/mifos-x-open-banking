@@ -30,6 +30,7 @@ internal fun PaymentsHubScreen(
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
     onNavigateToStandingOrder: () -> Unit = {},
+    onNavigateToVrp: () -> Unit = {},
 ) {
     KptScaffold(
         showNavigationIcon = false,
@@ -40,6 +41,7 @@ internal fun PaymentsHubScreen(
             onNavigateToSendMoney = onNavigateToSendMoney,
             onNavigateToSchedulePayment = onNavigateToSchedulePayment,
             onNavigateToStandingOrder = onNavigateToStandingOrder,
+            onNavigateToVrp = onNavigateToVrp,
         )
     }
 }

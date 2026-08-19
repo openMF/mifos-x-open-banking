@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 Mifos Initiative
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+    If a copy of the MPL was not distributed with this file,
+    You can obtain one at https://mozilla.org/MPL/2.0/.
+
+    See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+-->
+<resources>
+    <string name="feature_vrp_payment_title">Make a payment</string>
+    <string name="feature_vrp_payment_to">To %1$s</string>
+    <string name="feature_vrp_payment_from">From %1$s</string>
+    <string name="feature_vrp_payment_amount_label">Amount</string>
+    <string name="feature_vrp_payment_per_payment_limit">Up to %1$s in one payment</string>
+    <string name="feature_vrp_payment_remaining">%1$s left this %2$s</string>
+    <string name="feature_vrp_payment_remaining_note">Based on payments made in this app. Your bank has the final say.</string>
+    <string name="feature_vrp_payment_amount_error_missing">Enter an amount.</string>
+    <string name="feature_vrp_payment_amount_error_min">Enter at least £0.01.</string>
+    <string name="feature_vrp_payment_amount_error_decimals">Use pounds and pence, for example 50.00.</string>
+    <string name="feature_vrp_payment_amount_error_per_payment">That is more than the %1$s limit for a single payment.</string>
+    <string name="feature_vrp_payment_amount_error_remaining">That is more than the %1$s left this %2$s.</string>
+    <string name="feature_vrp_payment_check_funds">Check funds</string>
+    <string name="feature_vrp_payment_funds_warning">Your bank says there may not be enough in this account.</string>
+    <string name="feature_vrp_payment_continue">Continue</string>
+    <string name="feature_vrp_payment_unusable">This VRP can no longer be used.</string>
+    <string name="feature_vrp_payment_error_title">Could not load this VRP</string>
+    <string name="feature_vrp_payment_error_body">Something went wrong. Please try again.</string>
+    <string name="feature_vrp_payment_retry">Retry</string>
+
+    <string name="feature_vrp_payment_review_title">Check this payment</string>
+    <string name="feature_vrp_payment_review_amount">Amount</string>
+    <string name="feature_vrp_payment_review_remaining_after">%1$s will be left this %2$s</string>
+    <string name="feature_vrp_payment_review_confirm">Send payment</string>
+    <string name="feature_vrp_payment_review_back">Back</string>
+    <string name="feature_vrp_payment_review_sent_title">Payment sent</string>
+    <string name="feature_vrp_payment_review_in_progress">Your bank is processing this payment.</string>
+    <string name="feature_vrp_payment_review_settled">This payment has been sent.</string>
+    <string name="feature_vrp_payment_review_refresh">Check again</string>
+    <string name="feature_vrp_payment_review_done">Done</string>
+    <string name="feature_vrp_payment_review_failed_title">Payment not sent</string>
+    <string name="feature_vrp_payment_review_error_limit">This is more than your remaining limit for this %1$s.</string>
+    <string name="feature_vrp_payment_review_error_unusable">This VRP can no longer be used. You will need to set up a new one.</string>
+    <string name="feature_vrp_payment_review_error_reauthorise">Your bank needs you to approve this arrangement again.</string>
+    <string name="feature_vrp_payment_review_error_rejected">Your bank did not accept this payment. No money has left your account.</string>
+    <string name="feature_vrp_payment_review_error_unconfirmed">We could not confirm whether this payment went through. Do not send it again — check your payments in a moment.</string>
+    <string name="feature_vrp_payment_review_error_network">We could not reach your bank. Retrying will not send it twice.</string>
+    <string name="feature_vrp_payment_review_support_reference">Reference: %1$s</string>
+    <string name="feature_vrp_payment_review_retry">Retry</string>
+
+    <string name="feature_vrp_payment_period_day">day</string>
+    <string name="feature_vrp_payment_period_week">week</string>
+    <string name="feature_vrp_payment_period_fortnight">fortnight</string>
+    <string name="feature_vrp_payment_period_month">month</string>
+    <string name="feature_vrp_payment_period_half_year">half-year</string>
+    <string name="feature_vrp_payment_period_year">year</string>
+</resources>

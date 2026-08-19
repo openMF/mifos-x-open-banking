@@ -78,6 +78,7 @@ internal fun PaymentsHubContent(
     modifier: Modifier = Modifier,
     onNavigateToSchedulePayment: () -> Unit = {},
     onNavigateToStandingOrder: () -> Unit = {},
+    onNavigateToVrp: () -> Unit = {},
 ) {
     // Scrollable even though it is one section: two rows of 120dp cards plus the scaffold's chrome
     // overflow a short screen, and the LazyColumn this replaced scrolled by construction.
@@ -92,6 +93,7 @@ internal fun PaymentsHubContent(
             onNavigateToSendMoney = onNavigateToSendMoney,
             onNavigateToSchedulePayment = onNavigateToSchedulePayment,
             onNavigateToStandingOrder = onNavigateToStandingOrder,
+            onNavigateToVrp = onNavigateToVrp,
         )
     }
 }
@@ -101,12 +103,14 @@ private fun QuickActionsSection(
     onNavigateToSendMoney: () -> Unit,
     onNavigateToSchedulePayment: () -> Unit,
     onNavigateToStandingOrder: () -> Unit,
+    onNavigateToVrp: () -> Unit,
 ) {
     val gap = KptTheme.spacing.md
     val rows = quickActionRows(
         onSendMoney = onNavigateToSendMoney,
         onSchedulePayment = onNavigateToSchedulePayment,
         onStandingOrder = onNavigateToStandingOrder,
+        onVrp = onNavigateToVrp,
     )
     Column(modifier = Modifier.testTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID)) {
         for (row in rows) {
@@ -144,6 +148,7 @@ private fun quickActionRows(
     onSendMoney: () -> Unit,
     onSchedulePayment: () -> Unit,
     onStandingOrder: () -> Unit,
+    onVrp: () -> Unit,
 ): List<List<QuickActionItem>> = listOf(
     listOf(
         QuickActionItem(
@@ -173,7 +178,8 @@ private fun quickActionRows(
             icon = quickActionIcon(Icons.Filled.Speed),
             label = "VRP / Sweeping",
             testTag = PaymentsHubTestTags.QUICK_ACTION_VRP,
-            subtext = "Automatic sweep",
+            subtext = "Pay without signing in",
+            onClick = onVrp,
         ),
     ),
 )
