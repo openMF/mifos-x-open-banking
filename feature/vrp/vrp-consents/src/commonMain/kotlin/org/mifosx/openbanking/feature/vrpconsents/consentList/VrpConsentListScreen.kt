@@ -159,7 +159,7 @@ private fun ConsentCard(
             .testTag(VrpConsentListTestTags.row(consent.consentId))
             .clickable(onClick = onClick),
         shape = KptTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = KptTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = KptTheme.colorScheme.surfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = KptTheme.elevation.level1),
     ) {
         Row(
@@ -186,7 +186,7 @@ private fun ConsentCard(
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Text(
-                        text = consent.limitAmountLabel,
+                        text = consent.ceilingAmount,
                         style = KptTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Light,
                         color = KptTheme.colorScheme.onSurface,
@@ -194,7 +194,7 @@ private fun ConsentCard(
                     Text(
                         text = stringResource(
                             Res.string.feature_vrp_consents_list_limit_format,
-                            periodLabel(consent.period),
+                            periodLabel(consent.periodType),
                         ),
                         style = KptTheme.typography.bodyMedium,
                         color = KptTheme.colorScheme.onSurfaceVariant,

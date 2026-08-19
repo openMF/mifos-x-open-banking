@@ -18,6 +18,10 @@ import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.model.vrp.Money
 import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.Res
+import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_checked_days
+import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_checked_hours
+import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_checked_just_now
+import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_checked_minutes
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_payment_failed
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_payment_pending
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_payment_sent
@@ -34,6 +38,11 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vr
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_status_expired
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_status_rejected
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_status_revoked
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 private const val WHOLE_AMOUNT_SUFFIX = ".00"
 
@@ -85,4 +94,32 @@ internal fun paymentStatusLabel(status: PaymentStatus): String = when (status.di
     PaymentDisposition.TerminalSuccess -> stringResource(Res.string.feature_vrp_consents_payment_sent)
     PaymentDisposition.TerminalFailure -> stringResource(Res.string.feature_vrp_consents_payment_failed)
     PaymentDisposition.InProgress -> stringResource(Res.string.feature_vrp_consents_payment_pending)
+}
+
+/**
+ * How long has passed since [instant], worded for reading, e.g. `2 minutes ago`.
+ *
+ * Elapsed time is measured at composition, so the wording is as of the last recomposition.
+ */
+@Composable
+internal fun timeElapsedSince(instant: Instant): String {
+    val elapsed = Clock.System.now() - instant
+    return when {
+        elapsed < 1.minutes -> stringResource(Res.string.feature_vrp_consents_detail_checked_just_now)
+
+        elapsed < 1.hours -> stringResource(
+            Res.string.feature_vrp_consents_detail_checked_minutes,
+            elapsed.inWholeMinutes,
+        )
+
+        elapsed < 1.days -> stringResource(
+            Res.string.feature_vrp_consents_detail_checked_hours,
+            elapsed.inWholeHours,
+        )
+
+        else -> stringResource(
+            Res.string.feature_vrp_consents_detail_checked_days,
+            elapsed.inWholeDays,
+        )
+    }
 }

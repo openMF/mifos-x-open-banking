@@ -11,8 +11,10 @@ package org.mifosx.openbanking.feature.vrpconsents.di
 
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.mifosx.openbanking.feature.vrpconsents.consentDetail.VrpConsentDetailViewModel
 import org.mifosx.openbanking.feature.vrpconsents.consentList.VrpConsentListViewModel
 
 val VrpConsentsModule = module {
     viewModelOf(::VrpConsentListViewModel)
+    viewModelOf(::VrpConsentDetailViewModel)
 }

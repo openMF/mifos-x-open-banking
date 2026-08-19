@@ -53,8 +53,8 @@ sealed interface VrpConsentListUiState {
  *
  * @property consentId The row key, and the argument the detail route takes.
  * @property payeeName Who the money goes to, e.g. `Sarah Chen`.
- * @property limitAmountLabel The headline ceiling, e.g. `£500`.
- * @property period The window that ceiling covers.
+ * @property ceilingAmount The headline ceiling, e.g. `£500`.
+ * @property periodType The window that ceiling covers.
  * @property status The consent's status at [VrpConsent.syncedAt].
  * @property validUntil When it stops, e.g. `18 Mar 2027`. Null when it runs indefinitely.
  * @property isRevoked Whether the app has ended this authority.
@@ -62,8 +62,8 @@ sealed interface VrpConsentListUiState {
 data class ConsentRowUi(
     val consentId: String,
     val payeeName: String,
-    val limitAmountLabel: String,
-    val period: PeriodType?,
+    val ceilingAmount: String,
+    val periodType: PeriodType?,
     val status: ConsentStatus,
     val validUntil: String?,
     val isRevoked: Boolean,
@@ -156,10 +156,10 @@ private fun VrpConsent.toRowUi(): ConsentRowUi {
     return ConsentRowUi(
         consentId = consentId,
         payeeName = payee.name,
-        limitAmountLabel = formatLimitAmount(
+        ceilingAmount = formatLimitAmount(
             headline?.amount ?: controlParameters.maximumIndividualAmount,
         ),
-        period = headline?.periodType,
+        periodType = headline?.periodType,
         status = status,
         validUntil = validity?.validTo?.let { formatIsoDate(it.toString()) },
         isRevoked = revokedAt != null,
