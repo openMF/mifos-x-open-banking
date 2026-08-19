@@ -149,10 +149,10 @@ class FakeVrpAuthRepository(
 
     override fun validateCallback(redirectUrl: String): VrpAuthValidation = VrpAuthValidation.NoPending
 
-    override suspend fun completeAuthorisation(
+    override suspend fun exchangeAndPersistCredential(
         code: String,
         consentId: String,
-    ): NetworkResult<VrpConsent, NetworkError> =
+    ): NetworkResult<Unit, NetworkError> =
         NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
 
     override fun pendingConsentId(): String? = null

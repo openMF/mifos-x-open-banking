@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.core.data.vrp
 
-import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
@@ -63,16 +62,16 @@ interface VrpAuthRepository {
     fun validateCallback(redirectUrl: String): VrpAuthValidation
 
     /**
-     * Exchanges [code] for the consent's credentials and reads [consentId] back.
+     * Exchanges [code] for the consent's credentials and stores them against [consentId].
      *
-     * The refresh token is stored before the consent is read, so an app that dies mid-way can still
-     * pay under a consent the customer already approved. Losing it would mean sending them back to
-     * the bank for a consent that is authorised there.
+     * Separate from reading the consent back so a caller can tell the two apart: a failure here
+     * means the customer approved at the bank and this app holds nothing, which is unrecoverable,
+     * while a failure reading back leaves a usable consent.
      */
-    suspend fun completeAuthorisation(
+    suspend fun exchangeAndPersistCredential(
         code: String,
         consentId: String,
-    ): NetworkResult<VrpConsent, NetworkError>
+    ): NetworkResult<Unit, NetworkError>
 
     /** The consent currently being authorised, or null when none is. */
     fun pendingConsentId(): String?

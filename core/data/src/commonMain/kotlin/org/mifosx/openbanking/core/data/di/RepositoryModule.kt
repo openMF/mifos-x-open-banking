@@ -129,7 +129,6 @@ val DataModule = module {
         VrpAuthRepositoryImpl(
             oauth = get(),
             session = get(),
-            consents = get(),
             signingKeyPem = get(named("hsbcSigningKey")),
             clientId = get(named("hsbcClientId")),
             kid = get(named("hsbcKid")),

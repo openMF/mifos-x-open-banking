@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 Mifos Initiative
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+    If a copy of the MPL was not distributed with this file,
+    You can obtain one at https://mozilla.org/MPL/2.0/.
+
+    See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+-->
+<resources>
+    <string name="feature_vrp_callback_title">Setting up</string>
+    <string name="feature_vrp_callback_validating">Checking your approval…</string>
+    <string name="feature_vrp_callback_exchanging">Confirming with your bank…</string>
+    <string name="feature_vrp_callback_saving">Saving your VRP…</string>
+    <string name="feature_vrp_callback_confirming">Almost done…</string>
+
+    <string name="feature_vrp_callback_success_title">VRP set up</string>
+    <string name="feature_vrp_callback_success_body">You can now pay %1$s from this app without signing in to your bank again.</string>
+    <string name="feature_vrp_callback_done">Done</string>
+
+    <string name="feature_vrp_callback_unusable_title">Set up, but not usable</string>
+    <string name="feature_vrp_callback_unusable_body">The account you chose at your bank cannot make these payments. Set one up again with a different account.</string>
+
+    <string name="feature_vrp_callback_failed_title">Setup did not finish</string>
+    <string name="feature_vrp_callback_failed_invalid">We could not confirm this came from your bank. Nothing has been set up.</string>
+    <string name="feature_vrp_callback_failed_expired">Your bank\'s approval has expired. Nothing has been set up.</string>
+    <string name="feature_vrp_callback_failed_not_saved">Your bank approved this, but we could not save it on this device. Please contact support and quote the reference below.</string>
+    <string name="feature_vrp_callback_failed_confirmation">Your VRP is set up. We could not load its details just now — you will find it in your list.</string>
+    <string name="feature_vrp_callback_failed_network">We lost connection before finishing. Nothing has been set up.</string>
+    <string name="feature_vrp_callback_support_reference">Reference: %1$s</string>
+
+    <string name="feature_vrp_callback_start_again">Start again</string>
+    <string name="feature_vrp_callback_dismiss">Close</string>
+</resources>

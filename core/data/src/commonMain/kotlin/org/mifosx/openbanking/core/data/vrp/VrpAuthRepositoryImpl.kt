@@ -11,7 +11,6 @@ package org.mifosx.openbanking.core.data.vrp
 
 import org.mifosx.openbanking.core.data.callback.impl.idTokenNonceMismatch
 import org.mifosx.openbanking.core.data.callback.impl.parseCallbackUrl
-import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.network.api.ConsentCreationScope
 import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.authorize.generateConsentAuthorizationUrl
@@ -26,7 +25,6 @@ private const val ERROR_ACCESS_DENIED = "access_denied"
 internal class VrpAuthRepositoryImpl(
     private val oauth: OAuth,
     private val session: VrpAuthSession,
-    private val consents: VrpConsentRepository,
     private val signingKeyPem: String,
     private val clientId: String,
     private val kid: String,
@@ -97,10 +95,10 @@ internal class VrpAuthRepositoryImpl(
     }
 
     @Suppress("ReturnCount")
-    override suspend fun completeAuthorisation(
+    override suspend fun exchangeAndPersistCredential(
         code: String,
         consentId: String,
-    ): NetworkResult<VrpConsent, NetworkError> {
+    ): NetworkResult<Unit, NetworkError> {
         val tokens = when (val result = oauth.exchangeAuthorizationCode(code, redirectUri)) {
             is NetworkResult.Success -> result.data
             is NetworkResult.Error -> return result
@@ -114,7 +112,7 @@ internal class VrpAuthRepositoryImpl(
         session.saveRefreshToken(consentId, refreshToken)
         session.clearAuthorisationInFlight()
 
-        return consents.refreshStatus(consentId)
+        return NetworkResult.Success(Unit)
     }
 
     override fun pendingConsentId(): String? = session.pendingConsentId()

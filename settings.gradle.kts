@@ -138,6 +138,7 @@ include(":feature:payments-standing-order")
 
 include(":feature:vrp:vrp-consents")
 include(":feature:vrp:vrp-setup")
+include(":feature:vrp:vrp-callback")
 
 include(":core-base:analytics")
 include(":core-base:common")

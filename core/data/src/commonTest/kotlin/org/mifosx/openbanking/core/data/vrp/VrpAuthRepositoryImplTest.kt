@@ -19,19 +19,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.data.TestSigningKey
-import org.mifosx.openbanking.core.model.callback.ConsentStatus
-import org.mifosx.openbanking.core.model.vrp.AccountIdentity
-import org.mifosx.openbanking.core.model.vrp.Money
-import org.mifosx.openbanking.core.model.vrp.PeriodType
-import org.mifosx.openbanking.core.model.vrp.PeriodicLimit
-import org.mifosx.openbanking.core.model.vrp.VrpConsent
-import org.mifosx.openbanking.core.model.vrp.VrpConsentDraft
-import org.mifosx.openbanking.core.model.vrp.VrpControlParameters
 import org.mifosx.openbanking.core.network.api.OAuth
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -60,51 +50,9 @@ class VrpAuthRepositoryImplTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
-    private fun consent() = VrpConsent(
-        consentId = CONSENT_ID,
-        status = ConsentStatus.Authorised,
-        createdAt = Instant.parse("2026-08-15T20:36:00Z"),
-        controlParameters = VrpControlParameters(
-            maximumIndividualAmount = Money(10_000L, "GBP"),
-            periodicLimits = listOf(PeriodicLimit(PeriodType.Day, Money(50_000L, "GBP"))),
-            interactionType = "UK.OBIE.VRPType.Sweeping",
-        ),
-        payee = AccountIdentity(
-            schemeName = "UK.OBIE.SortCodeAccountNumber",
-            identification = "80200110203350",
-            name = "Mr Dharani C",
-        ),
-    )
-
-    /** Records what the session held at the moment the consent was read back. */
-    private inner class RecordingConsents(
-        private val session: VrpAuthSession,
-    ) : VrpConsentRepository {
-        var refreshTokenWhenRead: String? = null
-            private set
-        var readConsentId: String? = null
-            private set
-
-        override fun observeActive(): Flow<List<VrpConsent>> = MutableStateFlow(emptyList())
-        override fun observeById(consentId: String): Flow<VrpConsent?> = MutableStateFlow(null)
-
-        override suspend fun stageConsent(draft: VrpConsentDraft): NetworkResult<VrpConsent, NetworkError> =
-            NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
-
-        override suspend fun refreshStatus(consentId: String): NetworkResult<VrpConsent, NetworkError> {
-            readConsentId = consentId
-            refreshTokenWhenRead = session.refreshToken(consentId)
-            return NetworkResult.Success(consent())
-        }
-
-        override suspend fun revoke(consentId: String): NetworkResult<Unit, NetworkError> =
-            NetworkResult.Success(Unit)
-    }
-
     private class Fixture(
         val repository: VrpAuthRepositoryImpl,
         val session: SettingsVrpAuthSession,
-        val consents: VrpConsentRepository,
     )
 
     private suspend fun fixture(tokenBody: String? = null): Fixture {
@@ -121,13 +69,11 @@ class VrpAuthRepositoryImplTest {
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         }
         val session = SettingsVrpAuthSession(MapSettings())
-        val consents = RecordingConsents(session)
         val oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem())
         return Fixture(
             repository = VrpAuthRepositoryImpl(
                 oauth = oauth,
                 session = session,
-                consents = consents,
                 signingKeyPem = TestSigningKey.pem(),
                 clientId = "test-client",
                 kid = "test-kid",
@@ -136,7 +82,6 @@ class VrpAuthRepositoryImplTest {
                 redirectUri = REDIRECT_URI,
             ),
             session = session,
-            consents = consents,
         )
     }
 
@@ -238,35 +183,23 @@ class VrpAuthRepositoryImplTest {
     }
 
     @Test
-    fun storesTheConsentsRefreshTokenBeforeReadingTheConsentBack() = runTest {
-        val f = fixture()
-        f.repository.beginAuthorisation(CONSENT_ID)
-
-        val result = f.repository.completeAuthorisation("auth-code-1", CONSENT_ID)
-
-        assertIs<NetworkResult.Success<VrpConsent>>(result)
-        val consents = f.consents as RecordingConsents
-        assertEquals(CONSENT_ID, consents.readConsentId)
-        assertEquals(REFRESH_TOKEN, consents.refreshTokenWhenRead)
-    }
-
-    @Test
     fun keepsTheRefreshTokenUnderTheConsentItBelongsTo() = runTest {
         val f = fixture()
         f.repository.beginAuthorisation(CONSENT_ID)
 
-        f.repository.completeAuthorisation("auth-code-1", CONSENT_ID)
+        val result = f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID)
 
+        assertIs<NetworkResult.Success<Unit>>(result)
         assertEquals(REFRESH_TOKEN, f.session.refreshToken(CONSENT_ID))
         assertNull(f.session.refreshToken("some-other-consent"))
     }
 
     @Test
-    fun clearsTheRoundTripOnceTheAuthorisationIsComplete() = runTest {
+    fun clearsTheRoundTripOnceTheCredentialIsStored() = runTest {
         val f = fixture()
         f.repository.beginAuthorisation(CONSENT_ID)
 
-        f.repository.completeAuthorisation("auth-code-1", CONSENT_ID)
+        f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID)
 
         assertNull(f.session.pendingConsentId())
     }
@@ -279,7 +212,7 @@ class VrpAuthRepositoryImplTest {
         )
         f.repository.beginAuthorisation(CONSENT_ID)
 
-        val result = f.repository.completeAuthorisation("auth-code-1", CONSENT_ID)
+        val result = f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID)
 
         assertIs<NetworkResult.Error<NetworkError>>(result)
         assertNull(f.session.refreshToken(CONSENT_ID))
