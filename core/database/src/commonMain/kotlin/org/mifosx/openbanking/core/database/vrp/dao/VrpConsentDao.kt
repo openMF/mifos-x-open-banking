@@ -27,6 +27,10 @@ interface VrpConsentDao {
     @Query("SELECT * FROM vrp_consent WHERE consentId = :consentId")
     fun observeById(consentId: String): Flow<VrpConsentEntity?>
 
+    /** Consents the app has not revoked, newest first. */
+    @Query("SELECT * FROM vrp_consent WHERE revokedAt IS NULL ORDER BY createdAt DESC")
+    suspend fun findActive(): List<VrpConsentEntity>
+
     @Query("SELECT * FROM vrp_consent WHERE consentId = :consentId")
     suspend fun findById(consentId: String): VrpConsentEntity?
 

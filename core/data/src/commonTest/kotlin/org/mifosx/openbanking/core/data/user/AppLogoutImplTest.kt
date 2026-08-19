@@ -17,8 +17,14 @@ import org.mifosx.openbanking.core.data.banking.ConsentRevokeRepository
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.user.impl.AppLogoutImpl
+import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
 import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
+import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
+import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
+import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
+import org.mifosx.openbanking.core.database.vrp.entity.VrpPaymentEntity
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
@@ -27,6 +33,8 @@ import org.mifosx.openbanking.core.model.user.DarkThemeConfig
 import org.mifosx.openbanking.core.model.user.LanguageConfig
 import org.mifosx.openbanking.core.model.user.ThemeBrand
 import org.mifosx.openbanking.core.model.user.UserData
+import org.mifosx.openbanking.core.model.vrp.VrpConsent
+import org.mifosx.openbanking.core.model.vrp.VrpConsentDraft
 import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 import org.mifosx.openbanking.core.store.infra.StoreCacheManager
 import template.core.base.network.NetworkError
@@ -51,13 +59,84 @@ class AppLogoutImplTest {
         userData: RecordingUserDataRepository = RecordingUserDataRepository(),
         cache: RecordingStoreCacheManager = RecordingStoreCacheManager(),
         paymentAuth: RecordingPaymentAuthSession = RecordingPaymentAuthSession(),
-    ) = AppLogoutImpl(revoke, session, paymentAuth, userData, cache, paymentHistoryDao = FakePaymentHistoryDao())
+        vrpConsents: VrpConsentRepository = RecordingVrpConsentRepository(),
+        vrpConsentDao: FakeVrpConsentDao = FakeVrpConsentDao(),
+        vrpPaymentDao: FakeVrpPaymentDao = FakeVrpPaymentDao(),
+        vrpAuthSession: RecordingVrpAuthSession = RecordingVrpAuthSession(),
+    ) = AppLogoutImpl(
+        consentRevokeRepository = revoke,
+        consentSession = session,
+        paymentAuthSession = paymentAuth,
+        userDataRepository = userData,
+        storeCacheManager = cache,
+        paymentHistoryDao = FakePaymentHistoryDao(),
+        vrpConsentRepository = vrpConsents,
+        vrpConsentDao = vrpConsentDao,
+        vrpPaymentDao = vrpPaymentDao,
+        vrpAuthSession = vrpAuthSession,
+    )
+
+    private fun vrpConsentRow(consentId: String) = VrpConsentEntity(
+        consentId = consentId,
+        status = "Authorised",
+        createdAt = "2026-08-15T20:36:00Z",
+        currency = "GBP",
+        maxIndividualAmountMinor = 10_000L,
+        interactionType = "UK.OBIE.VRPType.Sweeping",
+        payeeScheme = "UK.OBIE.SortCodeAccountNumber",
+        payeeIdentification = "80200110203350",
+        payeeName = "Mr Dharani C",
+    )
 
     /**
      * The payment session keeps its own keys precisely so that clearing one leg cannot disturb the
      * other — which means signing out has to clear it explicitly, or a payments-scoped token outlives
      * the session that authorised it.
      */
+    @Test
+    fun signingOutRevokesEveryStandingAuthorityAtTheBank() = runTest {
+        val consents = RecordingVrpConsentRepository()
+        val dao = FakeVrpConsentDao(listOf(vrpConsentRow("45411"), vrpConsentRow("45412")))
+
+        logout(vrpConsents = consents, vrpConsentDao = dao).logOut()
+
+        assertEquals(listOf("45411", "45412"), consents.revoked)
+    }
+
+    @Test
+    fun signingOutClearsTheStandingAuthorityTablesAndCredentials() = runTest {
+        val consentDao = FakeVrpConsentDao(listOf(vrpConsentRow("45411")))
+        val paymentDao = FakeVrpPaymentDao()
+        val vrpSession = RecordingVrpAuthSession()
+
+        logout(
+            vrpConsentDao = consentDao,
+            vrpPaymentDao = paymentDao,
+            vrpAuthSession = vrpSession,
+        ).logOut()
+
+        assertTrue(consentDao.cleared)
+        assertTrue(paymentDao.cleared)
+        assertTrue(vrpSession.cleared)
+    }
+
+    @Test
+    fun signingOutCompletesEvenWhenTheBankRefusesToRevokeAStandingAuthority() = runTest {
+        val consents = RefusingVrpConsentRepository()
+        val consentDao = FakeVrpConsentDao(listOf(vrpConsentRow("45411"), vrpConsentRow("45412")))
+        val vrpSession = RecordingVrpAuthSession()
+
+        logout(
+            vrpConsents = consents,
+            vrpConsentDao = consentDao,
+            vrpAuthSession = vrpSession,
+        ).logOut()
+
+        assertEquals(listOf("45411", "45412"), consents.revoked)
+        assertTrue(consentDao.cleared)
+        assertTrue(vrpSession.cleared)
+    }
+
     @Test
     fun signingOutAlsoDropsThePaymentAuthorisation() = runTest {
         val paymentAuth = RecordingPaymentAuthSession()
@@ -259,6 +338,94 @@ private class RecordingPaymentAuthSession : PaymentAuthSession {
     override fun approvedAt(): String? = null
 
     override fun pendingConsentType(): ConsentType? = ConsentType.DomesticSinglePayment
+
+    override fun clear() {
+        cleared = true
+    }
+}
+
+private class RecordingVrpConsentRepository : VrpConsentRepository {
+    val revoked = mutableListOf<String>()
+
+    override fun observeActive(): Flow<List<VrpConsent>> = MutableStateFlow(emptyList())
+    override fun observeById(consentId: String): Flow<VrpConsent?> = MutableStateFlow(null)
+
+    override suspend fun stageConsent(draft: VrpConsentDraft): NetworkResult<VrpConsent, NetworkError> =
+        NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+
+    override suspend fun refreshStatus(consentId: String): NetworkResult<VrpConsent, NetworkError> =
+        NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+
+    override suspend fun revoke(consentId: String): NetworkResult<Unit, NetworkError> {
+        revoked += consentId
+        return NetworkResult.Success(Unit)
+    }
+}
+
+/** Refuses every revoke, to prove that signing out completes regardless. */
+private class RefusingVrpConsentRepository : VrpConsentRepository {
+    val revoked = mutableListOf<String>()
+
+    override fun observeActive(): Flow<List<VrpConsent>> = MutableStateFlow(emptyList())
+    override fun observeById(consentId: String): Flow<VrpConsent?> = MutableStateFlow(null)
+
+    override suspend fun stageConsent(draft: VrpConsentDraft): NetworkResult<VrpConsent, NetworkError> =
+        NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+
+    override suspend fun refreshStatus(consentId: String): NetworkResult<VrpConsent, NetworkError> =
+        NetworkResult.Error(NetworkError.Client.BadRequest("not used"))
+
+    override suspend fun revoke(consentId: String): NetworkResult<Unit, NetworkError> {
+        revoked += consentId
+        error("the bank refused")
+    }
+}
+
+private class FakeVrpConsentDao(private val active: List<VrpConsentEntity> = emptyList()) : VrpConsentDao {
+    var cleared = false
+        private set
+
+    override fun observeActive(): Flow<List<VrpConsentEntity>> = MutableStateFlow(active)
+    override fun observeById(consentId: String): Flow<VrpConsentEntity?> = MutableStateFlow(null)
+    override suspend fun findActive(): List<VrpConsentEntity> = active
+    override suspend fun findById(consentId: String): VrpConsentEntity? = null
+    override suspend fun upsert(consent: VrpConsentEntity) = Unit
+    override suspend fun updateStatus(consentId: String, status: String, syncedAt: String) = Unit
+    override suspend fun markRevoked(consentId: String, revokedAt: String) = Unit
+
+    override suspend fun clear() {
+        cleared = true
+    }
+}
+
+private class FakeVrpPaymentDao : VrpPaymentDao {
+    var cleared = false
+        private set
+
+    override fun observeForConsent(consentId: String): Flow<List<VrpPaymentEntity>> =
+        MutableStateFlow(emptyList())
+
+    override suspend fun findForConsent(consentId: String): List<VrpPaymentEntity> = emptyList()
+    override suspend fun findByLocalId(localId: String): VrpPaymentEntity? = null
+    override suspend fun upsert(payment: VrpPaymentEntity) = Unit
+
+    override suspend fun clear() {
+        cleared = true
+    }
+}
+
+private class RecordingVrpAuthSession : VrpAuthSession {
+    var cleared = false
+        private set
+
+    override fun saveAuthorisationInFlight(consentId: String, state: String, nonce: String) = Unit
+    override fun pendingConsentId(): String? = null
+    override fun pendingNonce(): String? = null
+    override fun matchesPendingState(state: String?): Boolean = false
+    override fun clearAuthorisationInFlight() = Unit
+    override fun saveRefreshToken(consentId: String, refreshToken: String) = Unit
+    override fun refreshToken(consentId: String): String? = null
+    override fun removeRefreshToken(consentId: String) = Unit
 
     override fun clear() {
         cleared = true

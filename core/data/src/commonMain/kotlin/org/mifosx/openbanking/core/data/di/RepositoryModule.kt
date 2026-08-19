@@ -51,6 +51,8 @@ import org.mifosx.openbanking.core.data.user.impl.AppLogoutImpl
 import org.mifosx.openbanking.core.data.user.impl.UserDataRepositoryImpl
 import org.mifosx.openbanking.core.data.user.impl.UserLogoutManagerImpl
 import org.mifosx.openbanking.core.data.vrp.SettingsVrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpAuthRepository
+import org.mifosx.openbanking.core.data.vrp.VrpAuthRepositoryImpl
 import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepositoryImpl
@@ -120,6 +122,20 @@ val DataModule = module {
             dao = get(),
             session = get(),
             tokens = get(),
+        )
+    }
+
+    single<VrpAuthRepository> {
+        VrpAuthRepositoryImpl(
+            oauth = get(),
+            session = get(),
+            consents = get(),
+            signingKeyPem = get(named("hsbcSigningKey")),
+            clientId = get(named("hsbcClientId")),
+            kid = get(named("hsbcKid")),
+            bankHost = get(named("hsbcBankHost")),
+            authorizeHost = get(named("hsbcAuthorizeHost")),
+            redirectUri = get(named("hsbcRedirectUri")),
         )
     }
 
@@ -216,6 +232,10 @@ val DataModule = module {
             userDataRepository = get(),
             storeCacheManager = get(),
             paymentHistoryDao = get(),
+            vrpConsentRepository = get(),
+            vrpConsentDao = get(),
+            vrpPaymentDao = get(),
+            vrpAuthSession = get(),
         )
     }
 

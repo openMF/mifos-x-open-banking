@@ -50,7 +50,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Clock
 import kotlin.time.Instant
 
 private const val TOKEN_URL = "https://secure.example.test/oauth2/token"
@@ -103,6 +102,8 @@ class VrpPaymentRepositoryImplTest {
         override fun observeActive(): Flow<List<VrpConsentEntity>> = rows
         override fun observeById(consentId: String): Flow<VrpConsentEntity?> =
             rows.map { list -> list.firstOrNull { it.consentId == consentId } }
+        override suspend fun findActive(): List<VrpConsentEntity> =
+            rows.value.filter { it.revokedAt == null }
         override suspend fun findById(consentId: String): VrpConsentEntity? =
             rows.value.firstOrNull { it.consentId == consentId }
         override suspend fun upsert(consent: VrpConsentEntity) {
@@ -110,7 +111,9 @@ class VrpPaymentRepositoryImplTest {
         }
         override suspend fun updateStatus(consentId: String, status: String, syncedAt: String) = Unit
         override suspend fun markRevoked(consentId: String, revokedAt: String) = Unit
-        override suspend fun clear() { rows.value = emptyList() }
+        override suspend fun clear() {
+            rows.value = emptyList()
+        }
     }
 
     private class FakePaymentDao : VrpPaymentDao {
@@ -124,7 +127,9 @@ class VrpPaymentRepositoryImplTest {
         override suspend fun upsert(payment: VrpPaymentEntity) {
             rows.value = rows.value.filterNot { it.localId == payment.localId } + payment
         }
-        override suspend fun clear() { rows.value = emptyList() }
+        override suspend fun clear() {
+            rows.value = emptyList()
+        }
     }
 
     private fun consent() = VrpConsent(

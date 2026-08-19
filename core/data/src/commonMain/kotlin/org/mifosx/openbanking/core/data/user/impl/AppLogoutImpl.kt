@@ -14,7 +14,11 @@ import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.user.AppLogout
 import org.mifosx.openbanking.core.data.user.UserDataRepository
+import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
+import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
+import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
+import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
 import org.mifosx.openbanking.core.store.infra.StoreCacheManager
 
 /**
@@ -31,6 +35,10 @@ internal class AppLogoutImpl(
     private val userDataRepository: UserDataRepository,
     private val storeCacheManager: StoreCacheManager,
     private val paymentHistoryDao: PaymentHistoryDao,
+    private val vrpConsentRepository: VrpConsentRepository,
+    private val vrpConsentDao: VrpConsentDao,
+    private val vrpPaymentDao: VrpPaymentDao,
+    private val vrpAuthSession: VrpAuthSession,
 ) : AppLogout {
 
     override suspend fun logOut() {
@@ -59,5 +67,18 @@ internal class AppLogoutImpl(
 
         // 4. Drop payment history snapshots — the next session's hub should start empty.
         paymentHistoryDao.clear()
+
+        endStandingAuthorities()
+    }
+
+    /** Ends every VRP consent at the bank and clears what this app held for it. */
+    private suspend fun endStandingAuthorities() {
+        vrpConsentDao.findActive().forEach { consent ->
+            runCatching { vrpConsentRepository.revoke(consent.consentId) }
+        }
+
+        vrpPaymentDao.clear()
+        vrpConsentDao.clear()
+        vrpAuthSession.clear()
     }
 }
