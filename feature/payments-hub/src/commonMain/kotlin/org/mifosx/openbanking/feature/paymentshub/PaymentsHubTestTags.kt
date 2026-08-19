@@ -23,6 +23,6 @@ internal object PaymentsHubTestTags {
     const val QUICK_ACTION_SCHEDULE = "paymentsHub:quickActionSchedule"
     const val QUICK_ACTION_STANDING_ORDER = "paymentsHub:quickActionStandingOrder"
 
-    /** The fourth card is "VRP / Sweeping"; it was named for an international rail it never showed. */
+    /** The fourth card is "Variable Recurring Payments"; it was named for a rail it never showed. */
     const val QUICK_ACTION_VRP = "paymentsHub:quickActionVrp"
 }

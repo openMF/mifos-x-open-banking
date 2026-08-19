@@ -10,13 +10,13 @@
 -->
 <resources>
     <string name="feature_vrp_consents_list_title">Variable Recurring Payments</string>
-    <string name="feature_vrp_consents_list_create">Set up a VRP</string>
+    <string name="feature_vrp_consents_list_create">Set up a Variable Recurring Payment</string>
     <string name="feature_vrp_consents_list_limit_format">per %1$s</string>
     <string name="feature_vrp_consents_list_valid_until">Until %1$s</string>
     <string name="feature_vrp_consents_list_no_end_date">No end date</string>
     <string name="feature_vrp_consents_list_empty_title">No variable recurring payments</string>
     <string name="feature_vrp_consents_list_empty_body">Pay someone regularly without signing in to your bank each time.</string>
-    <string name="feature_vrp_consents_list_error_title">Could not load your VRPs</string>
+    <string name="feature_vrp_consents_list_error_title">Could not load your Variable Recurring Payments</string>
     <string name="feature_vrp_consents_list_error_storage">Something went wrong. Please try again.</string>
     <string name="feature_vrp_consents_list_accessibility">Your variable recurring payments</string>
     <string name="feature_vrp_consents_list_retry">Retry</string>
@@ -36,7 +36,7 @@
     <string name="feature_vrp_consents_detail_checked_minutes">%1$d minutes ago</string>
     <string name="feature_vrp_consents_detail_checked_hours">%1$d hours ago</string>
     <string name="feature_vrp_consents_detail_checked_days">%1$d days ago</string>
-    <string name="feature_vrp_consents_detail_valid_until">Runs until %1$s</string>
+    <string name="feature_vrp_consents_detail_valid_until">Valid until %1$s</string>
     <string name="feature_vrp_consents_detail_no_end_date">No end date</string>
     <string name="feature_vrp_consents_detail_pay">Make a payment</string>
     <string name="feature_vrp_consents_detail_history_title">Payments</string>
@@ -48,11 +48,11 @@
     <string name="feature_vrp_consents_detail_revoke_confirm">Remove access</string>
     <string name="feature_vrp_consents_detail_revoke_cancel">Keep it</string>
     <string name="feature_vrp_consents_detail_revoke_failed">Removed on this device. Your bank refused, so it may still be active there.</string>
-    <string name="feature_vrp_consents_detail_ended">This VRP has ended.</string>
-    <string name="feature_vrp_consents_detail_unusable_title">This VRP cannot be used</string>
+    <string name="feature_vrp_consents_detail_ended">This Variable Recurring Payment has ended.</string>
+    <string name="feature_vrp_consents_detail_unusable_title">This Variable Recurring Payment cannot be used</string>
     <string name="feature_vrp_consents_detail_unusable_body">The account you chose at your bank cannot make these payments.</string>
-    <string name="feature_vrp_consents_detail_not_found">No record of this VRP.</string>
-    <string name="feature_vrp_consents_detail_error_title">Could not load this VRP</string>
+    <string name="feature_vrp_consents_detail_not_found">No record of this Variable Recurring Payment.</string>
+    <string name="feature_vrp_consents_detail_error_title">Could not load this Variable Recurring Payment</string>
 
     <string name="feature_vrp_consents_period_day">day</string>
     <string name="feature_vrp_consents_period_week">week</string>

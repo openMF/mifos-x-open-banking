@@ -23,8 +23,6 @@ internal object VrpPaymentTestTags {
     const val PER_PAYMENT_LIMIT = "vrpPayment:perPaymentLimit"
     const val REMAINING = "vrpPayment:remaining"
     const val REMAINING_NOTE = "vrpPayment:remainingNote"
-    const val CHECK_FUNDS_BUTTON = "vrpPayment:checkFundsButton"
-    const val FUNDS_WARNING = "vrpPayment:fundsWarning"
     const val CONTINUE_BUTTON = "vrpPayment:continueButton"
 
     const val REVIEW_PAGE = "vrpPayment:reviewPage"

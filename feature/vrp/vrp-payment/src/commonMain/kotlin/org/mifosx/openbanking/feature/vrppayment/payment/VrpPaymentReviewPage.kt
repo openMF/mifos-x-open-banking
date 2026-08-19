@@ -97,7 +97,6 @@ private fun ReviewDetails(form: PaymentFormUi) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = KptTheme.spacing.md),
         )
-
     }
 }
 

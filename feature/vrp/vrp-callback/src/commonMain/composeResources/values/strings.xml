@@ -14,7 +14,7 @@
     <string name="feature_vrp_callback_exchanging">Confirming with your bank…</string>
     <string name="feature_vrp_callback_confirming">Almost done…</string>
 
-    <string name="feature_vrp_callback_success_title">VRP set up</string>
+    <string name="feature_vrp_callback_success_title">Variable Recurring Payment set up</string>
     <string name="feature_vrp_callback_success_body">You can now pay %1$s from this app without signing in to your bank again.</string>
     <string name="feature_vrp_callback_done">Done</string>
 
@@ -25,7 +25,7 @@
     <string name="feature_vrp_callback_failed_invalid">We could not confirm this came from your bank. Nothing has been set up.</string>
     <string name="feature_vrp_callback_failed_expired">Your bank\'s approval has expired. Nothing has been set up.</string>
     <string name="feature_vrp_callback_failed_not_saved">Your bank approved this, but we could not save it on this device. Please contact support and quote the reference below.</string>
-    <string name="feature_vrp_callback_failed_confirmation">Your VRP is set up. We could not load its details just now — you will find it in your list.</string>
+    <string name="feature_vrp_callback_failed_confirmation">Your Variable Recurring Payment is set up. We could not load its details just now — you will find it in your list.</string>
     <string name="feature_vrp_callback_failed_network">We lost connection before finishing. Nothing has been set up.</string>
     <string name="feature_vrp_callback_support_reference">Reference: %1$s</string>
 

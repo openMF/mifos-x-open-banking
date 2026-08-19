@@ -463,11 +463,12 @@ private fun PaymentHistory(payments: List<PaymentRowUi>) {
             return@Column
         }
 
+        // Flat: the history is a list to read, and a raised surface reads as something to tap.
         Card(
             modifier = Modifier.fillMaxWidth().padding(top = KptTheme.spacing.sm),
             shape = KptTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = KptTheme.colorScheme.surfaceContainerLowest),
-            elevation = CardDefaults.cardElevation(defaultElevation = KptTheme.elevation.level1),
+            elevation = CardDefaults.cardElevation(defaultElevation = KptTheme.elevation.level0),
         ) {
             payments.forEachIndexed { index, payment ->
                 if (index > 0) HorizontalDivider()

@@ -32,7 +32,6 @@ object VrpPaymentFixtures {
     fun form(
         amount: String = "45.00",
         problem: AmountProblem? = null,
-        fundsWarning: Boolean = false,
     ) = PaymentFormUi(
         payeeName = "Sarah Chen",
         payerName = "Everyday Current Account",
@@ -41,7 +40,6 @@ object VrpPaymentFixtures {
         perPaymentCeilingAmount = "£200.00",
         remainingAmount = "£380.00",
         periodType = PeriodType.Month,
-        fundsWarning = fundsWarning,
     )
 
     fun state(uiState: VrpPaymentUiState) =
@@ -50,11 +48,10 @@ object VrpPaymentFixtures {
     fun amountState(
         amount: String = "45.00",
         problem: AmountProblem? = null,
-        fundsWarning: Boolean = false,
     ) = state(
         VrpPaymentUiState.Content(
             phase = PaymentPhase.Amount,
-            form = form(amount, problem, fundsWarning),
+            form = form(amount, problem),
         ),
     )
 

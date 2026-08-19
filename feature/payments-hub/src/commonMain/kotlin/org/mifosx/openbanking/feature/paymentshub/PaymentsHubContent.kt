@@ -176,7 +176,7 @@ private fun quickActionRows(
         ),
         QuickActionItem(
             icon = quickActionIcon(Icons.Filled.Speed),
-            label = "VRP / Sweeping",
+            label = "Variable Recurring Payments",
             testTag = PaymentsHubTestTags.QUICK_ACTION_VRP,
             subtext = "Pay without signing in",
             onClick = onVrp,

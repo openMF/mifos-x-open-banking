@@ -12,16 +12,11 @@ package org.mifosx.openbanking.feature.vrppayment.payment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -43,10 +38,8 @@ import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_per_payment
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_remaining
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_resting
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_check_funds
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_currency_sign
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_from
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_funds_warning
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_per_payment_limit
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_remaining
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_remaining_note
@@ -140,20 +133,6 @@ internal fun VrpPaymentAmountPage(
                         .testTag(VrpPaymentTestTags.REMAINING_NOTE),
                 )
             }
-
-            if (form.fundsWarning) {
-                FundsWarning()
-            }
-        }
-
-        OutlinedButton(
-            onClick = { onAction(VrpPaymentAction.CheckFunds) },
-            enabled = form.isUsable,
-            modifier = Modifier
-                .padding(bottom = KptTheme.spacing.md)
-                .testTag(VrpPaymentTestTags.CHECK_FUNDS_BUTTON),
-        ) {
-            Text(stringResource(Res.string.feature_vrp_payment_check_funds))
         }
     }
 }
@@ -213,29 +192,6 @@ private class CurrencySignTransformation(private val sign: String) : VisualTrans
                 (offset - sign.length).coerceIn(0, text.length)
         },
     )
-}
-
-/** Shown only on a shortfall: an available answer ignores the limits and promises nothing. */
-@Composable
-private fun FundsWarning() {
-    Row(
-        modifier = Modifier
-            .padding(top = KptTheme.spacing.md)
-            .testTag(VrpPaymentTestTags.FUNDS_WARNING),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
-    ) {
-        Icon(
-            imageVector = Icons.Filled.WarningAmber,
-            contentDescription = null,
-            tint = KptTheme.colorScheme.error,
-        )
-        Text(
-            text = stringResource(Res.string.feature_vrp_payment_funds_warning),
-            style = KptTheme.typography.bodyMedium,
-            color = KptTheme.colorScheme.error,
-        )
-    }
 }
 
 @Composable

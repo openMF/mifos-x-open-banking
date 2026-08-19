@@ -9,7 +9,7 @@
     See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
 -->
 <resources>
-    <string name="feature_vrp_setup_title">Set up a VRP</string>
+    <string name="feature_vrp_setup_title">Set up a Variable Recurring Payment</string>
     <string name="feature_vrp_setup_payer_label">Pay from</string>
     <string name="feature_vrp_setup_payer_choose_at_bank">Choose at my bank</string>
     <string name="feature_vrp_setup_payer_choose_at_bank_supporting">Pick the account when you approve</string>
@@ -39,21 +39,21 @@
     <string name="feature_vrp_setup_date_picker_cancel">Cancel</string>
     <string name="feature_vrp_setup_continue">Continue</string>
     <string name="feature_vrp_setup_no_accounts_title">No account can be used</string>
-    <string name="feature_vrp_setup_no_accounts_body">None of your accounts can set up a VRP.</string>
+    <string name="feature_vrp_setup_no_accounts_body">None of your accounts can set up a Variable Recurring Payment.</string>
     <string name="feature_vrp_setup_error_title">Could not load your accounts</string>
     <string name="feature_vrp_setup_error_body">Something went wrong. Please try again.</string>
     <string name="feature_vrp_setup_retry">Retry</string>
 
-    <string name="feature_vrp_setup_review_title">Check your VRP</string>
+    <string name="feature_vrp_setup_review_title">Check your Variable Recurring Payment</string>
     <string name="feature_vrp_setup_review_payer">From</string>
     <string name="feature_vrp_setup_review_payee">To</string>
     <string name="feature_vrp_setup_review_limits">Limits</string>
     <string name="feature_vrp_setup_review_up_to">Up to</string>
     <string name="feature_vrp_setup_review_per_payment">per payment</string>
     <string name="feature_vrp_setup_review_per_period">per %1$s</string>
-    <string name="feature_vrp_setup_review_validity">Runs until %1$s</string>
+    <string name="feature_vrp_setup_review_validity">Valid until %1$s</string>
     <string name="feature_vrp_setup_review_no_end_date">No end date</string>
-    <string name="feature_vrp_setup_review_irreversible">These limits cannot be changed later. Changing them means setting up a new VRP at your bank.</string>
+    <string name="feature_vrp_setup_review_irreversible">These limits cannot be changed later. Changing them means setting up a new Variable Recurring Payment at your bank.</string>
     <string name="feature_vrp_setup_review_confirm">Continue to your bank</string>
     <string name="feature_vrp_setup_review_protected">Protected by UK Open Banking</string>
     <string name="feature_vrp_setup_review_back">Back</string>

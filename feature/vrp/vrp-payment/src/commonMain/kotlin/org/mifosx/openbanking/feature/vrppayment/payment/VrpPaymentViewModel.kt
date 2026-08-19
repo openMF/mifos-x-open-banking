@@ -27,7 +27,6 @@ import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepository
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
-import org.mifosx.openbanking.core.model.vrp.FundsAvailability
 import org.mifosx.openbanking.core.model.vrp.Money
 import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.core.model.vrp.PeriodUsage
@@ -95,7 +94,6 @@ data class PaymentFormUi(
     val perPaymentCeilingAmount: String = "",
     val remainingAmount: String = "",
     val periodType: PeriodType? = null,
-    val fundsWarning: Boolean = false,
 ) {
 
     /** Whether the amount can be sent, as far as this app can tell. */
@@ -166,9 +164,6 @@ sealed interface VrpPaymentAction {
 
     data class AmountChanged(val value: String) : VrpPaymentAction
 
-    /** Optional. Reports only bad news; an available answer changes nothing. */
-    data object CheckFunds : VrpPaymentAction
-
     data object Continue : VrpPaymentAction
 
     data object BackToAmount : VrpPaymentAction
@@ -188,10 +183,6 @@ sealed interface VrpPaymentAction {
         data class ReceiveConsent(
             val consent: VrpConsent?,
             val usage: List<PeriodUsage>,
-        ) : Internal
-
-        data class ReceiveFundsResult(
-            val result: NetworkResult<FundsAvailability, NetworkError>,
         ) : Internal
 
         data class ReceivePaymentResult(
@@ -226,7 +217,6 @@ class VrpPaymentViewModel(
     private val amount = MutableStateFlow("")
     private val phase = MutableStateFlow(PaymentPhase.Amount)
     private val submission = MutableStateFlow<SubmissionUi>(SubmissionUi.NotStarted)
-    private val fundsWarning = MutableStateFlow(false)
     private val loaded = MutableStateFlow<LoadedConsent?>(null)
 
     /**
@@ -240,8 +230,8 @@ class VrpPaymentViewModel(
     init {
         observeConsent()
 
-        combine(loaded, amount, phase, submission, fundsWarning) { consent, entered, current, sent, warn ->
-            render(consent, entered, current, sent, warn)
+        combine(loaded, amount, phase, submission) { consent, entered, current, sent ->
+            render(consent, entered, current, sent)
         }
             .onEach { rendered -> updateState { copy(uiState = rendered) } }
             .launchIn(viewModelScope)
@@ -252,7 +242,6 @@ class VrpPaymentViewModel(
         when (action) {
             VrpPaymentAction.RetryLoad -> observeConsent()
             is VrpPaymentAction.AmountChanged -> amount.update { action.value }
-            VrpPaymentAction.CheckFunds -> checkFunds()
             VrpPaymentAction.Continue -> moveToReview()
             VrpPaymentAction.BackToAmount -> backToAmount()
             VrpPaymentAction.Confirm -> submit()
@@ -263,7 +252,6 @@ class VrpPaymentViewModel(
             is VrpPaymentAction.Internal.ReceiveConsent ->
                 loaded.update { LoadedConsent(action.consent, action.usage) }
 
-            is VrpPaymentAction.Internal.ReceiveFundsResult -> applyFundsResult(action.result)
             is VrpPaymentAction.Internal.ReceivePaymentResult -> applyPaymentResult(action.result)
         }
     }
@@ -277,19 +265,6 @@ class VrpPaymentViewModel(
         }
             .onEach { sendAction(it) }
             .launchIn(viewModelScope)
-    }
-
-    /** Reports only a shortfall: an available answer ignores the limits and promises nothing. */
-    private fun checkFunds() {
-        val entered = enteredMoney() ?: return
-        viewModelScope.launch {
-            val result = payments.checkFunds(state.consentId, entered)
-            sendAction(VrpPaymentAction.Internal.ReceiveFundsResult(result))
-        }
-    }
-
-    private fun applyFundsResult(result: NetworkResult<FundsAvailability, NetworkError>) {
-        fundsWarning.update { result is NetworkResult.Success && !result.data.available }
     }
 
     private fun moveToReview() {
@@ -355,7 +330,6 @@ class VrpPaymentViewModel(
         entered: String,
         currentPhase: PaymentPhase,
         sent: SubmissionUi,
-        warn: Boolean,
     ): VrpPaymentUiState = when {
         consent == null -> VrpPaymentUiState.Loading
         consent.consent == null -> VrpPaymentUiState.Error(VrpPaymentErrorKind.ConsentUnavailable)
@@ -363,7 +337,7 @@ class VrpPaymentViewModel(
 
         else -> VrpPaymentUiState.Content(
             phase = currentPhase,
-            form = consent.toFormUi(entered, warn),
+            form = consent.toFormUi(entered),
             outcome = sent,
         )
     }
@@ -391,7 +365,7 @@ private data class LoadedConsent(
     val bindingUsage: PeriodUsage? get() = usage.minByOrNull { it.remaining.minorUnits }
 }
 
-private fun LoadedConsent.toFormUi(entered: String, warn: Boolean): PaymentFormUi {
+private fun LoadedConsent.toFormUi(entered: String): PaymentFormUi {
     val consent = consent ?: return PaymentFormUi()
     val perPayment = consent.controlParameters.maximumIndividualAmount
 
@@ -403,7 +377,6 @@ private fun LoadedConsent.toFormUi(entered: String, warn: Boolean): PaymentFormU
         perPaymentCeilingAmount = formatExactAmount(perPayment),
         remainingAmount = bindingUsage?.let { formatExactAmount(it.remaining) }.orEmpty(),
         periodType = bindingUsage?.limit?.periodType,
-        fundsWarning = warn,
     )
 }
 

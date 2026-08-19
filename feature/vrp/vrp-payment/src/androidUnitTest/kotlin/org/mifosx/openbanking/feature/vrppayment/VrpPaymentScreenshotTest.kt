@@ -61,10 +61,6 @@ class VrpPaymentScreenshotTest {
     )
 
     @Test
-    fun amountFundsWarningGolden() =
-        capture("amount_funds_warning", VrpPaymentFixtures.amountState(fundsWarning = true))
-
-    @Test
     fun reviewGolden() = capture("review", VrpPaymentFixtures.reviewState())
 
     @Test

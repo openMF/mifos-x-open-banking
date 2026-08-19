@@ -21,7 +21,6 @@ import kotlinx.coroutines.test.setMain
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.model.vrp.AccountIdentity
-import org.mifosx.openbanking.core.model.vrp.FundsAvailability
 import org.mifosx.openbanking.core.model.vrp.Money
 import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.core.model.vrp.PeriodUsage
@@ -284,51 +283,11 @@ class VrpPaymentViewModelTest {
         assertEquals(PaymentPhase.Amount, content(vm).phase)
     }
 
-    // the funds check
-
-    /** Only bad news is reported: an available answer ignores the limits and promises nothing. */
+    /** The screen makes no funds check of its own; the bank evaluates the payment when it is sent. */
     @Test
-    fun aShortfallIsWarnedAbout() = runTest {
-        payments.fundsReturns(NetworkResult.Success(fundsAvailability(available = false)))
-        val vm = viewModel()
-        advanceUntilIdle()
-        vm.trySendAction(VrpPaymentAction.AmountChanged("45.00"))
-        vm.trySendAction(VrpPaymentAction.CheckFunds)
-        advanceUntilIdle()
-
-        assertContentEquals(listOf(Money(45_00L, "GBP")), payments.fundsChecks)
-        assertTrue(content(vm).form.fundsWarning)
-    }
-
-    @Test
-    fun anAvailableAnswerWarnsAboutNothing() = runTest {
-        payments.fundsReturns(NetworkResult.Success(fundsAvailability(available = true)))
-        val vm = viewModel()
-        advanceUntilIdle()
-        vm.trySendAction(VrpPaymentAction.AmountChanged("45.00"))
-        vm.trySendAction(VrpPaymentAction.CheckFunds)
-        advanceUntilIdle()
-
-        assertEquals(false, content(vm).form.fundsWarning)
-    }
-
-    @Test
-    fun aFailedFundsCheckWarnsAboutNothing() = runTest {
-        payments.fundsReturns(NetworkResult.Error(NetworkError.Network(IllegalStateException("offline"))))
-        val vm = viewModel()
-        advanceUntilIdle()
-        vm.trySendAction(VrpPaymentAction.AmountChanged("45.00"))
-        vm.trySendAction(VrpPaymentAction.CheckFunds)
-        advanceUntilIdle()
-
-        assertEquals(false, content(vm).form.fundsWarning)
-    }
-
-    @Test
-    fun noFundsCheckIsMadeWithoutAnAmount() = runTest {
-        val vm = viewModel()
-        advanceUntilIdle()
-        vm.trySendAction(VrpPaymentAction.CheckFunds)
+    fun noFundsCheckIsMade() = runTest {
+        val vm = reviewing()
+        vm.trySendAction(VrpPaymentAction.Confirm)
         advanceUntilIdle()
 
         assertContentEquals(emptyList(), payments.fundsChecks)
@@ -574,11 +533,5 @@ class VrpPaymentViewModelTest {
         amount = Money(45_00L, "GBP"),
         status = status,
         createdAt = Instant.parse("2026-08-19T12:00:00Z"),
-    )
-
-    private fun fundsAvailability(available: Boolean) = FundsAvailability(
-        available = available,
-        amount = Money(45_00L, "GBP"),
-        checkedAt = Instant.parse("2026-08-19T12:00:00Z"),
     )
 }

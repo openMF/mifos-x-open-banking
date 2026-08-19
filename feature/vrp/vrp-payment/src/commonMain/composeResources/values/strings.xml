@@ -21,11 +21,9 @@
     <string name="feature_vrp_payment_amount_error_decimals">Use pounds and pence, for example 50.00.</string>
     <string name="feature_vrp_payment_amount_error_per_payment">That is more than the %1$s limit for a single payment.</string>
     <string name="feature_vrp_payment_amount_error_remaining">That is more than the %1$s left this %2$s.</string>
-    <string name="feature_vrp_payment_check_funds">Check funds</string>
-    <string name="feature_vrp_payment_funds_warning">Your bank says there may not be enough in this account.</string>
     <string name="feature_vrp_payment_continue">Continue</string>
-    <string name="feature_vrp_payment_unusable">This VRP can no longer be used.</string>
-    <string name="feature_vrp_payment_error_title">Could not load this VRP</string>
+    <string name="feature_vrp_payment_unusable">This Variable Recurring Payment can no longer be used.</string>
+    <string name="feature_vrp_payment_error_title">Could not load this Variable Recurring Payment</string>
     <string name="feature_vrp_payment_error_body">Something went wrong. Please try again.</string>
     <string name="feature_vrp_payment_retry">Retry</string>
 
@@ -40,7 +38,7 @@
     <string name="feature_vrp_payment_review_done">Done</string>
     <string name="feature_vrp_payment_review_failed_title">Payment not sent</string>
     <string name="feature_vrp_payment_review_error_limit">This is more than your remaining limit for this %1$s.</string>
-    <string name="feature_vrp_payment_review_error_unusable">This VRP can no longer be used. You will need to set up a new one.</string>
+    <string name="feature_vrp_payment_review_error_unusable">This Variable Recurring Payment can no longer be used. You will need to set up a new one.</string>
     <string name="feature_vrp_payment_review_error_reauthorise">Your bank needs you to approve this arrangement again.</string>
     <string name="feature_vrp_payment_review_error_rejected">Your bank did not accept this payment. No money has left your account.</string>
     <string name="feature_vrp_payment_review_error_unconfirmed">We could not confirm whether this payment went through. Do not send it again — check your payments in a moment.</string>

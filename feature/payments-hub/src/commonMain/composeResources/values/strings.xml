@@ -16,7 +16,6 @@
     <string name="feature_payments_hub_schedule">Schedule</string>
     <string name="feature_payments_hub_standing_order">Standing order</string>
     <string name="feature_payments_hub_international">International</string>
-    <string name="feature_payments_hub_vrp">VRP / Sweeping</string>
     <string name="feature_payments_hub_check_funds">Check funds</string>
     <string name="feature_payments_hub_recent_activity">In-flight &amp; Recent</string>
     <string name="feature_payments_hub_empty_activity">No payments yet</string>
