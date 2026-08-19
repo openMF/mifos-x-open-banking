@@ -31,7 +31,6 @@
 
     <string name="feature_vrp_payment_review_title">Check this payment</string>
     <string name="feature_vrp_payment_review_amount">Amount</string>
-    <string name="feature_vrp_payment_review_remaining_after">%1$s will be left this %2$s</string>
     <string name="feature_vrp_payment_review_confirm">Send payment</string>
     <string name="feature_vrp_payment_review_back">Back</string>
     <string name="feature_vrp_payment_review_sent_title">Payment sent</string>

@@ -29,7 +29,6 @@ internal object VrpPaymentTestTags {
 
     const val REVIEW_PAGE = "vrpPayment:reviewPage"
     const val REVIEW_AMOUNT = "vrpPayment:reviewAmount"
-    const val REVIEW_REMAINING_AFTER = "vrpPayment:reviewRemainingAfter"
     const val CONFIRM_BUTTON = "vrpPayment:confirmButton"
     const val BACK_BUTTON = "vrpPayment:backButton"
 

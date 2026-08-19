@@ -42,7 +42,6 @@ import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_error_unusable
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_failed_title
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_in_progress
-import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_remaining_after
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_sent_title
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_settled
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_review_support_reference
@@ -99,21 +98,6 @@ private fun ReviewDetails(form: PaymentFormUi) {
             modifier = Modifier.padding(top = KptTheme.spacing.md),
         )
 
-        if (form.remainingAmount.isNotBlank()) {
-            Text(
-                text = stringResource(
-                    Res.string.feature_vrp_payment_review_remaining_after,
-                    form.remainingAmount,
-                    periodLabel(form.periodType),
-                ),
-                style = KptTheme.typography.bodyMedium,
-                color = KptTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(top = KptTheme.spacing.md)
-                    .testTag(VrpPaymentTestTags.REVIEW_REMAINING_AFTER),
-            )
-        }
     }
 }
 
