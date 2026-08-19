@@ -23,9 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -63,15 +61,12 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.Res
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_consumed
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_ended
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_error_title
-import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_history_empty
-import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_history_title
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_limits
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_no_end_date
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_not_found
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_pay
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_payer
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_payer_chosen_at_bank
-import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_payment_failed
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_per_payment_limit
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_periodic_limit
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_remaining
@@ -88,7 +83,6 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vr
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_unusable_body
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_unusable_title
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_valid_until
-import org.mifosx.openbanking.feature.vrpconsents.paymentStatusLabel
 import org.mifosx.openbanking.feature.vrpconsents.periodLabel
 import org.mifosx.openbanking.feature.vrpconsents.timeElapsedSince
 import template.core.base.designsystem.theme.KptTheme
