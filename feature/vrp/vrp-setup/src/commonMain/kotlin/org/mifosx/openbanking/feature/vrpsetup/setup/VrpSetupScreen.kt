@@ -55,7 +55,6 @@ internal fun VrpSetupScreen(
     EventsEffect(viewModel.eventFlow) { event ->
         when (event) {
             is VrpSetupEvent.LaunchAuthorisation -> onLaunchAuthorisation(event.url)
-            is VrpSetupEvent.StagingFailed -> Unit
         }
     }
 
@@ -102,7 +101,10 @@ internal fun VrpSetupScreenContent(
 
             is VrpSetupUiState.Content -> when (uiState.phase) {
                 SetupPhase.Form -> VrpSetupFormPage(uiState.form, onAction)
-                SetupPhase.Review -> VrpSetupReviewPage(uiState.form)
+                SetupPhase.Review -> VrpSetupReviewPage(
+                    form = uiState.form,
+                    failure = (uiState.staging as? StagingUi.Failed)?.failure,
+                )
             }
 
             VrpSetupUiState.NoEligiblePayers -> VrpSetupNoAccounts()

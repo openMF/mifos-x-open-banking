@@ -79,20 +79,28 @@ sealed interface VrpConsentDetailUiState {
      */
     data object Unusable : VrpConsentDetailUiState
 
-    /** Removed, or gone at the bank. History stays readable; the actions do not. */
-    data class Ended(val payeeName: String, val payments: List<PaymentRowUi>) : VrpConsentDetailUiState
+    /**
+     * Removed, or gone at the bank. History stays readable; the actions do not.
+     *
+     * @property bankRefusedRemoval The removal was refused, so the authority may still be live at
+     *   the bank even though this app has dropped it.
+     */
+    data class Ended(
+        val payeeName: String,
+        val payments: List<PaymentRowUi>,
+        val bankRefusedRemoval: Boolean = false,
+    ) : VrpConsentDetailUiState
 
     /** No local record of this standing payment. */
     data object NotFound : VrpConsentDetailUiState
-
-    data class Error(val kind: VrpConsentDetailErrorKind) : VrpConsentDetailUiState
 }
 
 /**
  * Where the two-step removal has got to.
  *
  * Neither step is a network state: [Confirming] is the gate the customer has opened and nothing has
- * been called yet, and [Revoking] is what a completed [NetworkResult] cannot express.
+ * been called yet, and [Revoking] is what a completed [NetworkResult] cannot express. There is no
+ * failed phase, because a refused removal still ends the authority locally and leaves this screen.
  */
 enum class RevokePhase {
     Idle,
@@ -147,17 +155,8 @@ data class PaymentRowUi(
     val sentOn: String,
 )
 
-/** The three failures this screen distinguishes. */
-enum class VrpConsentDetailErrorKind {
-    StorageUnavailable,
-    RevokeFailed,
-    NetworkUnavailable,
-}
-
 /** Actions the view model owns. Paying is navigation, carried by the screen's lambda. */
 sealed interface VrpConsentDetailAction {
-
-    data object RetryLoad : VrpConsentDetailAction
 
     data object RefreshStatus : VrpConsentDetailAction
 
@@ -186,8 +185,6 @@ sealed interface VrpConsentDetailEvent {
 
     /** The standing payment is gone. The screen pops back to the list. */
     data object Revoked : VrpConsentDetailEvent
-
-    data object RevokeFailed : VrpConsentDetailEvent
 }
 
 /** Drives one standing payment: its limits, what they have consumed, its payments, and removal. */
@@ -201,6 +198,9 @@ class VrpConsentDetailViewModel(
     ),
 ) {
 
+    /** Whether the bank refused the removal this app has already carried out locally. */
+    private var bankRefusedRemoval = false
+
     init {
         observeConsent()
         refreshStatus()
@@ -208,12 +208,6 @@ class VrpConsentDetailViewModel(
 
     override fun handleAction(action: VrpConsentDetailAction) {
         when (action) {
-            VrpConsentDetailAction.RetryLoad -> {
-                updateState { copy(uiState = VrpConsentDetailUiState.Loading) }
-                observeConsent()
-                refreshStatus()
-            }
-
             VrpConsentDetailAction.RefreshStatus -> refreshStatus()
             VrpConsentDetailAction.RevokeRequested -> moveRevokeTo(RevokePhase.Confirming)
             VrpConsentDetailAction.RevokeDismissed -> moveRevokeTo(RevokePhase.Idle)
@@ -256,13 +250,22 @@ class VrpConsentDetailViewModel(
         }
     }
 
+    /**
+     * Records the bank's answer to a removal.
+     *
+     * A refusal still leaves the authority ended here, so the screen has usually moved to
+     * [VrpConsentDetailUiState.Ended] by the time this arrives. Both orderings are covered: the flag
+     * is marked for a later emission and stamped on the state already rendered.
+     */
     private fun applyRevokeResult(result: NetworkResult<Unit, NetworkError>) {
         when (result) {
             is NetworkResult.Success -> sendEvent(VrpConsentDetailEvent.Revoked)
 
             is NetworkResult.Error -> {
-                moveRevokeTo(RevokePhase.Idle)
-                sendEvent(VrpConsentDetailEvent.RevokeFailed)
+                bankRefusedRemoval = true
+                (state.uiState as? VrpConsentDetailUiState.Ended)?.let { ended ->
+                    updateState { copy(uiState = ended.copy(bankRefusedRemoval = true)) }
+                }
             }
         }
     }
@@ -281,7 +284,7 @@ class VrpConsentDetailViewModel(
         val uiState = when {
             consent == null -> VrpConsentDetailUiState.NotFound
             consent.revokedAt != null || consent.status.hasEnded() ->
-                VrpConsentDetailUiState.Ended(consent.payee.name, rows)
+                VrpConsentDetailUiState.Ended(consent.payee.name, rows, bankRefusedRemoval)
 
             consent.status == ConsentStatus.Authorised && !consent.canBePaidUnder() ->
                 VrpConsentDetailUiState.Unusable

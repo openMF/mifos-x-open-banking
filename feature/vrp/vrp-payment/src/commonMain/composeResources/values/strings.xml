@@ -12,7 +12,6 @@
     <string name="feature_vrp_payment_title">Make a payment</string>
     <string name="feature_vrp_payment_to">To %1$s</string>
     <string name="feature_vrp_payment_from">From %1$s</string>
-    <string name="feature_vrp_payment_amount_label">Amount</string>
     <string name="feature_vrp_payment_per_payment_limit">Up to %1$s in one payment</string>
     <string name="feature_vrp_payment_remaining">%1$s left this %2$s</string>
     <string name="feature_vrp_payment_remaining_note">Based on payments made in this app. Your bank has the final say.</string>

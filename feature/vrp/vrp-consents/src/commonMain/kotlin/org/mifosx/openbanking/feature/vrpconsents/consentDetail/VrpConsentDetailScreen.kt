@@ -74,9 +74,9 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vr
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_refresh
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_remaining
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_remaining_note
-import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_retry
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke_body
+import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke_failed
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke_cancel
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke_confirm
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke_title
@@ -108,7 +108,6 @@ internal fun VrpConsentDetailScreen(
     EventsEffect(viewModel.eventFlow) { event ->
         when (event) {
             VrpConsentDetailEvent.Revoked -> onBack()
-            VrpConsentDetailEvent.RevokeFailed -> Unit
         }
     }
 
@@ -160,27 +159,21 @@ internal fun VrpConsentDetailScreenContent(
 
             is VrpConsentDetailUiState.Ended -> MessageState(
                 title = uiState.payeeName,
-                body = stringResource(Res.string.feature_vrp_consents_detail_ended),
+                body = stringResource(
+                    if (uiState.bankRefusedRemoval) {
+                        Res.string.feature_vrp_consents_detail_revoke_failed
+                    } else {
+                        Res.string.feature_vrp_consents_detail_ended
+                    },
+                ),
                 stateTag = VrpConsentDetailTestTags.ENDED_STATE,
+                bodyTag = if (uiState.bankRefusedRemoval) VrpConsentDetailTestTags.REVOKE_ERROR else null,
             )
 
             VrpConsentDetailUiState.NotFound -> MessageState(
                 title = stringResource(Res.string.feature_vrp_consents_detail_error_title),
                 body = stringResource(Res.string.feature_vrp_consents_detail_not_found),
                 stateTag = VrpConsentDetailTestTags.NOT_FOUND_STATE,
-            )
-
-            is VrpConsentDetailUiState.Error -> MessageState(
-                title = stringResource(Res.string.feature_vrp_consents_detail_error_title),
-                body = stringResource(Res.string.feature_vrp_consents_detail_not_found),
-                stateTag = VrpConsentDetailTestTags.ERROR_STATE,
-                action = {
-                    MifosFilledPillButton(
-                        label = stringResource(Res.string.feature_vrp_consents_detail_retry),
-                        onClick = { onAction(VrpConsentDetailAction.RetryLoad) },
-                        testTag = VrpConsentDetailTestTags.RETRY_BUTTON,
-                    )
-                },
             )
         }
     }

@@ -20,6 +20,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mifosx.openbanking.core.designsystem.theme.MifosXOpenBankingTheme
+import org.mifosx.openbanking.feature.vrpsetup.setup.StagingFailure
+import org.mifosx.openbanking.feature.vrpsetup.setup.StagingUi
 import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupScreenContent
 import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupState
 import org.robolectric.RobolectricTestRunner
@@ -59,6 +61,12 @@ class VrpSetupScreenshotTest {
 
     @Test
     fun reviewGolden() = capture("review", VrpSetupFixtures.reviewState())
+
+    @Test
+    fun reviewStagingFailedGolden() = capture(
+        "review_staging_failed",
+        VrpSetupFixtures.reviewState(StagingUi.Failed(StagingFailure.NetworkUnavailable)),
+    )
 
     @Test
     fun loadingGolden() = capture("loading", VrpSetupFixtures.loadingState())

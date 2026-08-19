@@ -15,6 +15,7 @@ import org.mifosx.openbanking.feature.vrpsetup.setup.PayeeOptionUi
 import org.mifosx.openbanking.feature.vrpsetup.setup.PayerOptionUi
 import org.mifosx.openbanking.feature.vrpsetup.setup.SetupFormUi
 import org.mifosx.openbanking.feature.vrpsetup.setup.SetupPhase
+import org.mifosx.openbanking.feature.vrpsetup.setup.StagingUi
 import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupErrorKind
 import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupState
 import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupUiState
@@ -90,11 +91,11 @@ object VrpSetupFixtures {
     fun formState(
         form: SetupFormUi = filledForm(),
         phase: SetupPhase = SetupPhase.Form,
-        isStaging: Boolean = false,
-    ) = VrpSetupState(VrpSetupUiState.Content(phase = phase, form = form, isStaging = isStaging))
+        staging: StagingUi = StagingUi.NotStarted,
+    ) = VrpSetupState(VrpSetupUiState.Content(phase = phase, form = form, staging = staging))
 
-    fun reviewState(isStaging: Boolean = false) =
-        formState(phase = SetupPhase.Review, isStaging = isStaging)
+    fun reviewState(staging: StagingUi = StagingUi.NotStarted) =
+        formState(phase = SetupPhase.Review, staging = staging)
 
     fun loadingState() = VrpSetupState(VrpSetupUiState.Loading)
 

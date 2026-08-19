@@ -35,12 +35,11 @@ internal object VrpConsentDetailTestTags {
     const val REVOKE_CONFIRM = "vrpConsentDetail:revokeConfirm"
     const val REVOKE_CANCEL = "vrpConsentDetail:revokeCancel"
     const val REVOKE_IRREVERSIBLE_NOTICE = "vrpConsentDetail:revokeIrreversibleNotice"
+    const val REVOKE_ERROR = "vrpConsentDetail:revokeError"
     const val UNUSABLE_STATE = "vrpConsentDetail:unusableState"
     const val UNUSABLE_BODY = "vrpConsentDetail:unusableBody"
     const val ENDED_STATE = "vrpConsentDetail:endedState"
     const val NOT_FOUND_STATE = "vrpConsentDetail:notFoundState"
-    const val ERROR_STATE = "vrpConsentDetail:errorState"
-    const val RETRY_BUTTON = "vrpConsentDetail:retryButton"
     const val REFRESH_BUTTON = "vrpConsentDetail:refreshButton"
 
     fun paymentRow(localId: String): String = "vrpConsentDetail:paymentRow:$localId"

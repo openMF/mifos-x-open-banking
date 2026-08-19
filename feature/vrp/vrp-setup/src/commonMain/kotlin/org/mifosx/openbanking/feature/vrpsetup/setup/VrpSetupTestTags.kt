@@ -48,6 +48,7 @@ internal object VrpSetupTestTags {
     const val REVIEW_PERIODIC = "vrpSetup:reviewPeriodic"
     const val REVIEW_VALIDITY = "vrpSetup:reviewValidity"
     const val REVIEW_IRREVERSIBLE = "vrpSetup:reviewIrreversible"
+    const val REVIEW_ERROR = "vrpSetup:reviewError"
     const val REVIEW_CONFIRM = "vrpSetup:reviewConfirm"
     const val REVIEW_BACK = "vrpSetup:reviewBack"
 

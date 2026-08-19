@@ -16,7 +16,6 @@ import org.mifosx.openbanking.feature.vrpconsents.consentDetail.LimitRowUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.PaymentRowUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.PeriodicLimitUsageUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.RevokePhase
-import org.mifosx.openbanking.feature.vrpconsents.consentDetail.VrpConsentDetailErrorKind
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.VrpConsentDetailState
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.VrpConsentDetailUiState
 import org.mifosx.openbanking.feature.vrpconsents.consentList.ConsentRowUi
@@ -146,11 +145,11 @@ object VrpConsentsFixtures {
     fun detailEndedState() =
         detailState(VrpConsentDetailUiState.Ended("Sarah Chen", paymentRows()))
 
-    fun detailNotFoundState() = detailState(VrpConsentDetailUiState.NotFound)
+    fun detailRevokeRefusedState() = detailState(
+        VrpConsentDetailUiState.Ended("Sarah Chen", paymentRows(), bankRefusedRemoval = true),
+    )
 
-    fun detailErrorState(
-        kind: VrpConsentDetailErrorKind = VrpConsentDetailErrorKind.StorageUnavailable,
-    ) = detailState(VrpConsentDetailUiState.Error(kind))
+    fun detailNotFoundState() = detailState(VrpConsentDetailUiState.NotFound)
 }
 
 /** Always two minutes ago, so the rendered phrase does not drift as the fixture ages. */

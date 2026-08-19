@@ -101,8 +101,11 @@ sealed interface VrpSetupUiState {
     data class Content(
         val phase: SetupPhase,
         val form: SetupFormUi,
-        val isStaging: Boolean = false,
+        val staging: StagingUi = StagingUi.NotStarted,
     ) : VrpSetupUiState {
+
+        /** Whether a call to the bank is in flight, which disables both review actions. */
+        val isStaging: Boolean get() = staging == StagingUi.Staging
 
         /** Whether the form is complete enough to move to the review. */
         val canContinue: Boolean get() = !isStaging && form.isComplete
@@ -237,6 +240,22 @@ enum class VrpSetupErrorKind {
     NetworkUnavailable,
 }
 
+/** How far the hop to the bank has got. There is no staged state: success leaves the app at once. */
+sealed interface StagingUi {
+
+    data object NotStarted : StagingUi
+
+    data object Staging : StagingUi
+
+    data class Failed(val failure: StagingFailure) : StagingUi
+}
+
+/** Why staging did not reach the bank's authorisation page. Nothing is set up in either case. */
+enum class StagingFailure {
+    NetworkUnavailable,
+    BankRefused,
+}
+
 /** Actions the view model owns. */
 sealed interface VrpSetupAction {
 
@@ -291,8 +310,6 @@ sealed interface VrpSetupEvent {
 
     /** Open [url] so the customer can approve at their bank. Only the composition may do this. */
     data class LaunchAuthorisation(val url: String) : VrpSetupEvent
-
-    data class StagingFailed(val kind: VrpSetupErrorKind) : VrpSetupEvent
 }
 
 /**
@@ -314,7 +331,7 @@ class VrpSetupViewModel(
 
     private val formState = MutableStateFlow(SetupFormUi())
     private val phase = MutableStateFlow(SetupPhase.Form)
-    private val staging = MutableStateFlow(false)
+    private val staging = MutableStateFlow<StagingUi>(StagingUi.NotStarted)
     private val payersScreen =
         MutableStateFlow<ScreenState<List<AccountWithBalance>>>(ScreenState.Loading)
 
@@ -322,8 +339,8 @@ class VrpSetupViewModel(
         observePayers()
         observePayees()
 
-        combine(formState, phase, staging, payersScreen) { form, currentPhase, isStaging, payers ->
-            render(form, currentPhase, isStaging, payers)
+        combine(formState, phase, staging, payersScreen) { form, currentPhase, stagingUi, payers ->
+            render(form, currentPhase, stagingUi, payers)
         }
             .onEach { rendered -> updateState { copy(uiState = rendered) } }
             .launchIn(viewModelScope)
@@ -373,7 +390,7 @@ class VrpSetupViewModel(
     private fun render(
         form: SetupFormUi,
         currentPhase: SetupPhase,
-        isStaging: Boolean,
+        stagingUi: StagingUi,
         payers: ScreenState<List<AccountWithBalance>>,
     ): VrpSetupUiState = when (payers) {
         ScreenState.Loading -> VrpSetupUiState.Loading
@@ -388,7 +405,7 @@ class VrpSetupViewModel(
             VrpSetupUiState.Content(
                 phase = currentPhase,
                 form = form.copy(payerOptions = payers.data.map { it.toOptionUi() }),
-                isStaging = isStaging,
+                staging = stagingUi,
             )
         }
     }
@@ -413,7 +430,7 @@ class VrpSetupViewModel(
             is VrpSetupAction.ValidToSelected -> selectValidTo(action.date)
             VrpSetupAction.ValidToCleared -> editForm { copy(validTo = null, datePickerOpen = false) }
             VrpSetupAction.Continue -> continueToReview()
-            VrpSetupAction.BackToForm -> phase.update { SetupPhase.Form }
+            VrpSetupAction.BackToForm -> returnToForm()
             VrpSetupAction.StageConsent -> stageConsent()
             is VrpSetupAction.ReceiveAuthorisationUrl -> applyAuthorisationUrl(action.result)
         }
@@ -427,9 +444,9 @@ class VrpSetupViewModel(
      */
     private fun stageConsent() {
         val form = formState.value
-        if (staging.value || !form.isComplete) return
+        if (staging.value == StagingUi.Staging || !form.isComplete) return
 
-        staging.value = true
+        staging.value = StagingUi.Staging
         viewModelScope.launch {
             val result = when (val staged = consents.stageConsent(form.toDraft())) {
                 is NetworkResult.Success -> auth.beginAuthorisation(staged.data.consentId)
@@ -440,11 +457,21 @@ class VrpSetupViewModel(
     }
 
     private fun applyAuthorisationUrl(result: NetworkResult<String, NetworkError>) {
-        staging.value = false
         when (result) {
-            is NetworkResult.Success -> sendEvent(VrpSetupEvent.LaunchAuthorisation(result.data))
-            is NetworkResult.Error -> sendEvent(VrpSetupEvent.StagingFailed(result.error.toErrorKind()))
+            is NetworkResult.Success -> {
+                staging.value = StagingUi.NotStarted
+                sendEvent(VrpSetupEvent.LaunchAuthorisation(result.data))
+            }
+
+            is NetworkResult.Error ->
+                staging.value = StagingUi.Failed(result.error.toStagingFailure())
         }
+    }
+
+    /** Returns to the form, dropping a staging failure that no longer describes what is on screen. */
+    private fun returnToForm() {
+        staging.value = StagingUi.NotStarted
+        phase.update { SetupPhase.Form }
     }
 
     /** Validates everything, then moves to the review with every entered value intact. */
@@ -607,10 +634,10 @@ private fun SetupFormUi.toDraft(): VrpConsentDraft = VrpConsentDraft(
     validity = validTo?.let { ValidityWindow(validFrom = null, validTo = it) },
 )
 
-/** Which failure the screen reports for a staging refusal. */
-private fun NetworkError.toErrorKind(): VrpSetupErrorKind = when (this) {
-    is NetworkError.Network -> VrpSetupErrorKind.NetworkUnavailable
-    else -> VrpSetupErrorKind.AccountsUnavailable
+/** Which failure the review reports for a staging refusal. */
+private fun NetworkError.toStagingFailure(): StagingFailure = when (this) {
+    is NetworkError.Network -> StagingFailure.NetworkUnavailable
+    else -> StagingFailure.BankRefused
 }
 
 /** Re-checks both ceilings and the rule that binds them. */

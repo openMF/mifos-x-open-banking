@@ -296,7 +296,7 @@ class VrpSetupViewModelTest {
     }
 
     @Test
-    fun aFailedStagingUnlocksTheReview() = runTest {
+    fun aFailedStagingUnlocksTheReviewAndReportsWhy() = runTest {
         val vm = completeForm()
         consents.stageReturns(NetworkResult.Error(NetworkError.Network(IllegalStateException("offline"))))
         vm.trySendAction(VrpSetupAction.Continue)
@@ -306,6 +306,51 @@ class VrpSetupViewModelTest {
         advanceUntilIdle()
 
         assertEquals(false, content(vm).isStaging)
+        assertEquals(StagingUi.Failed(StagingFailure.NetworkUnavailable), content(vm).staging)
+    }
+
+    @Test
+    fun aRefusalIsReportedAsTheBankRefusing() = runTest {
+        val vm = completeForm()
+        consents.stageReturns(NetworkResult.Error(NetworkError.Client.BadRequest(null)))
+        vm.trySendAction(VrpSetupAction.Continue)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        assertEquals(StagingUi.Failed(StagingFailure.BankRefused), content(vm).staging)
+    }
+
+    /** The failure describes the review that was sent, so it cannot outlive a return to the form. */
+    @Test
+    fun goingBackToTheFormDropsTheFailure() = runTest {
+        val vm = completeForm()
+        consents.stageReturns(NetworkResult.Error(NetworkError.Network(IllegalStateException("offline"))))
+        vm.trySendAction(VrpSetupAction.Continue)
+        advanceUntilIdle()
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpSetupAction.BackToForm)
+        advanceUntilIdle()
+
+        assertEquals(StagingUi.NotStarted, content(vm).staging)
+    }
+
+    @Test
+    fun stagingAgainAfterAFailureIsAllowed() = runTest {
+        val vm = completeForm()
+        consents.stageReturns(NetworkResult.Error(NetworkError.Network(IllegalStateException("offline"))))
+        vm.trySendAction(VrpSetupAction.Continue)
+        advanceUntilIdle()
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        assertEquals(2, consents.stagedDrafts.size)
     }
 
     @Test

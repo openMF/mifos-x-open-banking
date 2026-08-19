@@ -47,13 +47,12 @@
     <string name="feature_vrp_consents_detail_revoke_body">This stops all future payments and cannot be undone.</string>
     <string name="feature_vrp_consents_detail_revoke_confirm">Remove access</string>
     <string name="feature_vrp_consents_detail_revoke_cancel">Keep it</string>
-    <string name="feature_vrp_consents_detail_revoke_failed">Removed on this device. It may still be active at your bank — try again.</string>
+    <string name="feature_vrp_consents_detail_revoke_failed">Removed on this device. Your bank refused, so it may still be active there.</string>
     <string name="feature_vrp_consents_detail_ended">This VRP has ended.</string>
     <string name="feature_vrp_consents_detail_unusable_title">This VRP cannot be used</string>
     <string name="feature_vrp_consents_detail_unusable_body">The account you chose at your bank cannot make these payments.</string>
     <string name="feature_vrp_consents_detail_not_found">No record of this VRP.</string>
     <string name="feature_vrp_consents_detail_error_title">Could not load this VRP</string>
-    <string name="feature_vrp_consents_detail_retry">Retry</string>
     <string name="feature_vrp_consents_detail_refresh">Check with bank</string>
 
     <string name="feature_vrp_consents_period_day">day</string>

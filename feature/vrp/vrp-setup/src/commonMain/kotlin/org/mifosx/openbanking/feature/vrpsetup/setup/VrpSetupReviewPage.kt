@@ -33,6 +33,8 @@ import org.mifosx.openbanking.core.ui.account.maskedAccountNumber
 import org.mifosx.openbanking.feature.vrpsetup.formatPayeeIdentification
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.Res
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_payer_choose_at_bank
+import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_review_error_network
+import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_review_error_server
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_review_irreversible
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_review_limits
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_review_no_end_date
@@ -49,9 +51,11 @@ import template.core.base.designsystem.theme.KptTheme
  * The check phase: what was entered, restated, with the notice that none of it can be changed.
  *
  * The notice sits above the primary action rather than below it.
+ *
+ * @param failure The last staging refusal, or null when there has been none.
  */
 @Composable
-internal fun VrpSetupReviewPage(form: SetupFormUi) {
+internal fun VrpSetupReviewPage(form: SetupFormUi, failure: StagingFailure?) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -68,6 +72,32 @@ internal fun VrpSetupReviewPage(form: SetupFormUi) {
             style = KptTheme.typography.bodyMedium,
             color = KptTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.testTag(VrpSetupTestTags.REVIEW_IRREVERSIBLE),
+        )
+
+        if (failure != null) StagingFailureNotice(failure)
+    }
+}
+
+/** Says that the hop to the bank did not happen, and that nothing was set up either way. */
+@Composable
+private fun StagingFailureNotice(failure: StagingFailure) {
+    Surface(
+        shape = KptTheme.shapes.small,
+        color = KptTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = stringResource(
+                when (failure) {
+                    StagingFailure.NetworkUnavailable -> Res.string.feature_vrp_setup_review_error_network
+                    StagingFailure.BankRefused -> Res.string.feature_vrp_setup_review_error_server
+                },
+            ),
+            style = KptTheme.typography.bodyMedium,
+            color = KptTheme.colorScheme.onErrorContainer,
+            modifier = Modifier
+                .padding(KptTheme.spacing.md)
+                .testTag(VrpSetupTestTags.REVIEW_ERROR),
         )
     }
 }

@@ -69,7 +69,8 @@ class VrpConsentDetailScreenshotTest {
     fun notFoundGolden() = capture("not_found", VrpConsentsFixtures.detailNotFoundState())
 
     @Test
-    fun errorGolden() = capture("error", VrpConsentsFixtures.detailErrorState())
+    fun revokeRefusedGolden() =
+        capture("revoke_refused", VrpConsentsFixtures.detailRevokeRefusedState())
 
     private fun capture(state: String, screenState: VrpConsentDetailState) {
         composeRule.setContent {
