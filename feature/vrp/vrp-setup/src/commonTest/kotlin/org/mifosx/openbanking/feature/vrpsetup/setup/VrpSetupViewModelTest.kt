@@ -45,6 +45,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
@@ -293,6 +294,59 @@ class VrpSetupViewModelTest {
         assertEquals(50_000L, draft.controlParameters.periodicLimits.single().amount.minorUnits)
         assertEquals(PAYEE_IDENTIFICATION, draft.payee.identification)
         assertContentEquals(listOf("45411"), auth.begunFor)
+    }
+
+    /**
+     * Without this the bank receives no `DebtorAccount` and asks the customer to choose an account
+     * it was already told about, which reads as the app having ignored the choice.
+     */
+    @Test
+    fun stagingCarriesTheChosenPayerAsTheDebtorAccount() = runTest {
+        val vm = completeForm()
+        consents.stageReturns(NetworkResult.Success(stagedConsent()))
+        vm.trySendAction(VrpSetupAction.Continue)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        val payer = assertNotNull(consents.stagedDrafts.single().payer)
+        assertEquals("80200110204021", payer.identification)
+        assertEquals("UK.OBIE.SortCodeAccountNumber", payer.schemeName)
+    }
+
+    /** A payer deferred to the bank has no identification here, so none is sent. */
+    @Test
+    fun deferringThePayerToTheBankSendsNoDebtorAccount() = runTest {
+        val vm = completeForm()
+        consents.stageReturns(NetworkResult.Success(stagedConsent()))
+        vm.trySendAction(VrpSetupAction.ChooseAtBankSelected)
+        advanceUntilIdle()
+        vm.trySendAction(VrpSetupAction.Continue)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpSetupAction.StageConsent)
+        advanceUntilIdle()
+
+        assertNull(consents.stagedDrafts.single().payer)
+    }
+
+    /** The rule is unenforceable without the payer resolved, which is how it silently stopped firing. */
+    @Test
+    fun aPayeeMatchingTheChosenPayerIsRefused() = runTest {
+        val vm = viewModel()
+        advanceUntilIdle()
+        vm.trySendAction(VrpSetupAction.PayerSelected(CURRENT_ACCOUNT_ID))
+        advanceUntilIdle()
+        vm.trySendAction(VrpSetupAction.PayNewSelected)
+        vm.trySendAction(VrpSetupAction.NewPayeeNameChanged("Myself"))
+        vm.trySendAction(VrpSetupAction.NewPayeeSortCodeChanged("802001"))
+        vm.trySendAction(VrpSetupAction.NewPayeeAccountNumberChanged("10204021"))
+        vm.trySendAction(VrpSetupAction.PerPaymentAmountChanged("200.00"))
+        vm.trySendAction(VrpSetupAction.PeriodicAmountChanged("500.00"))
+        advanceUntilIdle()
+
+        assertEquals(false, content(vm).form.isComplete)
     }
 
     @Test

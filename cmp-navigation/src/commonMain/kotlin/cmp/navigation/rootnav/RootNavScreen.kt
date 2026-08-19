@@ -37,8 +37,8 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.mifosx.openbanking.core.data.callback.AuthorisationLeg
 import org.mifosx.openbanking.core.data.callback.ConsentRedirectBus
-import org.mifosx.openbanking.core.data.callback.authorisationLegOf
 import org.mifosx.openbanking.core.data.callback.PaymentAuthRepository
+import org.mifosx.openbanking.core.data.callback.authorisationLegOf
 import org.mifosx.openbanking.core.data.vrp.VrpAuthRepository
 import org.mifosx.openbanking.feature.consentcallback.ConsentCallbackRoute
 import org.mifosx.openbanking.feature.consentcallback.consentCallbackDestination

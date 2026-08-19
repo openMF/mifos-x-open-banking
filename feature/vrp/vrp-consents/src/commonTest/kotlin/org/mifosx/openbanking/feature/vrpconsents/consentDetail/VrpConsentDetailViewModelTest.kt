@@ -314,17 +314,6 @@ class VrpConsentDetailViewModelTest {
         assertEquals(RevokePhase.Confirming, content(vm).revoke)
     }
 
-    @Test
-    fun refreshingReadsTheBankAgain() = runTest {
-        val vm = viewModel()
-        advanceUntilIdle()
-
-        vm.trySendAction(VrpConsentDetailAction.RefreshStatus)
-        advanceUntilIdle()
-
-        assertContentEquals(listOf(CONSENT_ID, CONSENT_ID), consents.refreshedIds)
-    }
-
     private fun consent(
         status: ConsentStatus = ConsentStatus.Authorised,
         payer: AccountIdentity? = null,

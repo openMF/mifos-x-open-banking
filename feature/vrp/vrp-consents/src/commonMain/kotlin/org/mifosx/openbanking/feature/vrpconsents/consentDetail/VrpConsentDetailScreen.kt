@@ -71,7 +71,6 @@ import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vr
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_payment_failed
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_per_payment_limit
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_periodic_limit
-import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_refresh
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_remaining
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_remaining_note
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.feature_vrp_consents_detail_revoke
@@ -135,9 +134,7 @@ internal fun VrpConsentDetailScreenContent(
         topBar = {
             DetailTopBar(
                 title = uiState.headerTitle(),
-                showRefresh = uiState is VrpConsentDetailUiState.Content,
                 onBack = onBack,
-                onRefresh = { onAction(VrpConsentDetailAction.RefreshStatus) },
             )
         },
     ) {
@@ -186,18 +183,12 @@ private fun VrpConsentDetailUiState.headerTitle(): String = when (this) {
     else -> stringResource(Res.string.feature_vrp_consents_detail_title)
 }
 
-/**
- * The screen's top bar: the payee, and the read-from-the-bank action beside it.
- *
- * Not [KptTopAppBar], whose actions are icons only. This one reads as words.
- */
+/** The screen's top bar: the payee, and the way back. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DetailTopBar(
     title: String,
-    showRefresh: Boolean,
     onBack: () -> Unit,
-    onRefresh: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -215,19 +206,6 @@ private fun DetailTopBar(
                     contentDescription = null,
                     tint = KptTheme.colorScheme.onSurface,
                 )
-            }
-        },
-        actions = {
-            if (showRefresh) {
-                TextButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.testTag(VrpConsentDetailTestTags.REFRESH_BUTTON),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.feature_vrp_consents_detail_refresh),
-                        color = KptTheme.colorScheme.primary,
-                    )
-                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

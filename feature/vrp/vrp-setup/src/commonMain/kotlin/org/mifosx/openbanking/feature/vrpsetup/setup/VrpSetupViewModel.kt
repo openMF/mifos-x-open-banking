@@ -351,6 +351,10 @@ class VrpSetupViewModel(
      *
      * The product matrix is a prediction; the registry is what the bank has refused this session.
      * The prediction fails open, so a product this app has never met keeps the payer role.
+     *
+     * The options are written into the form, not merged in while rendering: the draft and the
+     * same-as-payer check both resolve the chosen payer out of the form, and would find nothing in a
+     * list that only ever existed on the rendered copy.
      */
     private fun observePayers() {
         accountsOverviewRepository.overviewState(viewModelScope)
@@ -359,7 +363,11 @@ class VrpSetupViewModel(
                     .filter { it.account.canFundAVrp() }
                     .filterNot { AccountEndpoint.VrpPayer in refused[it.account.accountId].orEmpty() }
             }
-            .onEach { payersScreen.value = it }
+            .onEach { screen ->
+                payersScreen.value = screen
+                val payers = (screen as? ScreenState.Content)?.data ?: return@onEach
+                editForm { copy(payerOptions = payers.map { it.toOptionUi() }) }
+            }
             .launchIn(viewModelScope)
     }
 
@@ -404,7 +412,7 @@ class VrpSetupViewModel(
         } else {
             VrpSetupUiState.Content(
                 phase = currentPhase,
-                form = form.copy(payerOptions = payers.data.map { it.toOptionUi() }),
+                form = form,
                 staging = stagingUi,
             )
         }

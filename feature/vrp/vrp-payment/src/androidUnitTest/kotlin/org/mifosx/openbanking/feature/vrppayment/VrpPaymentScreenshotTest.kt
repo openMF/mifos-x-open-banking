@@ -44,6 +44,10 @@ class VrpPaymentScreenshotTest {
     @Test
     fun amountGolden() = capture("amount", VrpPaymentFixtures.amountState())
 
+    /** The resting state has to show something: an empty field paints nothing to tap. */
+    @Test
+    fun amountEmptyGolden() = capture("amount_empty", VrpPaymentFixtures.amountState(amount = ""))
+
     @Test
     fun amountOverPerPaymentGolden() = capture(
         "amount_over_per_payment",

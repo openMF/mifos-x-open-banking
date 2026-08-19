@@ -10,6 +10,7 @@
 package org.mifosx.openbanking.feature.vrppayment.payment
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,16 +24,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.Res
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_decimals
+import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_resting
+import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_currency_sign
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_min
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_per_payment
 import org.mifosx.openbanking.feature.vrppayment.generated.resources.feature_vrp_payment_amount_error_remaining
@@ -155,24 +163,60 @@ internal fun VrpPaymentAmountPage(
     }
 }
 
-/** The figure, set large and centred, with the currency stated beneath rather than inside it. */
+/**
+ * The figure, set large and centred, with the sign carried in front of it.
+ *
+ * The sign is a visual transformation rather than part of the value, so it travels with the number
+ * as it grows and cannot be deleted. The resting `0.00` matters as much: an empty [BasicTextField]
+ * paints nothing at all — no border, no baseline, no hint — leaving nowhere visible to tap.
+ */
 @Composable
 private fun AmountEntry(
     value: String,
     onValueChange: (String) -> Unit,
 ) {
+    val amountStyle = KptTheme.typography.displayLarge.copy(
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.Light,
+    )
+    val sign = stringResource(Res.string.feature_vrp_payment_currency_sign)
+    val signTransformation = remember(sign) { CurrencySignTransformation(sign) }
+
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = KptTheme.typography.displayLarge.copy(
-            color = KptTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Light,
-        ),
+        textStyle = amountStyle.copy(color = KptTheme.colorScheme.primary),
         cursorBrush = SolidColor(KptTheme.colorScheme.primary),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        // Skipped while empty, or the lone sign would be painted over the resting figure.
+        visualTransformation = if (value.isEmpty()) VisualTransformation.None else signTransformation,
         modifier = Modifier.fillMaxWidth().testTag(VrpPaymentTestTags.AMOUNT_FIELD),
+        decorationBox = { field ->
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = sign + stringResource(Res.string.feature_vrp_payment_amount_resting),
+                        style = amountStyle,
+                        color = KptTheme.colorScheme.outline,
+                    )
+                }
+                field()
+            }
+        },
+    )
+}
+
+/** Shows [sign] before the amount without putting it in the value the customer edits. */
+private class CurrencySignTransformation(private val sign: String) : VisualTransformation {
+
+    override fun filter(text: AnnotatedString): TransformedText = TransformedText(
+        text = AnnotatedString(sign + text.text),
+        offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int = offset + sign.length
+            override fun transformedToOriginal(offset: Int): Int =
+                (offset - sign.length).coerceIn(0, text.length)
+        },
     )
 }
 

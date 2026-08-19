@@ -40,7 +40,6 @@ internal object VrpConsentDetailTestTags {
     const val UNUSABLE_BODY = "vrpConsentDetail:unusableBody"
     const val ENDED_STATE = "vrpConsentDetail:endedState"
     const val NOT_FOUND_STATE = "vrpConsentDetail:notFoundState"
-    const val REFRESH_BUTTON = "vrpConsentDetail:refreshButton"
 
     fun paymentRow(localId: String): String = "vrpConsentDetail:paymentRow:$localId"
 

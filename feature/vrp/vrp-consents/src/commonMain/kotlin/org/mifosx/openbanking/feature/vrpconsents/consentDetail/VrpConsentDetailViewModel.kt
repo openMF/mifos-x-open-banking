@@ -158,8 +158,6 @@ data class PaymentRowUi(
 /** Actions the view model owns. Paying is navigation, carried by the screen's lambda. */
 sealed interface VrpConsentDetailAction {
 
-    data object RefreshStatus : VrpConsentDetailAction
-
     /** Opens the confirmation gate. Makes no call. */
     data object RevokeRequested : VrpConsentDetailAction
 
@@ -208,7 +206,6 @@ class VrpConsentDetailViewModel(
 
     override fun handleAction(action: VrpConsentDetailAction) {
         when (action) {
-            VrpConsentDetailAction.RefreshStatus -> refreshStatus()
             VrpConsentDetailAction.RevokeRequested -> moveRevokeTo(RevokePhase.Confirming)
             VrpConsentDetailAction.RevokeDismissed -> moveRevokeTo(RevokePhase.Idle)
             VrpConsentDetailAction.RevokeConfirmed -> revoke()
