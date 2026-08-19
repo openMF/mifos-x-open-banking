@@ -466,6 +466,27 @@ class VrpPaymentViewModelTest {
         assertTrue(assertIs<SubmissionUi.Sent>(content(vm).outcome).settled)
     }
 
+    /**
+     * Checking the status reads the payment the bank accepted, which is what carries its id — the
+     * repository turns that into the read of the payment resource rather than a fresh submission.
+     */
+    @Test
+    fun checkingTheStatusReadsBackTheAcceptedPayment() = runTest {
+        payments.payReturns(
+            NetworkResult.Success(payment(status = PaymentStatus.AcceptedSettlementInProcess)),
+        )
+        payments.refreshReturns(NetworkResult.Success(payment()))
+        val vm = reviewing()
+        vm.trySendAction(VrpPaymentAction.Confirm)
+        advanceUntilIdle()
+
+        vm.trySendAction(VrpPaymentAction.RefreshOutcome)
+        advanceUntilIdle()
+
+        assertContentEquals(listOf("pay-1"), payments.refreshedPayments.map { it.localId })
+        assertEquals(1, payments.payCalls.size)
+    }
+
     @Test
     fun nothingIsReadBackBeforeAPaymentHasBeenAccepted() = runTest {
         val vm = reviewing()

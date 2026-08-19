@@ -261,17 +261,21 @@ class VrpConsentDetailViewModel(
     }
 
     /**
-     * Reads back the payments the bank had not finished with.
+     * Reads back every payment the bank has not reported as settled.
      *
      * A submission reports an interim status, and nothing else ever revisits it: left alone the row
      * reads as still sending for good, and — because usage counts settled payments only — the money
      * it consumed is never charged against the ceiling.
      *
+     * Settlement is judged on the bank's own terminal code rather than on the disposition this app
+     * derives from it, so a status the mapping reads wrongly still gets another read rather than
+     * being left final. An attempt that never reached the bank has no id to read and costs nothing.
+     *
      * Each payment is read once per visit. The read writes to storage, which emits back into here,
      * so repeating on every emission would not stop.
      */
     private fun refreshUnsettledPayments(made: List<VrpPayment>) {
-        made.filter { it.status.disposition == PaymentDisposition.InProgress }
+        made.filter { it.status != PaymentStatus.AcceptedCreditSettlementCompleted }
             .filter { readBackPayments.add(it.localId) }
             .forEach { payment -> viewModelScope.launch { payments.refreshStatus(payment) } }
     }

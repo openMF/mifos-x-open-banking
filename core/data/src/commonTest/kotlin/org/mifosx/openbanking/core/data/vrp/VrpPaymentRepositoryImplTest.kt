@@ -264,6 +264,7 @@ class VrpPaymentRepositoryImplTest {
 
         val call = assertNotNull(calls.firstOrNull { it.method == "GET" })
         assertEquals("Bearer $TPP_TOKEN", call.authorization)
+        assertTrue(call.path.endsWith("domestic-vrps/$PAYMENT_ID"), call.path)
     }
 
     @Test

@@ -167,6 +167,7 @@ class VrpConsentDetailViewModelTest {
         assertContentEquals(listOf("pay-1"), payments.refreshedPayments.map { it.localId })
     }
 
+    /** The bank's own terminal code is the only thing that stops the read-back. */
     @Test
     fun aSettledPaymentIsNotReadBackAgain() = runTest {
         payments.emitPayments(listOf(payment()))
@@ -174,6 +175,37 @@ class VrpConsentDetailViewModelTest {
         advanceUntilIdle()
 
         assertContentEquals(emptyList(), payments.refreshedPayments)
+    }
+
+    /**
+     * Judged on the code rather than the disposition derived from it: a status this app reads as
+     * final is still read back, so a wrong mapping cannot strand a payment.
+     */
+    @Test
+    fun aPaymentTheAppReadsAsFailedIsStillReadBack() = runTest {
+        payments.emitPayments(listOf(payment(status = PaymentStatus.Rejected)))
+        viewModel()
+        advanceUntilIdle()
+
+        assertContentEquals(listOf("pay-1"), payments.refreshedPayments.map { it.localId })
+    }
+
+    @Test
+    fun everyUnsettledPaymentIsReadBack() = runTest {
+        payments.emitPayments(
+            listOf(
+                payment(localId = "pay-1", status = PaymentStatus.AcceptedSettlementInProcess),
+                payment(localId = "pay-2"),
+                payment(localId = "pay-3", status = PaymentStatus.Rejected),
+            ),
+        )
+        viewModel()
+        advanceUntilIdle()
+
+        assertContentEquals(
+            listOf("pay-1", "pay-3"),
+            payments.refreshedPayments.map { it.localId }.sorted(),
+        )
     }
 
     /** The read writes to storage, which emits back in, so repeating on every emission never stops. */
