@@ -15,4 +15,9 @@
     <string name="core_ui_account_type_global_money">Global money</string>
     <string name="core_ui_account_type_global_wallet">Global wallet</string>
     <string name="core_ui_account_type_other">Account</string>
+
+    <string name="core_ui_account_picker_available_balance">Available Balance: %1$s</string>
+    <string name="core_ui_account_picker_choose">Choose an account</string>
+    <string name="core_ui_account_picker_expand">Show accounts</string>
+    <string name="core_ui_account_picker_collapse">Hide accounts</string>
 </resources>

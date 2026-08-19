@@ -24,7 +24,35 @@ import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_type_s
 private const val LAST_DIGITS = 4
 private const val TYPE_NUMBER_SEPARATOR = " ·· "
 private const val TYPE_CARD_SEPARATOR = " "
+private const val MASK_CHARACTER = "X"
 private val CREDIT_CARD_SUBTYPES = setOf("creditcard", "credit", "card", "ccrd")
+
+/**
+ * The account's number with every character but the last four masked, e.g. `XXXX3349`.
+ *
+ * A credit card flattens a full PAN rather than a UK account number, so it takes [maskCardNumber]'s
+ * grouped form instead. Blank when the bank supplied no identifier at all.
+ */
+fun maskedAccountNumber(
+    accountSubType: String,
+    accountNumber: String,
+    rawIdentification: String = "",
+): String {
+    if (isCreditCardSubType(accountSubType)) {
+        return if (rawIdentification.isNotBlank()) maskCardNumber(rawIdentification) else ""
+    }
+    val digits = accountNumber.ifBlank { rawIdentification }.filter { it.isLetterOrDigit() }
+    return if (digits.length <= LAST_DIGITS) {
+        digits
+    } else {
+        MASK_CHARACTER.repeat(digits.length - LAST_DIGITS) + digits.takeLast(LAST_DIGITS)
+    }
+}
+
+/** The localized account-type label on its own, e.g. `Current account`. */
+@Composable
+fun accountTypeLabel(accountSubType: String): String =
+    stringResource(accountTypeLabelRes(accountSubType))
 
 /**
  * The name to show for an account.
