@@ -34,6 +34,9 @@
     <string name="feature_vrp_setup_valid_to_none">No end date</string>
     <string name="feature_vrp_setup_valid_to_clear">Clear</string>
     <string name="feature_vrp_setup_valid_to_hint">The earliest you can choose is %1$s.</string>
+    <string name="feature_vrp_setup_date_picker_title">Stop on</string>
+    <string name="feature_vrp_setup_date_picker_confirm">Select</string>
+    <string name="feature_vrp_setup_date_picker_cancel">Cancel</string>
     <string name="feature_vrp_setup_continue">Continue</string>
     <string name="feature_vrp_setup_no_accounts_title">No account can be used</string>
     <string name="feature_vrp_setup_no_accounts_body">None of your accounts can set up a VRP.</string>

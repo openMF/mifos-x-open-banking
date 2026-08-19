@@ -55,6 +55,24 @@ class VrpSetupRulesTest {
         assertEquals(LocalDate(2026, 8, 19), todayUtc(lateInLondon))
     }
 
+    /** The picker hands out UTC millis; reading them east of UTC lands on the following day. */
+    @Test
+    fun pickerMillisAreReadInUtc() {
+        assertEquals(LocalDate(2026, 8, 21), utcDateOf(1_787_270_400_000L))
+    }
+
+    @Test
+    fun aDateSurvivesTheRoundTripThroughMillis() {
+        val date = LocalDate(2026, 8, 21)
+
+        assertEquals(date, utcDateOf(epochMillisOf(date)))
+    }
+
+    @Test
+    fun theCalendarOffersTenYearsAhead() {
+        assertEquals(2026..2036, selectableEndYears(today))
+    }
+
     @Test
     fun aBlankAmountIsMissing() {
         assertEquals(AmountProblem.Missing, checkAmount(""))

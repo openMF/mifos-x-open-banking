@@ -36,6 +36,7 @@ import org.mifosx.openbanking.core.ui.account.MifosAccountOption
 import org.mifosx.openbanking.core.ui.account.MifosAccountPicker
 import org.mifosx.openbanking.feature.vrpsetup.amountErrorLabel
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpAmountField
+import org.mifosx.openbanking.feature.vrpsetup.components.VrpEndDatePickerDialog
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpEndDateRow
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpPayeeAvatarRow
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpPeriodDropdown
@@ -56,6 +57,7 @@ import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_s
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_valid_to_hint
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_valid_to_label
 import org.mifosx.openbanking.feature.vrpsetup.payeeErrorLabel
+import org.mifosx.openbanking.feature.vrpsetup.todayUtc
 import template.core.base.designsystem.theme.KptTheme
 
 /** The entry phase: who pays, who is paid, the two ceilings, and when it stops. */
@@ -327,6 +329,15 @@ private fun EndDateSection(
             modifier = Modifier
                 .padding(top = KptTheme.spacing.xs)
                 .testTag(VrpSetupTestTags.VALID_TO_HINT),
+        )
+    }
+
+    if (form.datePickerOpen) {
+        VrpEndDatePickerDialog(
+            today = todayUtc(),
+            selected = form.validTo,
+            onSelect = { onAction(VrpSetupAction.ValidToSelected(it)) },
+            onDismiss = { onAction(VrpSetupAction.DatePickerDismissed) },
         )
     }
 }

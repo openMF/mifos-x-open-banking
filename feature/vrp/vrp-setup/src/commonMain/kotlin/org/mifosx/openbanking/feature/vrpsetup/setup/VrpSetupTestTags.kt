@@ -36,6 +36,9 @@ internal object VrpSetupTestTags {
     const val VALID_TO_ROW = "vrpSetup:validToRow"
     const val VALID_TO_CLEAR = "vrpSetup:validToClear"
     const val VALID_TO_HINT = "vrpSetup:validToHint"
+    const val DATE_PICKER = "vrpSetup:datePicker"
+    const val DATE_PICKER_CONFIRM = "vrpSetup:datePickerConfirm"
+    const val DATE_PICKER_CANCEL = "vrpSetup:datePickerCancel"
     const val CONTINUE_BUTTON = "vrpSetup:continueButton"
 
     const val REVIEW = "vrpSetup:review"

@@ -12,6 +12,7 @@ package org.mifosx.openbanking.feature.vrpsetup
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.mifosx.openbanking.core.common.parseMinorUnits
@@ -20,6 +21,14 @@ import kotlin.time.Instant
 
 /** The soonest end date the bank accepts, counted in days from today. */
 private const val MIN_DAYS_AHEAD = 2
+
+/**
+ * How many years ahead the picker offers.
+ *
+ * A presentation bound, not a bank rule: no ceiling on `ValidToDateTime` has been observed, so this
+ * only keeps the calendar navigable.
+ */
+private const val MAX_YEARS_AHEAD = 10
 
 /** The identification the bank requires: a six-digit sort code and an eight-digit account number. */
 private const val SORT_CODE_LENGTH = 6
@@ -62,6 +71,26 @@ fun earliestEndDate(today: LocalDate): LocalDate = today.plus(MIN_DAYS_AHEAD, Da
 
 /** Whether [date] is far enough ahead to be accepted on [today]. */
 fun isSelectableEndDate(date: LocalDate, today: LocalDate): Boolean = date >= earliestEndDate(today)
+
+/**
+ * The date [epochMillis] falls on, read in UTC.
+ *
+ * The picker hands out UTC millis by contract. Reading them in the device zone resolves east of UTC
+ * to the following calendar day, which would offer a date the bank refuses.
+ */
+fun utcDateOf(epochMillis: Long): LocalDate =
+    Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(TimeZone.UTC).date
+
+/** The inverse, for seeding a picker with a date already chosen. */
+fun epochMillisOf(date: LocalDate): Long = date.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+
+/**
+ * The years an end date may fall in, counted from [today].
+ *
+ * Left unbounded, the picker pages through decades in which every day is disabled, which reads as a
+ * broken calendar rather than a bounded one.
+ */
+fun selectableEndYears(today: LocalDate): IntRange = today.year..(today.year + MAX_YEARS_AHEAD)
 
 /**
  * Checks one ceiling on its own.
