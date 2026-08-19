@@ -136,6 +136,8 @@ include(":feature:payments-hub")
 include(":feature:payments-schedule-payment")
 include(":feature:payments-standing-order")
 
+include(":feature:vrp:vrp-consents")
+
 include(":core-base:analytics")
 include(":core-base:common")
 include(":core-base:database")

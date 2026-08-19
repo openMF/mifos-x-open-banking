@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 Mifos Initiative
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+    If a copy of the MPL was not distributed with this file,
+    You can obtain one at https://mozilla.org/MPL/2.0/.
+
+    See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+-->
+<resources>
+    <string name="feature_vrp_consents_list_title">Standing Payments</string>
+    <string name="feature_vrp_consents_list_create">Set up a standing payment</string>
+    <string name="feature_vrp_consents_list_limit_format">per %1$s</string>
+    <string name="feature_vrp_consents_list_valid_until">Until %1$s</string>
+    <string name="feature_vrp_consents_list_no_end_date">No end date</string>
+    <string name="feature_vrp_consents_list_empty_title">No standing payments</string>
+    <string name="feature_vrp_consents_list_empty_body">Pay someone regularly without signing in to your bank each time.</string>
+    <string name="feature_vrp_consents_list_error_title">Could not load your standing payments</string>
+    <string name="feature_vrp_consents_list_error_storage">Something went wrong. Please try again.</string>
+    <string name="feature_vrp_consents_list_retry">Retry</string>
+    <string name="feature_vrp_consents_list_accessibility">Your standing payments</string>
+
+    <string name="feature_vrp_consents_detail_title">Standing payment</string>
+    <string name="feature_vrp_consents_detail_payer">Paid from %1$s</string>
+    <string name="feature_vrp_consents_detail_payer_chosen_at_bank">Chosen at your bank</string>
+    <string name="feature_vrp_consents_detail_limits">Limits</string>
+    <string name="feature_vrp_consents_detail_per_payment_limit">Up to %1$s per payment</string>
+    <string name="feature_vrp_consents_detail_periodic_limit">Up to %1$s per %2$s</string>
+    <string name="feature_vrp_consents_detail_this_period">This %1$s</string>
+    <string name="feature_vrp_consents_detail_remaining">%1$s left</string>
+    <string name="feature_vrp_consents_detail_consumed">%1$s of %2$s used</string>
+    <string name="feature_vrp_consents_detail_remaining_note">Based on payments made in this app. Your bank has the final say.</string>
+    <string name="feature_vrp_consents_detail_synced_at">Checked %1$s</string>
+    <string name="feature_vrp_consents_detail_valid_until">Runs until %1$s</string>
+    <string name="feature_vrp_consents_detail_no_end_date">No end date</string>
+    <string name="feature_vrp_consents_detail_pay">Make a payment</string>
+    <string name="feature_vrp_consents_detail_history_title">Payments</string>
+    <string name="feature_vrp_consents_detail_history_empty">No payments yet.</string>
+    <string name="feature_vrp_consents_detail_payment_failed">Your bank did not accept this payment</string>
+    <string name="feature_vrp_consents_detail_revoke">Remove access</string>
+    <string name="feature_vrp_consents_detail_revoke_title">Remove access?</string>
+    <string name="feature_vrp_consents_detail_revoke_body">This stops all future payments and cannot be undone.</string>
+    <string name="feature_vrp_consents_detail_revoke_confirm">Remove access</string>
+    <string name="feature_vrp_consents_detail_revoke_cancel">Keep it</string>
+    <string name="feature_vrp_consents_detail_revoke_failed">Removed on this device. It may still be active at your bank — try again.</string>
+    <string name="feature_vrp_consents_detail_ended">This standing payment has ended.</string>
+    <string name="feature_vrp_consents_detail_unusable_title">This standing payment cannot be used</string>
+    <string name="feature_vrp_consents_detail_unusable_body">The account you chose at your bank cannot make these payments.</string>
+    <string name="feature_vrp_consents_detail_not_found">No record of this standing payment.</string>
+    <string name="feature_vrp_consents_detail_error_title">Could not load this standing payment</string>
+    <string name="feature_vrp_consents_detail_retry">Retry</string>
+    <string name="feature_vrp_consents_detail_refresh">Check with bank</string>
+
+    <string name="feature_vrp_consents_period_day">day</string>
+    <string name="feature_vrp_consents_period_week">week</string>
+    <string name="feature_vrp_consents_period_fortnight">fortnight</string>
+    <string name="feature_vrp_consents_period_month">month</string>
+    <string name="feature_vrp_consents_period_half_year">half-year</string>
+    <string name="feature_vrp_consents_period_year">year</string>
+
+    <string name="feature_vrp_consents_status_awaiting">Awaiting authorisation</string>
+    <string name="feature_vrp_consents_status_active">Active</string>
+    <string name="feature_vrp_consents_status_rejected">Rejected</string>
+    <string name="feature_vrp_consents_status_revoked">Removed</string>
+    <string name="feature_vrp_consents_status_cancelled">Cancelled</string>
+    <string name="feature_vrp_consents_status_expired">Expired</string>
+    <string name="feature_vrp_consents_status_consumed">Used up</string>
+
+    <string name="feature_vrp_consents_payment_sent">Sent</string>
+    <string name="feature_vrp_consents_payment_pending">Sending</string>
+    <string name="feature_vrp_consents_payment_failed">Not sent</string>
+</resources>
