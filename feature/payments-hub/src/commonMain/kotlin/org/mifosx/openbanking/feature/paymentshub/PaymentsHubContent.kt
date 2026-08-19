@@ -15,11 +15,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -40,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import template.core.base.designsystem.theme.KptTheme
 
@@ -114,8 +118,9 @@ private fun QuickActionsSection(
     )
     Column(modifier = Modifier.testTag(PaymentsHubTestTags.QUICK_ACTIONS_GRID)) {
         for (row in rows) {
+            // Sized to the taller card, so a label that wraps lengthens both rather than clipping.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(gap),
             ) {
                 for (card in row) {
@@ -196,7 +201,8 @@ private fun QuickActionCard(
 ) {
     Card(
         modifier = modifier
-            .height(QuickActionCardMinHeight)
+            .heightIn(min = QuickActionCardMinHeight)
+            .fillMaxHeight()
             .border(
                 CardBorderThickness,
                 KptTheme.colorScheme.outlineVariant,
@@ -206,7 +212,10 @@ private fun QuickActionCard(
         colors = CardDefaults.cardColors(containerColor = KptTheme.colorScheme.surface),
         shape = KptTheme.shapes.medium,
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(KptTheme.spacing.sm),
+            contentAlignment = Alignment.Center,
+        ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
@@ -223,12 +232,14 @@ private fun QuickActionCard(
                     style = KptTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = KptTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
                 )
                 if (subtext.isNotBlank()) {
                     Text(
                         text = subtext,
                         style = KptTheme.typography.bodySmall,
                         color = KptTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
