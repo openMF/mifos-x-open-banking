@@ -9,6 +9,7 @@
  */
 package org.mifosx.openbanking.feature.vrpconsents.consentDetail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,10 +50,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
+import org.mifosx.openbanking.core.ui.account.accountTypeLabel
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
 import org.mifosx.openbanking.core.ui.scaffold.KptScaffold
 import org.mifosx.openbanking.feature.vrpconsents.consentStatusLabel
@@ -228,9 +231,9 @@ private fun ConsentDetail(
         verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.md),
     ) {
         StatusHeader(content)
+        PayerCard(content.payer)
         content.periodicLimitUsage?.let { UsageCard(it) }
         LimitsCard(content)
-        content.PayerRow()
 
         if (content.status == ConsentStatus.Authorised) {
             MifosFilledPillButton(
@@ -394,143 +397,94 @@ private fun LimitsCard(content: VrpConsentDetailUiState.Content) {
     DetailCard {
         SectionHeading(stringResource(Res.string.feature_vrp_consents_detail_limits))
 
-        Text(
-            text = stringResource(
-                Res.string.feature_vrp_consents_detail_per_payment_limit,
-                content.perPaymentCeilingAmount,
-            ),
-            style = KptTheme.typography.titleMedium,
-            color = KptTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .padding(top = KptTheme.spacing.sm)
-                .testTag(VrpConsentDetailTestTags.PER_PAYMENT_LIMIT),
+        LimitRow(
+            title = stringResource(Res.string.feature_vrp_consents_detail_per_payment_limit),
+            amount = content.perPaymentCeilingAmount,
+            testTag = VrpConsentDetailTestTags.PER_PAYMENT_LIMIT,
         )
 
         content.limits.forEach { limit ->
             HorizontalDivider(modifier = Modifier.padding(vertical = KptTheme.spacing.sm))
-            Text(
-                text = stringResource(
+            LimitRow(
+                title = stringResource(
                     Res.string.feature_vrp_consents_detail_periodic_limit,
-                    limit.ceilingAmount,
                     periodLabel(limit.periodType),
                 ),
-                style = KptTheme.typography.titleMedium,
-                color = KptTheme.colorScheme.onSurface,
-                modifier = Modifier.testTag(VrpConsentDetailTestTags.PERIODIC_LIMIT),
+                amount = limit.ceilingAmount,
+                testTag = VrpConsentDetailTestTags.PERIODIC_LIMIT,
             )
         }
     }
 }
 
+/** One ceiling: what it covers, and the figure beneath it. */
 @Composable
-private fun VrpConsentDetailUiState.Content.PayerRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth().testTag(VrpConsentDetailTestTags.PAYER),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
-    ) {
-        Icon(
-            imageVector = Icons.Filled.AccountBalance,
-            contentDescription = null,
-            tint = KptTheme.colorScheme.onSurfaceVariant,
+private fun LimitRow(
+    title: String,
+    amount: String,
+    testTag: String,
+) {
+    Column(modifier = Modifier.padding(top = KptTheme.spacing.sm)) {
+        Text(
+            text = title,
+            style = KptTheme.typography.bodyMedium,
+            color = KptTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = if (payerName.isBlank()) {
-                stringResource(Res.string.feature_vrp_consents_detail_payer_chosen_at_bank)
-            } else {
-                stringResource(Res.string.feature_vrp_consents_detail_payer, payerName)
-            },
-            style = KptTheme.typography.bodyLarge,
+            text = amount,
+            style = KptTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = KptTheme.colorScheme.onSurface,
+            modifier = Modifier.testTag(testTag),
         )
     }
 }
 
 @Composable
-private fun PaymentHistory(payments: List<PaymentRowUi>) {
-    Column(modifier = Modifier.fillMaxWidth().testTag(VrpConsentDetailTestTags.HISTORY)) {
-        SectionHeading(stringResource(Res.string.feature_vrp_consents_detail_history_title))
-
-        if (payments.isEmpty()) {
-            Text(
-                text = stringResource(Res.string.feature_vrp_consents_detail_history_empty),
-                style = KptTheme.typography.bodyMedium,
-                color = KptTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(top = KptTheme.spacing.sm)
-                    .testTag(VrpConsentDetailTestTags.HISTORY_EMPTY),
-            )
-            return@Column
-        }
-
-        // Flat: the history is a list to read, and a raised surface reads as something to tap.
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(top = KptTheme.spacing.sm),
-            shape = KptTheme.shapes.medium,
-            colors = CardDefaults.cardColors(containerColor = KptTheme.colorScheme.surfaceContainerLowest),
-            elevation = CardDefaults.cardElevation(defaultElevation = KptTheme.elevation.level0),
-        ) {
-            payments.forEachIndexed { index, payment ->
-                if (index > 0) HorizontalDivider()
-                PaymentRow(payment)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PaymentRow(payment: PaymentRowUi) {
-    val failed = payment.hasFailed
-    val tone = if (failed) KptTheme.colorScheme.error else KptTheme.colorScheme.onSurface
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(KptTheme.spacing.md)
-            .testTag(VrpConsentDetailTestTags.paymentRow(payment.localId)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = payment.sentAmount,
-                style = KptTheme.typography.titleMedium,
-                color = tone,
-                modifier = Modifier.testTag(VrpConsentDetailTestTags.paymentAmount(payment.localId)),
-            )
-            if (failed) {
-                Text(
-                    text = stringResource(Res.string.feature_vrp_consents_detail_payment_failed),
-                    style = KptTheme.typography.bodySmall,
-                    color = KptTheme.colorScheme.error,
-                )
-            }
-            Text(
-                text = payment.sentOn,
-                style = KptTheme.typography.bodySmall,
-                color = KptTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+private fun PayerCard(payer: PayerAccountUi?) {
+    DetailCard {
+        SectionHeading(stringResource(Res.string.feature_vrp_consents_detail_payer))
 
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = KptTheme.spacing.sm)
+                .testTag(VrpConsentDetailTestTags.PAYER),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.xs),
-            modifier = Modifier.testTag(VrpConsentDetailTestTags.paymentStatus(payment.localId)),
+            horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
         ) {
             Icon(
-                imageVector = if (failed) Icons.Filled.ErrorOutline else Icons.Filled.CheckCircle,
+                imageVector = Icons.Filled.AccountBalance,
                 contentDescription = null,
-                tint = if (failed) KptTheme.colorScheme.error else KptTheme.colorScheme.outline,
+                tint = KptTheme.colorScheme.onSurfaceVariant,
             )
-            if (!failed) {
+            if (payer == null) {
                 Text(
-                    text = paymentStatusLabel(payment.status),
-                    style = KptTheme.typography.bodyMedium,
-                    color = KptTheme.colorScheme.onSurfaceVariant,
+                    text = stringResource(Res.string.feature_vrp_consents_detail_payer_chosen_at_bank),
+                    style = KptTheme.typography.titleMedium,
+                    color = KptTheme.colorScheme.onSurface,
                 )
+            } else {
+                Column {
+                    Text(
+                        text = payer.maskedAccountNumber,
+                        style = KptTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = KptTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = accountTypeLabel(payer.accountSubType),
+                        style = KptTheme.typography.bodyMedium,
+                        color = KptTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
+
+/** Matches Material's own outlined-button border, which this only recolours. */
+private val RevokeBorderThickness = 1.dp
 
 @Composable
 private fun RevokeButton(
@@ -541,6 +495,7 @@ private fun RevokeButton(
         OutlinedButton(
             onClick = onClick,
             enabled = enabled,
+            border = BorderStroke(RevokeBorderThickness, KptTheme.colorScheme.error),
             modifier = Modifier.testTag(VrpConsentDetailTestTags.REVOKE_BUTTON),
         ) {
             Icon(
@@ -607,7 +562,7 @@ private fun DetailCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SectionHeading(text: String) {
+internal fun SectionHeading(text: String) {
     Text(
         text = text.uppercase(),
         style = KptTheme.typography.labelMedium,

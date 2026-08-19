@@ -22,11 +22,11 @@
     <string name="feature_vrp_consents_list_retry">Retry</string>
 
     <string name="feature_vrp_consents_detail_title">Variable recurring payment</string>
-    <string name="feature_vrp_consents_detail_payer">Paid from %1$s</string>
+    <string name="feature_vrp_consents_detail_payer">Paid from</string>
     <string name="feature_vrp_consents_detail_payer_chosen_at_bank">Chosen at your bank</string>
     <string name="feature_vrp_consents_detail_limits">Limits</string>
-    <string name="feature_vrp_consents_detail_per_payment_limit">Up to %1$s per payment</string>
-    <string name="feature_vrp_consents_detail_periodic_limit">Up to %1$s per %2$s</string>
+    <string name="feature_vrp_consents_detail_per_payment_limit">Per payment</string>
+    <string name="feature_vrp_consents_detail_periodic_limit">Per %1$s</string>
     <string name="feature_vrp_consents_detail_this_period">This %1$s</string>
     <string name="feature_vrp_consents_detail_remaining">%1$s left</string>
     <string name="feature_vrp_consents_detail_consumed">%1$s of %2$s used</string>
@@ -38,7 +38,7 @@
     <string name="feature_vrp_consents_detail_checked_days">%1$d days ago</string>
     <string name="feature_vrp_consents_detail_valid_until">Valid until %1$s</string>
     <string name="feature_vrp_consents_detail_no_end_date">No end date</string>
-    <string name="feature_vrp_consents_detail_pay">Make a payment</string>
+    <string name="feature_vrp_consents_detail_pay">Send money</string>
     <string name="feature_vrp_consents_detail_history_title">Payments</string>
     <string name="feature_vrp_consents_detail_history_empty">No payments yet.</string>
     <string name="feature_vrp_consents_detail_payment_failed">Your bank did not accept this payment</string>

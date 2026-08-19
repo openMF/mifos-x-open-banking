@@ -13,6 +13,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.LimitRowUi
+import org.mifosx.openbanking.feature.vrpconsents.consentDetail.PayerAccountUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.PaymentRowUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.PeriodicLimitUsageUi
 import org.mifosx.openbanking.feature.vrpconsents.consentDetail.RevokePhase
@@ -115,7 +116,7 @@ object VrpConsentsFixtures {
         payments: List<PaymentRowUi> = paymentRows(),
     ) = VrpConsentDetailUiState.Content(
         payeeName = "Sarah Chen",
-        payerName = "Everyday Current Account ··4021",
+        payer = PayerAccountUi(maskedAccountNumber = "XXXX4021", accountSubType = "CACC"),
         status = ConsentStatus.Authorised,
         validUntil = "18 Mar 2027",
         syncedAt = checkedAt,

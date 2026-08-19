@@ -39,6 +39,8 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -238,14 +240,46 @@ class VrpConsentDetailViewModelTest {
                 payer = AccountIdentity(
                     schemeName = SORT_CODE_ACCOUNT_NUMBER,
                     identification = "80200110204021",
-                    name = "Everyday Current Account",
+                    name = "CACC",
                 ),
             ),
         )
         val vm = viewModel()
         advanceUntilIdle()
 
-        assertEquals("Everyday Current Account", content(vm).payerName)
+        assertEquals("XXXX4021", assertNotNull(content(vm).payer).maskedAccountNumber)
+    }
+
+    /**
+     * The bank returns its own type code in the account's name, so the identity has to come from the
+     * number. Showing the name would put "CACC" on screen as if it were the account.
+     */
+    @Test
+    fun thePayerIsNamedByItsNumberAndType() = runTest {
+        consents.emit(
+            consent(
+                payer = AccountIdentity(
+                    schemeName = SORT_CODE_ACCOUNT_NUMBER,
+                    identification = "80200110203349",
+                    name = "CACC",
+                ),
+            ),
+        )
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        val payer = assertNotNull(content(vm).payer)
+        assertEquals("XXXX3349", payer.maskedAccountNumber)
+        assertEquals("CACC", payer.accountSubType)
+    }
+
+    /** A payer the customer chose at the bank is unknown until it is read back. */
+    @Test
+    fun aConsentWithNoPayerCarriesNone() = runTest {
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        assertNull(content(vm).payer)
     }
 
     @Test

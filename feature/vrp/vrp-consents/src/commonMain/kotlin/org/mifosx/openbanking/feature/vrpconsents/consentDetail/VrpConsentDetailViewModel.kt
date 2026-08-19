@@ -23,10 +23,12 @@ import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepository
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
+import org.mifosx.openbanking.core.model.vrp.AccountIdentity
 import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.core.model.vrp.PeriodUsage
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpPayment
+import org.mifosx.openbanking.core.ui.account.maskedAccountNumber
 import org.mifosx.openbanking.feature.vrpconsents.formatExactAmount
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -38,6 +40,9 @@ private const val SORT_CODE_ACCOUNT_NUMBER = "UK.OBIE.SortCodeAccountNumber"
 
 /** The length a sort-code-and-account-number identification always has. */
 private const val PAYER_IDENTIFICATION_LENGTH = 14
+
+/** The account-number half of that identification; the first six digits are the sort code. */
+private const val ACCOUNT_NUMBER_LENGTH = 8
 
 /** Screen state for one standing payment. */
 data class VrpConsentDetailState(
@@ -52,7 +57,7 @@ sealed interface VrpConsentDetailUiState {
 
     data class Content(
         val payeeName: String,
-        val payerName: String,
+        val payer: PayerAccountUi?,
         val status: ConsentStatus,
         val validUntil: String?,
         val syncedAt: Instant?,
@@ -121,6 +126,17 @@ enum class RevokePhase {
 data class LimitRowUi(
     val periodType: PeriodType?,
     val ceilingAmount: String,
+)
+
+/**
+ * The account a consent is paid from.
+ *
+ * @property maskedAccountNumber The number with all but its last digits hidden, e.g. `XXXX3349`.
+ * @property accountSubType The bank's type code, e.g. `CACC`. Resolved to a label where it is drawn.
+ */
+data class PayerAccountUi(
+    val maskedAccountNumber: String,
+    val accountSubType: String,
 )
 
 /**
@@ -357,7 +373,7 @@ private fun VrpConsent.toContent(
 
     return VrpConsentDetailUiState.Content(
         payeeName = payee.name,
-        payerName = payer?.name.orEmpty(),
+        payer = payer?.toPayerAccountUi(),
         status = status,
         validUntil = validity?.validTo?.let { formatIsoDate(it.toString()) },
         syncedAt = syncedAt,
@@ -370,6 +386,25 @@ private fun VrpConsent.toContent(
             ?.toPeriodicLimitUsageUi(),
         payments = rows,
         revoke = revoke,
+    )
+}
+
+/**
+ * The payer as the screen names it.
+ *
+ * The bank returns its own type code in the account's name — `CACC` for a current account — so the
+ * name is read as the type rather than shown, and the number carries the identity.
+ */
+private fun AccountIdentity.toPayerAccountUi(): PayerAccountUi {
+    val accountNumber = identification.takeLast(ACCOUNT_NUMBER_LENGTH)
+
+    return PayerAccountUi(
+        maskedAccountNumber = maskedAccountNumber(
+            accountSubType = name,
+            accountNumber = accountNumber,
+            rawIdentification = identification,
+        ),
+        accountSubType = name,
     )
 }
 
