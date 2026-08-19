@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright 2026 Mifos Initiative
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+    If a copy of the MPL was not distributed with this file,
+    You can obtain one at https://mozilla.org/MPL/2.0/.
+
+    See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+-->
+<resources>
+    <string name="feature_vrp_setup_title">Set up a VRP</string>
+    <string name="feature_vrp_setup_payer_label">Pay from</string>
+    <string name="feature_vrp_setup_payer_choose_at_bank">Choose at my bank</string>
+    <string name="feature_vrp_setup_payer_choose_at_bank_supporting">Pick the account when you approve</string>
+    <string name="feature_vrp_setup_payer_card_warning">Do not pick a credit card at your bank — card payments are rejected.</string>
+    <string name="feature_vrp_setup_payee_label">Pay to</string>
+    <string name="feature_vrp_setup_payee_pay_new">Pay new</string>
+    <string name="feature_vrp_setup_payee_new_name_label">Name</string>
+    <string name="feature_vrp_setup_payee_new_sort_code_label">Sort code</string>
+    <string name="feature_vrp_setup_payee_new_account_number_label">Account number</string>
+    <string name="feature_vrp_setup_payee_error_name">Enter a name for this payee.</string>
+    <string name="feature_vrp_setup_payee_error_sort_code">Enter the 6-digit sort code.</string>
+    <string name="feature_vrp_setup_payee_error_account_number">Enter the 8-digit account number.</string>
+    <string name="feature_vrp_setup_payee_error_same">This is the account you are paying from.</string>
+    <string name="feature_vrp_setup_per_payment_label">Most you can send in one payment</string>
+    <string name="feature_vrp_setup_periodic_label">Most you can send in total</string>
+    <string name="feature_vrp_setup_period_label">per</string>
+    <string name="feature_vrp_setup_amount_error_missing">Enter an amount.</string>
+    <string name="feature_vrp_setup_amount_error_min">Enter at least £0.01.</string>
+    <string name="feature_vrp_setup_amount_error_decimals">Use pounds and pence, for example 50.00.</string>
+    <string name="feature_vrp_setup_amount_error_ordering">The total must be more than a single payment.</string>
+    <string name="feature_vrp_setup_valid_to_label">Stop on</string>
+    <string name="feature_vrp_setup_valid_to_none">No end date</string>
+    <string name="feature_vrp_setup_valid_to_clear">Clear</string>
+    <string name="feature_vrp_setup_valid_to_hint">The earliest you can choose is %1$s.</string>
+    <string name="feature_vrp_setup_continue">Continue</string>
+    <string name="feature_vrp_setup_no_accounts_title">No account can be used</string>
+    <string name="feature_vrp_setup_no_accounts_body">None of your accounts can set up a VRP.</string>
+    <string name="feature_vrp_setup_error_title">Could not load your accounts</string>
+    <string name="feature_vrp_setup_error_body">Something went wrong. Please try again.</string>
+    <string name="feature_vrp_setup_retry">Retry</string>
+
+    <string name="feature_vrp_setup_review_title">Check your VRP</string>
+    <string name="feature_vrp_setup_review_payer">From</string>
+    <string name="feature_vrp_setup_review_payee">To</string>
+    <string name="feature_vrp_setup_review_limits">Limits</string>
+    <string name="feature_vrp_setup_review_up_to">Up to</string>
+    <string name="feature_vrp_setup_review_per_payment">per payment</string>
+    <string name="feature_vrp_setup_review_per_period">per %1$s</string>
+    <string name="feature_vrp_setup_review_validity">Runs until %1$s</string>
+    <string name="feature_vrp_setup_review_no_end_date">No end date</string>
+    <string name="feature_vrp_setup_review_irreversible">These limits cannot be changed later. Changing them means setting up a new VRP at your bank.</string>
+    <string name="feature_vrp_setup_review_confirm">Continue to your bank</string>
+    <string name="feature_vrp_setup_review_protected">Protected by UK Open Banking</string>
+    <string name="feature_vrp_setup_review_back">Back</string>
+    <string name="feature_vrp_setup_review_error_network">We could not reach your bank. Nothing has been set up.</string>
+    <string name="feature_vrp_setup_review_error_server">Your bank could not complete this. Nothing has been set up.</string>
+
+    <string name="feature_vrp_setup_period_day">day</string>
+    <string name="feature_vrp_setup_period_week">week</string>
+    <string name="feature_vrp_setup_period_fortnight">fortnight</string>
+    <string name="feature_vrp_setup_period_month">month</string>
+    <string name="feature_vrp_setup_period_half_year">half-year</string>
+    <string name="feature_vrp_setup_period_year">year</string>
+</resources>
