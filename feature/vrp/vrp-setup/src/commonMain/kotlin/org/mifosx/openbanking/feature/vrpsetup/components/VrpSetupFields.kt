@@ -17,15 +17,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.model.vrp.PeriodType
+import org.mifosx.openbanking.core.ui.components.MifosOutlinedTextField
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.Res
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_valid_to_clear
 import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_valid_to_none
@@ -60,18 +58,16 @@ internal fun VrpAmountField(
     testTag: String,
     errorTestTag: String,
     modifier: Modifier = Modifier,
+    currency: String = "£",
 ) {
     Column(modifier = modifier) {
-        OutlinedTextField(
+        MifosOutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().testTag(testTag),
-            prefix = { Text(text = "£", style = KptTheme.typography.titleMedium) },
-            isError = error != null,
-            singleLine = true,
-            shape = KptTheme.shapes.small,
-            colors = primaryOutlineColors(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            prefix = currency,
+            error = error != null,
+            keyboardType = KeyboardType.Decimal,
+            testTag = testTag,
         )
         error?.let { FieldError(it, errorTestTag) }
     }
@@ -89,16 +85,13 @@ internal fun VrpTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     Column(modifier = modifier) {
-        OutlinedTextField(
+        MifosOutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth().testTag(testTag),
-            isError = error != null,
-            singleLine = true,
-            shape = KptTheme.shapes.small,
-            colors = primaryOutlineColors(),
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            label = label,
+            error = error != null,
+            keyboardType = keyboardType,
+            testTag = testTag,
         )
         error?.let { FieldError(it, testTag + "Error") }
     }
@@ -186,18 +179,6 @@ internal fun VrpEndDateRow(
     }
 }
 
-/**
- * Field borders in primary, at rest as well as focused.
- *
- * A refused value still turns the border red: the error colour is left at its default so the brand
- * one cannot bury it.
- */
-@Composable
-private fun primaryOutlineColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = KptTheme.colorScheme.primary,
-    unfocusedBorderColor = KptTheme.colorScheme.primary,
-)
-
 /** A read-only control that opens something: the same outline the text fields carry. */
 @Composable
 private fun OutlinedField(
@@ -210,7 +191,7 @@ private fun OutlinedField(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = FieldMinHeight)
-            .border(FieldBorder, KptTheme.colorScheme.primary, KptTheme.shapes.small)
+            .border(FieldBorder, KptTheme.colorScheme.primary, KptTheme.shapes.medium)
             .clickable(onClick = onClick)
             .padding(horizontal = KptTheme.spacing.md)
             .testTag(testTag),

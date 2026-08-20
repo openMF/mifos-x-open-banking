@@ -284,7 +284,6 @@ sealed interface StandingOrderAction {
     data object AbandonAuthorisation : StandingOrderAction
     data object BackStep : StandingOrderAction
     data object RetryLoad : StandingOrderAction
-    data object RetryPayees : StandingOrderAction
 }
 
 sealed interface StandingOrderEvent {

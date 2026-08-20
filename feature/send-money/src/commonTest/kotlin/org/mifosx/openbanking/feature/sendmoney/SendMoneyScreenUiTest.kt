@@ -22,12 +22,10 @@ import androidx.compose.ui.test.runComposeUiTest
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.sendmoney.ui.OFFERED_CHARGE_BEARERS
-import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAction
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAmountProblem
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyErrorKind
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyStage
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 /**
  * Renders each state through the stateless [SendMoneyScreenContent] on the desktop runner.
@@ -116,17 +114,14 @@ class SendMoneyScreenUiTest {
     /**
      * The payee list is account-scoped, so before a payer exists there is nothing to show.
      *
-     * A notice rather than an empty list: an empty list looks like "you have no payees", which is a
-     * different and wrong statement.
+     * The previous payer's payees must not survive into a form with no payer.
      */
     @Test
-    fun noPayerChosenExplainsWhyThereAreNoPayees() = runComposeUiTest {
+    fun noPayerChosenOffersNoPayees() = runComposeUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(debtorAccountId = null), {}, {})
         }
-        onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).assertIsDisplayed()
         onNodeWithTag(SendMoneyTestTags.creditorRow(SendMoneyFixtures.JAMESON_ID)).assertDoesNotExist()
-        onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
     }
 
     /** Sending no payer is something to choose, not something left undone — offered among the accounts. */
@@ -153,7 +148,6 @@ class SendMoneyScreenUiTest {
                 {},
             )
         }
-        onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).assertIsDisplayed()
         onNodeWithTag(SendMoneyTestTags.MANUAL_ENTRY_BUTTON).assertIsDisplayed()
     }
 
@@ -410,56 +404,23 @@ class SendMoneyScreenUiTest {
         onNodeWithTag(SendMoneyTestTags.REVIEW_AMOUNT).assertTextEquals("$850.00")
     }
 
-    /**
-     * A refused payee read says so, rather than claiming the customer has none.
-     *
-     * The live failure: HSBC answered `403` on `beneficiaries` for every account while every other
-     * AIS read returned `200`, and the screen rendered "No saved payees" — a statement about the
-     * customer's own bank that was not true.
-     */
+    /** With no list, hand-keying the payee is the only route to a payment, so it survives a failure. */
     @Test
-    fun aFailedPayeeReadIsNotReportedAsAnEmptyList() = runComposeUiTest {
+    fun aFailedPayeeReadKeepsPayNew() = runComposeUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(payeesFailed = true), {}, {})
         }
-        onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).performScrollTo().assertIsDisplayed()
-        onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
-        onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).assertDoesNotExist()
-        onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).assertDoesNotExist()
-    }
-
-    /** And it is not a dead end: retry, and the only route to a payment without a list. */
-    @Test
-    fun aFailedPayeeReadOffersRetryAndKeepsPayNew() = runComposeUiTest {
-        val actions = mutableListOf<SendMoneyAction>()
-        setContent {
-            SendMoneyScreenContent(SendMoneyFixtures.formState(payeesFailed = true), { actions += it }, {})
-        }
         onNodeWithTag(SendMoneyTestTags.CREDITOR_LIST).assertIsDisplayed()
         onNodeWithTag(SendMoneyTestTags.MANUAL_ENTRY_BUTTON).assertIsDisplayed()
-
-        onNodeWithTag(SendMoneyTestTags.PAYEES_RETRY_BUTTON).performScrollTo().performClick()
-
-        assertEquals(listOf<SendMoneyAction>(SendMoneyAction.RetryPayees), actions)
     }
 
-    /**
-     * A read still running says so, rather than answering for the bank before it has replied.
-     *
-     * This is the rendered half of the defect: `payeesLoading` is what keeps the shimmer in, and
-     * asserting the absence of NO_SAVED_PAYEES is what keeps the old behaviour out. Both notices
-     * are checked absent, because "still asking" is neither a claim about the account nor a
-     * complaint about the bank.
-     */
+    /** A read still running shows placeholders rather than answering for the bank. */
     @Test
-    fun aPayeeReadStillRunningShowsPlaceholdersRatherThanTheNoPayeesNotice() = runComposeUiTest {
+    fun aPayeeReadStillRunningShowsPlaceholders() = runComposeUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(payeesLoading = true), {}, {})
         }
         onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).performScrollTo().assertIsDisplayed()
-        onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
-        onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).assertDoesNotExist()
-        onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).assertDoesNotExist()
     }
 
     /**
@@ -478,29 +439,22 @@ class SendMoneyScreenUiTest {
     }
 
     /**
-     * With no payer the notice explains itself; it does not also shimmer.
-     *
-     * The rendered mirror of the ViewModel's gate. Two states describing the same empty row at once
-     * would be the screen contradicting itself, and this is the ordering inside `PayeeSection`'s
-     * `when` that stops it — "no payer" first, because with no payer nothing is in flight.
+     * With no payer nothing is in flight, so the row must not shimmer either.
      */
     @Test
-    fun noPayerChosenDoesNotAlsoRenderAsLoading() = runComposeUiTest {
+    fun noPayerChosenDoesNotRenderAsLoading() = runComposeUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(debtorAccountId = null), {}, {})
         }
-        onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).assertIsDisplayed()
         onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).assertDoesNotExist()
     }
 
-    /** A list that loaded and happens to be empty still says the other thing — and does not shimmer. */
+    /** A list that loaded and happens to be empty is settled, so it does not shimmer. */
     @Test
-    fun anEmptyPayeeListIsNotReportedAsAFailure() = runComposeUiTest {
+    fun anEmptyPayeeListDoesNotRenderAsLoading() = runComposeUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(beneficiaries = emptyList()), {}, {})
         }
-        onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertIsDisplayed()
-        onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).assertDoesNotExist()
         onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).assertDoesNotExist()
     }
 
@@ -543,7 +497,6 @@ class SendMoneyScreenUiTest {
         setContent {
             SendMoneyScreenContent(SendMoneyFixtures.formState(beneficiaries = emptyList()), {}, {})
         }
-        onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertIsDisplayed()
         // The row survives an empty list on purpose: its first item is the only way to pay someone
         // who is not saved, so dropping it would take the escape away exactly when it is needed.
         onNodeWithTag(SendMoneyTestTags.CREDITOR_LIST).assertIsDisplayed()

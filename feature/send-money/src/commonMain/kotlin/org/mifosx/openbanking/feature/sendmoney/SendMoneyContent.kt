@@ -22,14 +22,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -48,8 +45,8 @@ import org.mifosx.openbanking.core.ui.components.MifosAmountCard
 import org.mifosx.openbanking.core.ui.components.MifosDropdownBox
 import org.mifosx.openbanking.core.ui.components.MifosDropdownField
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
+import org.mifosx.openbanking.core.ui.components.MifosOutlinedTextField
 import org.mifosx.openbanking.core.ui.components.MifosRailToggle
-import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
@@ -73,16 +70,10 @@ import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_name
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_sort_code
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_sort_code_error
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_no_saved_payees_body
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_no_saved_payees_title
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_non_gbp_notice
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_payee_needs_payer
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_payees_failed_body
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_payees_failed_title
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_payees_loading_a11y
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_reference_helper
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_reference_label
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_retry
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_review_button
 import org.mifosx.openbanking.feature.sendmoney.ui.OFFERED_CHARGE_BEARERS
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAccountRow
@@ -270,14 +261,6 @@ private fun PayeeSection(
             payNewTestTag = SendMoneyTestTags.MANUAL_ENTRY_BUTTON,
             loadingTestTag = SendMoneyTestTags.PAYEES_LOADING,
         )
-        when {
-            // Beneficiaries are saved per account, so without one there is no list to read.
-            // Saying so beats showing someone else's payees or an empty row that looks broken.
-            state.payeesUnavailable -> ChoosePayerFirstNotice()
-            state.payeesLoading -> Unit
-            state.payeesFailed -> PayeesFailedNotice(onAction)
-            !state.hasBeneficiaries -> NoSavedPayees()
-        }
 
         if (state.manualEntryVisible) {
             ManualCreditorFields(state, onAction)
@@ -341,50 +324,48 @@ private fun ManualCreditorFields(
     onAction: (SendMoneyAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(RowGap)) {
-        OutlinedTextField(
+        MifosOutlinedTextField(
             value = state.manualName,
             onValueChange = { onAction(SendMoneyAction.EnterManualName(it)) },
-            label = { Text(stringResource(Res.string.feature_send_money_manual_name)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.MANUAL_NAME),
+            label = stringResource(Res.string.feature_send_money_manual_name),
+            testTag = SendMoneyTestTags.MANUAL_NAME,
         )
         // The rails identify a creditor differently — sort code and account number against an IBAN —
         // and each refuses the other's scheme with U027, so only one set is ever offered.
         if (state.rail == PaymentRail.Domestic) {
-            OutlinedTextField(
+            MifosOutlinedTextField(
                 value = state.manualSortCode,
                 onValueChange = { onAction(SendMoneyAction.EnterManualSortCode(it)) },
-                label = { Text(stringResource(Res.string.feature_send_money_manual_sort_code)) },
-                isError = state.fieldErrors.sortCodeInvalid,
+                label = stringResource(Res.string.feature_send_money_manual_sort_code),
+                error = state.fieldErrors.sortCodeInvalid,
+                keyboardType = KeyboardType.Number,
+                testTag = SendMoneyTestTags.MANUAL_SORT_CODE,
                 supportingText = {
                     if (state.fieldErrors.sortCodeInvalid) {
                         Text(stringResource(Res.string.feature_send_money_manual_sort_code_error))
                     }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.MANUAL_SORT_CODE),
             )
-            OutlinedTextField(
+            MifosOutlinedTextField(
                 value = state.manualAccountNumber,
                 onValueChange = { onAction(SendMoneyAction.EnterManualAccountNumber(it)) },
-                label = { Text(stringResource(Res.string.feature_send_money_manual_account_number)) },
-                isError = state.fieldErrors.accountNumberInvalid,
+                label = stringResource(Res.string.feature_send_money_manual_account_number),
+                error = state.fieldErrors.accountNumberInvalid,
+                keyboardType = KeyboardType.Number,
+                testTag = SendMoneyTestTags.MANUAL_ACCOUNT_NUMBER,
                 supportingText = {
                     if (state.fieldErrors.accountNumberInvalid) {
                         Text(stringResource(Res.string.feature_send_money_manual_account_number_error))
                     }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.MANUAL_ACCOUNT_NUMBER),
             )
         } else {
-            OutlinedTextField(
+            MifosOutlinedTextField(
                 value = state.manualIban,
                 onValueChange = { onAction(SendMoneyAction.EnterManualIban(it)) },
-                label = { Text(stringResource(Res.string.feature_send_money_manual_iban)) },
-                isError = state.fieldErrors.ibanInvalid,
+                label = stringResource(Res.string.feature_send_money_manual_iban),
+                error = state.fieldErrors.ibanInvalid,
+                testTag = SendMoneyTestTags.MANUAL_IBAN,
                 supportingText = {
                     if (state.fieldErrors.ibanInvalid) {
                         Text(
@@ -393,8 +374,6 @@ private fun ManualCreditorFields(
                         )
                     }
                 },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.MANUAL_IBAN),
             )
         }
         MifosFilledPillButton(
@@ -433,13 +412,12 @@ private fun AmountSection(
         // Domestic only. International refuses RemittanceInformation outright with U005, so showing
         // the field there would invite someone to type a reference the recipient never sees.
         if (state.rail == PaymentRail.Domestic) {
-            OutlinedTextField(
+            MifosOutlinedTextField(
                 value = state.reference,
                 onValueChange = { onAction(SendMoneyAction.EnterReference(it.take(REFERENCE_MAX_LENGTH))) },
-                label = { Text(stringResource(Res.string.feature_send_money_reference_label)) },
+                label = stringResource(Res.string.feature_send_money_reference_label),
+                testTag = SendMoneyTestTags.REFERENCE_FIELD,
                 supportingText = { Text(stringResource(Res.string.feature_send_money_reference_helper)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.REFERENCE_FIELD),
             )
         }
 
@@ -545,89 +523,6 @@ private fun ChargesSection(
             optionTestTag = SendMoneyTestTags::chargeBearerOption,
             onSelect = { onAction(SendMoneyAction.SelectChargeBearer(it)) },
             modifier = Modifier.testTag(SendMoneyTestTags.CHARGE_BEARER_PICKER),
-        )
-    }
-}
-
-/**
- * The saved payees could not be read, which is not the same as there being none.
- *
- * Says the read failed and offers to run it again, and leaves "Pay new" above it untouched — with no
- * list, hand-keying the details is the only route to a payment, so it must survive the failure that
- * makes it necessary. The cause is deliberately not named: `403` here is indistinguishable from an
- * expired token by the time it reaches this state, and guessing at the bank's reason would put words
- * in its mouth.
- */
-@Composable
-private fun PayeesFailedNotice(onAction: (SendMoneyAction) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(SendMoneyTestTags.PAYEES_FAILED)
-            .clip(RoundedCornerShape(NoticeCorner))
-            .background(KptTheme.colorScheme.surfaceContainer)
-            .padding(NoticePadding),
-        verticalArrangement = Arrangement.spacedBy(HeadingGap),
-    ) {
-        Text(
-            text = stringResource(Res.string.feature_send_money_payees_failed_title),
-            style = KptTheme.typography.titleSmall,
-            color = KptTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(Res.string.feature_send_money_payees_failed_body),
-            style = KptTheme.typography.bodySmall,
-            color = KptTheme.colorScheme.onSurfaceVariant,
-        )
-        MifosTonalPillButton(
-            label = stringResource(Res.string.feature_send_money_retry),
-            onClick = { onAction(SendMoneyAction.RetryPayees) },
-            testTag = SendMoneyTestTags.PAYEES_RETRY_BUTTON,
-        )
-    }
-}
-
-/**
- * Why the payee list is empty when no payer has been chosen.
- *
- * Not an error and not an empty state: the list is account-scoped, so it genuinely cannot be
- * fetched yet. [NoSavedPayees] is the different case where an account was chosen and has none.
- */
-@Composable
-private fun ChoosePayerFirstNotice() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER)
-            .clip(RoundedCornerShape(NoticeCorner))
-            .background(KptTheme.colorScheme.surfaceContainer)
-            .padding(NoticePadding),
-        verticalArrangement = Arrangement.spacedBy(HeroGap),
-    ) {
-        Text(
-            text = stringResource(Res.string.feature_send_money_payee_needs_payer),
-            style = KptTheme.typography.bodyMedium,
-            color = KptTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun NoSavedPayees() {
-    Column(
-        modifier = Modifier.fillMaxWidth().testTag(SendMoneyTestTags.NO_SAVED_PAYEES),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(HeadingGap),
-    ) {
-        Text(
-            text = stringResource(Res.string.feature_send_money_no_saved_payees_title),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(Res.string.feature_send_money_no_saved_payees_body),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

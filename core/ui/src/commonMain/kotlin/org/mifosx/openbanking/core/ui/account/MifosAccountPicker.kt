@@ -91,11 +91,11 @@ fun MifosAccountPicker(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(KptTheme.shapes.small)
+            .clip(KptTheme.shapes.medium)
             .border(
                 width = BorderThickness,
                 color = KptTheme.colorScheme.primary,
-                shape = KptTheme.shapes.small,
+                shape = KptTheme.shapes.medium,
             )
             .background(KptTheme.colorScheme.surfaceContainerLowest),
     ) {

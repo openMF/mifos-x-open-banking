@@ -33,24 +33,11 @@ internal object SendMoneyTestTags {
     const val PAYER_BANK_CHOICE = "sendMoney:payerBankChoice"
     const val AMOUNT_CARD = "sendMoney:amountCard"
     const val AMOUNT_BALANCE = "sendMoney:amountBalance"
-    const val PAYEE_NEEDS_PAYER = "sendMoney:payeeNeedsPayer"
     const val NON_GBP_NOTICE = "sendMoney:nonGbpNotice"
     const val CREDITOR_LIST = "sendMoney:creditorList"
-    const val NO_SAVED_PAYEES = "sendMoney:noSavedPayees"
 
-    /**
-     * The payee read failed. Distinct from [NO_SAVED_PAYEES], which is the bank saying there are
-     * none — asserting one where the other belongs is the defect these two tags exist to separate.
-     */
-    const val PAYEES_FAILED = "sendMoney:payeesFailed"
-
-    /**
-     * The payee read is still in flight — a third thing again, and the one that used to render as
-     * [NO_SAVED_PAYEES]. Every assertion on this tag is worth double: that it is there while the
-     * read is running, and that it is GONE on all four of the outcomes that end the read.
-     */
+    /** The payee read is still in flight, and the row is showing placeholders in its place. */
     const val PAYEES_LOADING = "sendMoney:payeesLoading"
-    const val PAYEES_RETRY_BUTTON = "sendMoney:payeesRetryButton"
     const val MANUAL_ENTRY_BUTTON = "sendMoney:manualEntryButton"
     const val MANUAL_SORT_CODE = "sendMoney:manualSortCode"
     const val MANUAL_ACCOUNT_NUMBER = "sendMoney:manualAccountNumber"

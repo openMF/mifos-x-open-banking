@@ -44,7 +44,6 @@ import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
 import template.core.base.common.screen.combineContent
 import template.core.base.network.NetworkResult
-import template.core.base.store.screen.ScreenDataStream
 import template.core.base.ui.viewmodel.BaseViewModel
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
@@ -193,14 +192,6 @@ class SchedulePaymentViewModel(
     private val selectedAccountId = MutableStateFlow("")
 
     /**
-     * The payee stream currently in flight, held so [SchedulePaymentAction.RetryPayees] can refresh it.
-     *
-     * A `var` because it is rebuilt whenever the payer changes — a payee list is keyed by account —
-     * and `null` while there is no payer, when there is nothing to re-read.
-     */
-    private var payeesStream: ScreenDataStream<List<BeneficiaryItem>>? = null
-
-    /**
      * Payees for the chosen payer, re-fetched whenever that changes.
      *
      * A blank id emits an empty list rather than being filtered out. Filtering meant de-selecting an
@@ -214,12 +205,9 @@ class SchedulePaymentViewModel(
         selectedAccountId
             .flatMapLatest { accountId ->
                 if (accountId.isBlank()) {
-                    payeesStream = null
                     flowOf(ScreenState.Content(emptyList(), DataFreshness.FRESH))
                 } else {
-                    beneficiariesRepository.beneficiariesStream(accountId, viewModelScope)
-                        .also { payeesStream = it }
-                        .state
+                    beneficiariesRepository.beneficiariesStream(accountId, viewModelScope).state
                 }
             }
 
@@ -283,7 +271,6 @@ class SchedulePaymentViewModel(
             SchedulePaymentAction.AbandonAuthorisation -> abandonAuthorisation()
             SchedulePaymentAction.BackStep -> backStep()
             SchedulePaymentAction.RetryLoad -> accountsOverviewRepository.refresh()
-            SchedulePaymentAction.RetryPayees -> payeesStream?.refresh()
         }
     }
 

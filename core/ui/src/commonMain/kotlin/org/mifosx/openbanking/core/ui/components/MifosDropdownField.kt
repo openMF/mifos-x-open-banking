@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -48,7 +48,6 @@ import template.core.base.designsystem.theme.KptTheme
 /** Matches the account picker's rows, so the two controls do not disagree about how tall a field is. */
 private val FieldMinHeight = 56.dp
 private val ChipIconSize = 18.dp
-private val FieldCorner = 12.dp
 private val FieldBorder = 1.dp
 private val FieldPadding = 16.dp
 private val RowGap = 12.dp
@@ -106,6 +105,7 @@ fun <T> MifosDropdownField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .anchorSkin(
+                        shape = KptTheme.shapes.medium,
                         border = KptTheme.colorScheme.primary,
                         background = KptTheme.colorScheme.surfaceContainerLowest,
                     )
@@ -163,6 +163,7 @@ fun <T> MifosDropdownBox(
             modifier = Modifier
                 .fillMaxSize()
                 .anchorSkin(
+                    shape = KptTheme.shapes.medium,
                     border = KptTheme.colorScheme.primary,
                     background = KptTheme.colorScheme.surfaceContainerLowest,
                 )
@@ -197,9 +198,9 @@ fun <T> MifosDropdownBox(
  * The colours are passed rather than read from the theme here: a `@Composable` modifier builder
  * recomposes more than it needs to, and the callers are already in a composable scope.
  */
-private fun Modifier.anchorSkin(border: Color, background: Color): Modifier = this
-    .clip(RoundedCornerShape(FieldCorner))
-    .border(width = FieldBorder, color = border, shape = RoundedCornerShape(FieldCorner))
+private fun Modifier.anchorSkin(shape: Shape, border: Color, background: Color): Modifier = this
+    .clip(shape)
+    .border(width = FieldBorder, color = border, shape = shape)
     .background(background)
 
 /** The menu and the expansion both anchors share; only the anchor's own shape differs. */

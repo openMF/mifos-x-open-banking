@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
@@ -45,7 +44,6 @@ import template.core.base.designsystem.theme.KptTheme
 /** Keeps the figure's row a stable height, and is the height the currency box is cut to. */
 private val FigureRowMinHeight = 48.dp
 
-private val CardCorner = 12.dp
 private val CardBorder = 1.dp
 private val CardPadding = 16.dp
 private val RowGap = 12.dp
@@ -100,7 +98,7 @@ fun MifosAmountCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(CardCorner))
+            .clip(KptTheme.shapes.medium)
             .border(
                 width = CardBorder,
                 color = if (errorMessage != null) {
@@ -108,7 +106,7 @@ fun MifosAmountCard(
                 } else {
                     KptTheme.colorScheme.primary
                 },
-                shape = RoundedCornerShape(CardCorner),
+                shape = KptTheme.shapes.medium,
             )
             .background(KptTheme.colorScheme.surfaceContainerLowest)
             .padding(CardPadding),

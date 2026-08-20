@@ -146,30 +146,18 @@ class SendMoneyScreenInstrumentedTest {
         composeRule.onNodeWithTag(SendMoneyTestTags.REFERENCE_FIELD).assertDoesNotExist()
     }
 
-    /** On a real device too: a refused payee read is its own state, and its retry is tappable. */
-    @Test
-    fun aFailedPayeeReadOffersARetryThatRoutes() {
-        render(formState(payeesFailed = true))
-
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_RETRY_BUTTON).performScrollTo().performClick()
-
-        assertEquals(listOf<SendMoneyAction>(SendMoneyAction.RetryPayees), actions)
-    }
-
     /**
-     * On a real device too: a read still running shimmers rather than claiming there are none.
+     * On a real device too: a read still running shimmers.
      *
-     * Worth a device test despite the JVM suites covering the same states, because the shimmer is
-     * an infinite animation and a real device is where "the screen never settles" would actually
-     * bite — the test rule waits for idle before it can assert anything at all.
+     * Worth a device test despite the JVM suites covering the same state, because the shimmer is an
+     * infinite animation and a real device is where "the screen never settles" would actually bite
+     * — the test rule waits for idle before it can assert anything at all.
      */
     @Test
-    fun aPayeeReadStillRunningShowsPlaceholdersRatherThanNoPayees() {
+    fun aPayeeReadStillRunningShowsPlaceholders() {
         render(formState(payeesLoading = true))
 
         composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
         composeRule.onNodeWithTag(SendMoneyTestTags.MANUAL_ENTRY_BUTTON).assertIsDisplayed()
     }
 

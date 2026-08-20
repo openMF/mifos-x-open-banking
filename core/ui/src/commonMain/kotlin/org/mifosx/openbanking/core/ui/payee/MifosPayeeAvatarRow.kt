@@ -25,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PersonAddAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -63,9 +62,6 @@ private const val DASH_OFF = 5f
 
 /** How many lines a payee's name wraps across before it is elided. */
 private const val CAPTION_LINES = 2
-
-private val BadgeSize = 20.dp
-private val BadgeIconSize = 14.dp
 
 /** How many placeholder avatars stand in while the payees load. */
 private const val LOADING_AVATARS = 3
@@ -255,23 +251,6 @@ private fun AvatarColumn(
             contentAlignment = Alignment.Center,
         ) {
             avatar()
-            if (selected) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(BadgeSize)
-                        .clip(CircleShape)
-                        .background(KptTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = null,
-                        tint = KptTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(BadgeIconSize),
-                    )
-                }
-            }
         }
         Text(
             text = caption,

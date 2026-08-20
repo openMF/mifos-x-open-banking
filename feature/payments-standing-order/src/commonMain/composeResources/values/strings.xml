@@ -29,7 +29,6 @@
     <string name="feature_payments_standing_order_payer_unchosen_supporting">Tap to pick where the money comes from</string>
     <string name="feature_payments_standing_order_payer_expand_a11y">Show the accounts you can pay from</string>
     <string name="feature_payments_standing_order_payer_collapse_a11y">Hide the accounts you can pay from</string>
-    <string name="feature_payments_standing_order_payee_needs_payer">Choose an account to pay from to see its saved payees.</string>
     <!-- The payer account holds one currency and the amount is instructed in another, so the bank
          converts. %1$s is the instructed currency's code — it is no longer always GBP. -->
     <string name="feature_payments_standing_order_non_gbp_notice">This standing order is instructed in %1$s. Your bank will convert from this account and may charge for it.</string>
@@ -40,14 +39,10 @@
     <string name="feature_payments_standing_order_debtor_heading">Pay from</string>
     <string name="feature_payments_standing_order_creditor_heading">Pay to</string>
     <string name="feature_payments_standing_order_selected_a11y">Selected</string>
-    <string name="feature_payments_standing_order_no_saved_payees_title">No saved payees</string>
-    <string name="feature_payments_standing_order_no_saved_payees_body">You can still pay someone by entering their account details.</string>
     <!-- The read failed, which is a different statement from "you have no saved payees" — and the
          one the app used to make on a 403. The cause is not named: by the time it reaches the UI a
          refused permission and an expired token are the same state, and guessing would put words in
          the bank's mouth. Curly apostrophe, not \' — Compose Multiplatform renders the escape. -->
-    <string name="feature_payments_standing_order_payees_failed_title">Couldn’t load your saved payees</string>
-    <string name="feature_payments_standing_order_payees_failed_body">Your bank did not return them this time. You can try again, or pay someone by entering their account details.</string>
 
     <!-- The payee read is still running. Spoken only: the state itself is a shimmer, which has no
          text of its own, so without this a screen reader passes over the wait in silence and the

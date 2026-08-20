@@ -23,8 +23,8 @@
     <string name="feature_vrp_setup_payee_error_sort_code">Enter the 6-digit sort code.</string>
     <string name="feature_vrp_setup_payee_error_account_number">Enter the 8-digit account number.</string>
     <string name="feature_vrp_setup_payee_error_same">This is the account you are paying from.</string>
-    <string name="feature_vrp_setup_per_payment_label">Most you can send in one payment</string>
-    <string name="feature_vrp_setup_periodic_label">Most you can send in total</string>
+    <string name="feature_vrp_setup_per_payment_label">Maximum amount per payment</string>
+    <string name="feature_vrp_setup_periodic_label">Maximum amount you can send</string>
     <string name="feature_vrp_setup_period_label">per</string>
     <string name="feature_vrp_setup_amount_error_missing">Enter an amount.</string>
     <string name="feature_vrp_setup_amount_error_min">Enter at least £0.01.</string>

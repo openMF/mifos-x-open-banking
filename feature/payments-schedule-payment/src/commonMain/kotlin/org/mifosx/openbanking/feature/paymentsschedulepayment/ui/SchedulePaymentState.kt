@@ -498,7 +498,6 @@ sealed interface SchedulePaymentAction {
      * button retrying both would re-fetch something that never failed and still leave the payee row
      * with no way back.
      */
-    data object RetryPayees : SchedulePaymentAction
 }
 
 /**

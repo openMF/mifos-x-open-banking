@@ -131,35 +131,6 @@ class SendMoneyPayeeLoadTest {
         assertEquals(SendMoneyErrorKind.TokenExpired, state.kind)
     }
 
-    /** The failure is not a dead end: the payee read can be run again on its own. */
-    @Test
-    fun retryingThePayeesRefreshesOnlyThatStream() = runTest {
-        val accounts = FakeAccountsOverviewRepository()
-        val beneficiaries =
-            failing(ScreenState.Error(RemoteException(NetworkError.Client.Forbidden(null))))
-        val vm = viewModel(accounts = accounts, beneficiaries = beneficiaries)
-        vm.trySendAction(SendMoneyAction.SelectDebtorAccount(SendMoneyFixtures.CURRENT_ACCOUNT_ID))
-
-        vm.trySendAction(SendMoneyAction.RetryPayees)
-
-        assertEquals(1, beneficiaries.refreshCount)
-        // The accounts stream never failed, so nothing asked it to re-read. One button refreshing
-        // both would re-fetch what worked and still leave the payee row with no way back.
-        assertEquals(0, accounts.refreshCount)
-    }
-
-    /** With no payer there is no read in flight, so a retry has nothing to ask for. */
-    @Test
-    fun retryingThePayeesDoesNothingWithoutAPayer() = runTest {
-        val beneficiaries = FakeBeneficiariesRepository()
-        val vm = viewModel(beneficiaries = beneficiaries)
-
-        vm.trySendAction(SendMoneyAction.RetryPayees)
-
-        assertEquals(0, beneficiaries.refreshCount)
-        assertFalse(content(vm).payeesFailed)
-    }
-
     /** A list that loaded and is genuinely empty is not a failure — that is the other notice. */
     @Test
     fun anEmptyPayeeListIsNotAFailure() = runTest {
@@ -284,35 +255,5 @@ class SendMoneyPayeeLoadTest {
         val state = content(vm)
         assertFalse(state.payeesLoading)
         assertTrue(state.payeesUnavailable)
-    }
-
-    /**
-     * **The second symptom, and the easier one to regress.** Retry must not flash "no saved payees".
-     *
-     * The failure path caches no content, so `ScreenDataStream` has nothing to preserve and a
-     * refresh genuinely passes back through `Loading`. Before `payeesLoading` existed that
-     * `Loading` flattened to an empty list, so tapping Retry on the failure card replaced it with
-     * "No saved payees" — the exact untrue statement the failure card had just been added to
-     * prevent — and then replaced that with the failure card again a moment later. Fixing only the
-     * first-load case would have left this half of the defect in place.
-     */
-    @Test
-    fun retryingAfterAFailureShowsTheWaitAndNotTheNoPayeesNotice() = runTest {
-        val beneficiaries =
-            failing(ScreenState.Error(RemoteException(NetworkError.Client.Forbidden(null))))
-        val vm = viewModel(beneficiaries = beneficiaries)
-        vm.trySendAction(SendMoneyAction.SelectDebtorAccount(SendMoneyFixtures.CURRENT_ACCOUNT_ID))
-        assertTrue(content(vm).payeesFailed)
-
-        vm.trySendAction(SendMoneyAction.RetryPayees)
-        beneficiaries.emit(ScreenState.Loading)
-
-        val state = content(vm)
-        assertTrue(state.payeesLoading)
-        // The failure card is gone, and — the point — nothing has replaced it with a claim that the
-        // account has no payees. `hasBeneficiaries` is false here, so it is `payeesLoading` alone
-        // that stands between this state and the wrong notice.
-        assertFalse(state.payeesFailed)
-        assertFalse(state.hasBeneficiaries)
     }
 }

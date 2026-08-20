@@ -141,12 +141,10 @@ class SendMoneyScreenRobolectricTest {
      * go idle is a state that would never let the app go idle either.
      */
     @Test
-    fun aPayeeReadStillRunningShowsPlaceholdersRatherThanNoPayees() {
+    fun aPayeeReadStillRunningShowsPlaceholders() {
         render(SendMoneyFixtures.formState(payeesLoading = true))
 
         composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_LOADING).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).assertDoesNotExist()
         // The escape that never needed the list survives the wait for it.
         composeRule.onNodeWithTag(SendMoneyTestTags.MANUAL_ENTRY_BUTTON).assertIsDisplayed()
     }
@@ -188,19 +186,6 @@ class SendMoneyScreenRobolectricTest {
         assertEquals(listOf<SendMoneyAction>(SendMoneyAction.SelectInstructedCurrency("USD")), actions)
     }
 
-    /** A refused payee read is its own state, with its own way out. */
-    @Test
-    fun aFailedPayeeReadOffersRetryRatherThanClaimingThereAreNone() {
-        render(SendMoneyFixtures.formState(payeesFailed = true))
-
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_FAILED).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithTag(SendMoneyTestTags.NO_SAVED_PAYEES).assertDoesNotExist()
-
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEES_RETRY_BUTTON).performScrollTo().performClick()
-
-        assertEquals(listOf<SendMoneyAction>(SendMoneyAction.RetryPayees), actions)
-    }
-
     /** Each rail identifies a creditor its own way and refuses the other's scheme with `U027`. */
     @Test
     fun manualEntryAsksForAnIbanInternationallyAndASortCodeDomestically() {
@@ -218,10 +203,9 @@ class SendMoneyScreenRobolectricTest {
      * which is exactly the kind of thing this suite exists to catch.
      */
     @Test
-    fun noPayerChosenExplainsTheEmptyPayeeSection() {
+    fun noPayerChosenOffersNoPayees() {
         render(SendMoneyFixtures.formState(debtorAccountId = null))
 
-        composeRule.onNodeWithTag(SendMoneyTestTags.PAYEE_NEEDS_PAYER).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag(SendMoneyTestTags.creditorRow(SendMoneyFixtures.JAMESON_ID))
             .assertDoesNotExist()
     }
