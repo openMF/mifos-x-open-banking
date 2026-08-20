@@ -25,6 +25,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -69,6 +70,7 @@ internal fun VrpAmountField(
             isError = error != null,
             singleLine = true,
             shape = KptTheme.shapes.small,
+            colors = primaryOutlineColors(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
         error?.let { FieldError(it, errorTestTag) }
@@ -95,6 +97,7 @@ internal fun VrpTextField(
             isError = error != null,
             singleLine = true,
             shape = KptTheme.shapes.small,
+            colors = primaryOutlineColors(),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         )
         error?.let { FieldError(it, testTag + "Error") }
@@ -183,6 +186,18 @@ internal fun VrpEndDateRow(
     }
 }
 
+/**
+ * Field borders in primary, at rest as well as focused.
+ *
+ * A refused value still turns the border red: the error colour is left at its default so the brand
+ * one cannot bury it.
+ */
+@Composable
+private fun primaryOutlineColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = KptTheme.colorScheme.primary,
+    unfocusedBorderColor = KptTheme.colorScheme.primary,
+)
+
 /** A read-only control that opens something: the same outline the text fields carry. */
 @Composable
 private fun OutlinedField(
@@ -195,7 +210,7 @@ private fun OutlinedField(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = FieldMinHeight)
-            .border(FieldBorder, KptTheme.colorScheme.outline, KptTheme.shapes.small)
+            .border(FieldBorder, KptTheme.colorScheme.primary, KptTheme.shapes.small)
             .clickable(onClick = onClick)
             .padding(horizontal = KptTheme.spacing.md)
             .testTag(testTag),

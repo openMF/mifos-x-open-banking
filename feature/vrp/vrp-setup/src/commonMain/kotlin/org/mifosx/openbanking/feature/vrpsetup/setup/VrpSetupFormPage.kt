@@ -34,11 +34,13 @@ import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.common.formatIsoDate
 import org.mifosx.openbanking.core.ui.account.MifosAccountOption
 import org.mifosx.openbanking.core.ui.account.MifosAccountPicker
+import org.mifosx.openbanking.core.ui.account.MifosBankChoiceRow
+import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
+import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
 import org.mifosx.openbanking.feature.vrpsetup.amountErrorLabel
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpAmountField
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpEndDatePickerDialog
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpEndDateRow
-import org.mifosx.openbanking.feature.vrpsetup.components.VrpPayeeAvatarRow
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpPeriodDropdown
 import org.mifosx.openbanking.feature.vrpsetup.components.VrpTextField
 import org.mifosx.openbanking.feature.vrpsetup.formatPayeeIdentification
@@ -110,9 +112,10 @@ private fun PayerSection(
                 ""
             },
             extraOptions = {
-                BankChoiceRow(
+                MifosBankChoiceRow(
                     selected = form.chooseAtBank,
                     onClick = { onAction(VrpSetupAction.ChooseAtBankSelected) },
+                    testTag = VrpSetupTestTags.PAYER_BANK_CHOICE,
                 )
             },
         )
@@ -130,41 +133,6 @@ private fun PayerSection(
     }
 }
 
-/** The one payer alternative that is not an account: let the customer pick at the bank. */
-@Composable
-private fun BankChoiceRow(
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    HorizontalDivider(color = KptTheme.colorScheme.outlineVariant)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(KptTheme.spacing.md)
-            .testTag(VrpSetupTestTags.PAYER_BANK_CHOICE),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Filled.AccountBalance,
-            contentDescription = null,
-            tint = KptTheme.colorScheme.onSurfaceVariant,
-        )
-        Column(modifier = Modifier.padding(start = KptTheme.spacing.md)) {
-            Text(
-                text = stringResource(Res.string.feature_vrp_setup_payer_choose_at_bank),
-                style = KptTheme.typography.titleMedium,
-                color = if (selected) KptTheme.colorScheme.primary else KptTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(Res.string.feature_vrp_setup_payer_choose_at_bank_supporting),
-                style = KptTheme.typography.bodyMedium,
-                color = KptTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 @Composable
 private fun PayeeSection(
     form: SetupFormUi,
@@ -173,13 +141,17 @@ private fun PayeeSection(
     Column {
         SectionLabel(stringResource(Res.string.feature_vrp_setup_payee_label))
 
-        VrpPayeeAvatarRow(
-            payees = form.payeeOptions,
+        MifosPayeeAvatarRow(
+            payees = form.payeeOptions.map { it.toPayeeOption() },
             selectedId = form.selectedPayeeId,
             payNewSelected = form.payNewSelected,
             onSelect = { onAction(VrpSetupAction.PayeeSelected(it)) },
             onPayNew = { onAction(VrpSetupAction.PayNewSelected) },
-            modifier = Modifier.padding(top = KptTheme.spacing.sm),
+            modifier = Modifier
+                .padding(top = KptTheme.spacing.sm)
+                .testTag(VrpSetupTestTags.PAYEE_ROW),
+            payNewTestTag = VrpSetupTestTags.PAYEE_PAY_NEW,
+            payeeTestTag = VrpSetupTestTags::payeeAvatar,
         )
 
         form.selectedPayee?.let { payee ->
@@ -350,6 +322,12 @@ private fun SectionLabel(text: String) {
         color = KptTheme.colorScheme.onSurface,
     )
 }
+
+private fun PayeeOptionUi.toPayeeOption(): MifosPayeeOption = MifosPayeeOption(
+    payeeId = payeeId,
+    shortName = shortName,
+    initials = initials,
+)
 
 private fun PayerOptionUi.toPickerOption(): MifosAccountOption = MifosAccountOption(
     accountId = accountId,

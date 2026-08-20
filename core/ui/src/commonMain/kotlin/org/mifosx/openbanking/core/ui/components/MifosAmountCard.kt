@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
-package org.mifosx.openbanking.feature.paymentsstandingorder.components
+package org.mifosx.openbanking.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,89 +36,77 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardBorder
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardCorner
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardPadding
-import org.mifosx.openbanking.feature.paymentsstandingorder.RowGap
-import org.mifosx.openbanking.feature.paymentsstandingorder.SectionGap
-import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderTestTags
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.Res
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_amount_available
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_amount_label
-import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_amount_placeholder
+import org.mifosx.openbanking.core.ui.generated.resources.Res
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_amount_available
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_amount_label
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_amount_placeholder
 import template.core.base.designsystem.theme.KptTheme
 
 /** Keeps the figure's row a stable height, and is the height the currency box is cut to. */
 private val FigureRowMinHeight = 48.dp
 
+private val CardCorner = 12.dp
+private val CardBorder = 1.dp
+private val CardPadding = 16.dp
+private val RowGap = 12.dp
+private val SectionGap = 8.dp
+
 /**
  * How the row is divided between the currency and the figure.
  *
  * Weights rather than a fixed width for the box: the proportion then holds on a phone, on a desktop
- * window several times its width, and at `FormMaxWidth` in between. A fixed width would be a fifth
- * of the row on one of those and a third on another.
- *
- * They are declared here, in the one component that lays the row out, rather than passed in — that
- * is what makes the figure start at the same x-position whichever control the rail supplies.
+ * window several times its width, and at a form's max width in between. They are declared here, in
+ * the one component that lays the row out, rather than passed in — that is what makes the figure
+ * start at the same x-position whichever control the caller supplies.
  */
 private const val CURRENCY_WEIGHT = 0.22f
 private const val FIGURE_WEIGHT = 0.78f
 
 /**
- * The amount, as the card the reference leads with: the figure, a hairline, and the available
- * balance beneath.
+ * The amount, as a card: the figure, a hairline, and the available balance beneath.
  *
  * The figure is a [BasicTextField] rather than a label over an `OutlinedTextField`. What is being
- * asked for is one number, and a bordered box with a floating label around a 36sp figure reads as a
- * form field among form fields — the point of the card is that this is the payment, not a detail
+ * asked for is one number, and a bordered box with a floating label around a large figure reads as
+ * a form field among form fields — the point of the card is that this is the payment, not a detail
  * of it.
  *
- * **No currency mark inside the field.** A symbol on the figure and a currency control beside it
- * stated the same thing twice, and the symbol was the half that could not be changed. The unit is
- * now said once, by the [leading] control; the balance line beneath keeps its own symbol because it
- * reads in the *account's* currency, which is the one place the two can differ.
- *
- * **Major units.** `250` and `250.00` both mean £250. The field was labelled "Amount in pence" and
- * parsed minor units, so someone typing 250 for £250 sent £2.50. Nothing on screen mentions pence
- * now; the conversion happens once, in the ViewModel, and the draft still carries minor units.
+ * **No currency mark inside the field.** The unit is said once, by the [leading] control; the
+ * balance line beneath keeps its own symbol because it reads in the *account's* currency, which is
+ * the one place the two can differ.
  *
  * [balanceLabel] is blank until a payer is chosen, which is what hides the balance line: with no
  * account there is no balance to state, and a printed £0.00 would be a claim about one. An
  * [errorMessage] takes that line rather than being added below it, so the card cannot grow taller
  * as the customer types.
  *
- * [leading] is the currency, and it is the row's FIRST child. It sat at the trailing edge, where a
- * control that names the unit of the figure read as an afterthought bolted on after the number; and
- * it was omitted entirely on the domestic rail, which left `250.00` with nothing on screen naming
- * sterling at all.
- *
- * It has no default and both rails must supply one — the domestic rail a static `£`, the
- * international rail its dropdown. That is not ceremony: the slot's width is fixed here, so a rail
- * passing nothing would leave a fifth of the row blank and, worse, only appear to hold the figure's
- * position. Requiring it is what makes "the field starts in the same place on both rails" true by
- * construction rather than by two call sites agreeing.
+ * [leading] is the currency, and it is the row's FIRST child — a control that names the unit of the
+ * figure reads as an afterthought at the trailing edge. It has no default and every caller must
+ * supply one: the slot's width is fixed here, so passing nothing would leave a fifth of the row
+ * blank and only appear to hold the figure's position.
  */
 @Composable
-internal fun StandingOrderAmountCard(
+fun MifosAmountCard(
     amount: String,
     balanceLabel: String,
     errorMessage: String?,
     onAmountChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    fieldTestTag: String = AMOUNT_FIELD_TAG,
+    errorTestTag: String = AMOUNT_ERROR_TAG,
+    balanceTestTag: String = AMOUNT_BALANCE_TAG,
     leading: @Composable () -> Unit,
 ) {
-    val amountLabel = stringResource(Res.string.feature_payments_standing_order_amount_label)
+    val amountLabel = stringResource(Res.string.core_ui_amount_label)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .testTag(StandingOrderTestTags.AMOUNT_CARD)
             .clip(RoundedCornerShape(CardCorner))
             .border(
                 width = CardBorder,
                 color = if (errorMessage != null) {
                     KptTheme.colorScheme.error
                 } else {
-                    KptTheme.colorScheme.outlineVariant
+                    KptTheme.colorScheme.primary
                 },
                 shape = RoundedCornerShape(CardCorner),
             )
@@ -146,6 +134,7 @@ internal fun StandingOrderAmountCard(
                 amount = amount,
                 contentDescription = amountLabel,
                 onAmountChange = onAmountChange,
+                testTag = fieldTestTag,
                 modifier = Modifier.weight(FIGURE_WEIGHT),
             )
         }
@@ -154,26 +143,36 @@ internal fun StandingOrderAmountCard(
         // problem to report, and a rule with nothing beneath it reads as a card that failed to load.
         if (errorMessage != null || balanceLabel.isNotBlank()) {
             HorizontalDivider(color = KptTheme.colorScheme.outlineVariant)
-            AmountFooter(balanceLabel = balanceLabel, errorMessage = errorMessage)
+            AmountFooter(
+                balanceLabel = balanceLabel,
+                errorMessage = errorMessage,
+                errorTestTag = errorTestTag,
+                balanceTestTag = balanceTestTag,
+            )
         }
     }
 }
 
 @Composable
-private fun AmountFooter(balanceLabel: String, errorMessage: String?) {
+private fun AmountFooter(
+    balanceLabel: String,
+    errorMessage: String?,
+    errorTestTag: String,
+    balanceTestTag: String,
+) {
     when {
         errorMessage != null -> Text(
             text = errorMessage,
             style = KptTheme.typography.bodySmall,
             color = KptTheme.colorScheme.error,
-            modifier = Modifier.testTag(StandingOrderTestTags.AMOUNT_ERROR),
+            modifier = Modifier.testTag(errorTestTag),
         )
 
         balanceLabel.isNotBlank() -> Text(
-            text = stringResource(Res.string.feature_payments_standing_order_amount_available, balanceLabel),
+            text = stringResource(Res.string.core_ui_amount_available, balanceLabel),
             style = KptTheme.typography.bodySmall,
             color = KptTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.testTag(StandingOrderTestTags.AMOUNT_BALANCE),
+            modifier = Modifier.testTag(balanceTestTag),
         )
     }
 }
@@ -193,6 +192,7 @@ private fun AmountField(
     amount: String,
     contentDescription: String,
     onAmountChange: (String) -> Unit,
+    testTag: String,
     modifier: Modifier = Modifier,
 ) {
     val figureStyle = KptTheme.typography.displaySmall.copy(
@@ -205,7 +205,7 @@ private fun AmountField(
     ) {
         if (amount.isEmpty()) {
             Text(
-                text = stringResource(Res.string.feature_payments_standing_order_amount_placeholder),
+                text = stringResource(Res.string.core_ui_amount_placeholder),
                 style = figureStyle,
                 color = KptTheme.colorScheme.outlineVariant,
             )
@@ -219,8 +219,12 @@ private fun AmountField(
             cursorBrush = SolidColor(KptTheme.colorScheme.primary),
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag(StandingOrderTestTags.AMOUNT_FIELD)
+                .testTag(testTag)
                 .semantics { this.contentDescription = contentDescription },
         )
     }
 }
+
+private const val AMOUNT_FIELD_TAG = "mifosAmountCard:field"
+private const val AMOUNT_ERROR_TAG = "mifosAmountCard:error"
+private const val AMOUNT_BALANCE_TAG = "mifosAmountCard:balance"

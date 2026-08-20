@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
-package org.mifosx.openbanking.feature.sendmoney.components
+package org.mifosx.openbanking.core.ui.payee
 
 /** Where an account's readable name stops and its masked identifier begins. */
 private val IDENTIFIER_MARKERS = charArrayOf('·', '•')
@@ -19,7 +19,7 @@ private val IDENTIFIER_MARKERS = charArrayOf('·', '•')
  * including the digits would render "C3" where the design asks for "CA". A single-word name falls
  * back to its first two letters so "Savings" gives "SA" rather than one lonely letter.
  */
-internal fun initialsOf(name: String): String {
+fun initialsOf(name: String): String {
     val words = name.nameHalf()
         .split(' ')
         .filter { it.isNotBlank() }
@@ -35,12 +35,12 @@ internal fun initialsOf(name: String): String {
  *
  * The two halves are split apart rather than derived separately because `accountDisplayName` is the
  * one place the label is resolved, and re-deriving either half here would be a second answer to a
- * question `core/ui` has already settled.
+ * question this package has already settled.
  */
-internal fun String.nameHalf(): String = substringBefore('·').substringBefore('•').trim()
+fun String.nameHalf(): String = substringBefore('·').substringBefore('•').trim()
 
 /** The masked-identifier half, "·· 3349", or blank when the name carries no identifier at all. */
-internal fun String.identifierHalf(): String {
+fun String.identifierHalf(): String {
     val start = indexOfFirst { it in IDENTIFIER_MARKERS }
     return if (start < 0) "" else substring(start).trim()
 }

@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
-package org.mifosx.openbanking.feature.paymentsschedulepayment.components
+package org.mifosx.openbanking.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,11 +29,15 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
-import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentTestTags
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.Res
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_rail_domestic
-import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_rail_international
+import org.mifosx.openbanking.core.ui.generated.resources.Res
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_rail_domestic
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_rail_international
 import template.core.base.designsystem.theme.KptTheme
+
+private val TrackCorner = RoundedCornerShape(8.dp)
+private val OptionCorner = RoundedCornerShape(6.dp)
+private val OptionHeight = 40.dp
+private val TrackPadding = 4.dp
 
 /**
  * Which rail the payment goes out on.
@@ -41,35 +45,37 @@ import template.core.base.designsystem.theme.KptTheme
  * The two rails accept genuinely different fields, so this is not a cosmetic filter — switching it
  * changes what the form asks for. It renders on the form page only: the rail must not be able to
  * change while a review of a specific payment is on screen.
+ *
+ * @param optionTestTag Applied per rail, so a caller's own suite can address one option.
  */
 @Composable
-fun RailToggle(
+fun MifosRailToggle(
     rail: PaymentRail,
     onSelect: (PaymentRail) -> Unit,
     modifier: Modifier = Modifier,
+    optionTestTag: (PaymentRail) -> String = ::railOptionTag,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .testTag(SchedulePaymentTestTags.RAIL_TOGGLE)
-            .background(KptTheme.colorScheme.surfaceContainer, RoundedCornerShape(8.dp))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .background(KptTheme.colorScheme.surfaceContainer, TrackCorner)
+            .padding(TrackPadding),
+        horizontalArrangement = Arrangement.spacedBy(TrackPadding),
     ) {
         listOf(PaymentRail.Domestic, PaymentRail.International).forEach { option ->
             val selected = option == rail
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(40.dp)
-                    .testTag(SchedulePaymentTestTags.railOption(option))
+                    .height(OptionHeight)
+                    .testTag(optionTestTag(option))
                     .background(
                         if (selected) {
                             KptTheme.colorScheme.primary
                         } else {
                             KptTheme.colorScheme.surfaceContainer
                         },
-                        RoundedCornerShape(6.dp),
+                        OptionCorner,
                     )
                     .selectable(selected = selected, role = Role.RadioButton) { onSelect(option) },
                 contentAlignment = Alignment.Center,
@@ -90,6 +96,12 @@ fun RailToggle(
 }
 
 private fun PaymentRail.labelResource(): StringResource = when (this) {
-    PaymentRail.Domestic -> Res.string.feature_payments_schedule_payment_rail_domestic
-    PaymentRail.International -> Res.string.feature_payments_schedule_payment_rail_international
+    PaymentRail.Domestic -> Res.string.core_ui_rail_domestic
+    PaymentRail.International -> Res.string.core_ui_rail_international
+}
+
+/** The default per-rail tag. */
+fun railOptionTag(rail: PaymentRail): String = when (rail) {
+    PaymentRail.Domestic -> "mifosRailToggle:option:Domestic"
+    PaymentRail.International -> "mifosRailToggle:option:International"
 }

@@ -43,12 +43,20 @@ import org.mifosx.openbanking.core.common.currencySymbol
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
 import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
-import org.mifosx.openbanking.feature.sendmoney.components.RailToggle
-import org.mifosx.openbanking.feature.sendmoney.components.SendMoneyAmountCard
-import org.mifosx.openbanking.feature.sendmoney.components.SendMoneyDropdownBox
-import org.mifosx.openbanking.feature.sendmoney.components.SendMoneyDropdownField
-import org.mifosx.openbanking.feature.sendmoney.components.SendMoneyPayeeAvatarRow
-import org.mifosx.openbanking.feature.sendmoney.components.SendMoneyPayerPicker
+import org.mifosx.openbanking.core.ui.components.MifosAmountCard
+import org.mifosx.openbanking.core.ui.components.MifosDropdownBox
+import org.mifosx.openbanking.core.ui.components.MifosDropdownField
+import org.mifosx.openbanking.core.ui.components.MifosRailToggle
+import org.mifosx.openbanking.core.ui.account.MifosAccountOption
+import org.mifosx.openbanking.core.ui.account.MifosAccountPicker
+import org.mifosx.openbanking.core.ui.account.MifosBankChoiceRow
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
+import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
+import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
+import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAccountRow
+import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyPickerRow
+import org.mifosx.openbanking.core.ui.generated.resources.Res as CoreRes
 import org.mifosx.openbanking.feature.sendmoney.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.sendmoney.components.currencyName
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.Res
@@ -139,9 +147,11 @@ private fun SendMoneyFormPage(
                     .padding(ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(SectionGap),
             ) {
-                RailToggle(
+                MifosRailToggle(
                     rail = state.rail,
                     onSelect = { onAction(SendMoneyAction.SelectRail(it)) },
+                    modifier = Modifier.testTag(SendMoneyTestTags.RAIL_TOGGLE),
+                    optionTestTag = SendMoneyTestTags::railOption,
                 )
                 PayerSection(state, onAction)
                 PayeeSection(state, onAction)
@@ -159,14 +169,30 @@ private fun PayerSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(HeadingGap)) {
         SectionHeading(stringResource(Res.string.feature_send_money_debtor_heading))
-        SendMoneyPayerPicker(
-            rows = state.debtorRows,
+        MifosAccountPicker(
+            options = state.debtorRows.map { it.toPickerOption() },
             selectedId = state.debtorAccountId,
-            letBankChoose = state.letBankChoosePayer,
             expanded = state.payerPickerExpanded,
             onToggle = { onAction(SendMoneyAction.TogglePayerPicker) },
             onSelect = { onAction(SendMoneyAction.SelectDebtorAccount(it)) },
-            onLetBankChoose = { onAction(SendMoneyAction.LetBankChoosePayer) },
+            modifier = Modifier.testTag(SendMoneyTestTags.PAYER_PICKER),
+            unselectedLabel = if (state.letBankChoosePayer) {
+                stringResource(CoreRes.string.core_ui_account_picker_bank_choice)
+            } else {
+                null
+            },
+            unselectedSupporting = if (state.letBankChoosePayer) {
+                stringResource(CoreRes.string.core_ui_account_picker_bank_choice_supporting)
+            } else {
+                ""
+            },
+            extraOptions = {
+                MifosBankChoiceRow(
+                    selected = state.letBankChoosePayer,
+                    onClick = { onAction(SendMoneyAction.LetBankChoosePayer) },
+                    testTag = SendMoneyTestTags.PAYER_BANK_CHOICE,
+                )
+            },
         )
         if (state.showsConversionAdvisory) {
             ConversionNotice(instructedCurrency = state.instructedCurrency)
@@ -225,19 +251,25 @@ private fun PayeeSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(HeadingGap)) {
         SectionHeading(stringResource(Res.string.feature_send_money_creditor_heading))
-        SendMoneyPayeeAvatarRow(
+        MifosPayeeAvatarRow(
             // Empty whenever there is no payer, whatever the list happens to hold. Beneficiaries are
             // an account-scoped resource: with no account they are not "not loaded yet", they are
             // the previous account's, and showing them under a payer that no longer exists is the
             // defect this guard closes.
-            payees = if (state.payeesUnavailable) emptyList() else state.beneficiaries,
+            payees = if (state.payeesUnavailable) {
+                emptyList()
+            } else {
+                state.beneficiaries.map { it.toPayeeOption() }
+            },
             selectedId = state.creditor?.identification,
-            selectedLabel = stringResource(Res.string.feature_send_money_selected_a11y),
+            payNewSelected = state.manualEntryVisible,
             onSelect = { onAction(SendMoneyAction.SelectCreditor(it)) },
             onPayNew = { onAction(SendMoneyAction.ShowManualCreditorEntry) },
             modifier = Modifier.testTag(SendMoneyTestTags.CREDITOR_LIST),
             loading = state.payeesLoading,
             loadingContentDescription = stringResource(Res.string.feature_send_money_payees_loading_a11y),
+            payNewTestTag = SendMoneyTestTags.MANUAL_ENTRY_BUTTON,
+            loadingTestTag = SendMoneyTestTags.PAYEES_LOADING,
         )
         when {
             // Beneficiaries are saved per account, so without one there is no list to read.
@@ -380,11 +412,15 @@ private fun AmountSection(
     onAction: (SendMoneyAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(SectionGap)) {
-        SendMoneyAmountCard(
+        MifosAmountCard(
             amount = state.amountInput,
             balanceLabel = state.availableBalanceLabel,
             errorMessage = state.amountProblem?.let { stringResource(it.messageResource()) },
             onAmountChange = { onAction(SendMoneyAction.EnterAmount(it)) },
+            modifier = Modifier.testTag(SendMoneyTestTags.AMOUNT_CARD),
+            fieldTestTag = SendMoneyTestTags.AMOUNT_FIELD,
+            errorTestTag = SendMoneyTestTags.AMOUNT_ERROR,
+            balanceTestTag = SendMoneyTestTags.AMOUNT_BALANCE,
         ) {
             // Both rails fill the slot, so the figure begins at the same x-position on each and
             // switching rails does not shift it. What differs is only whether the box can be
@@ -432,7 +468,7 @@ private fun InstructedCurrencyControl(
     state: SendMoneyUiState.Content,
     onAction: (SendMoneyAction) -> Unit,
 ) {
-    SendMoneyDropdownBox(
+    MifosDropdownBox(
         label = state.instructedCurrency,
         selected = state.instructedCurrency,
         options = state.offeredCurrencies,
@@ -502,7 +538,7 @@ private fun ChargesSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(HeadingGap)) {
         SectionHeading(stringResource(Res.string.feature_send_money_charges_heading))
-        SendMoneyDropdownField(
+        MifosDropdownField(
             label = chargeBearerLabel(state.chargeBearer),
             selected = state.chargeBearer,
             options = OFFERED_CHARGE_BEARERS,
@@ -596,6 +632,20 @@ private fun NoSavedPayees() {
         )
     }
 }
+
+private fun SendMoneyAccountRow.toPickerOption(): MifosAccountOption = MifosAccountOption(
+    accountId = id,
+    accountSubType = accountSubType,
+    accountNumber = accountNumber,
+    rawIdentification = rawIdentification,
+    availableBalance = supporting,
+)
+
+private fun SendMoneyPickerRow.toPayeeOption(): MifosPayeeOption = MifosPayeeOption(
+    payeeId = id,
+    shortName = shortName.ifBlank { headline },
+    initials = initials,
+)
 
 private fun SendMoneyAmountProblem.messageResource(): StringResource = when (this) {
     SendMoneyAmountProblem.NotANumber -> Res.string.feature_send_money_amount_error_not_a_number

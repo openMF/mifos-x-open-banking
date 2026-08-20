@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
+import org.mifosx.openbanking.core.ui.components.MifosDropdownField
 import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderTestTags
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.Res
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_frequency_fortnightly
@@ -38,14 +39,15 @@ internal fun FrequencyField(
     onSelect: (StandingOrderFrequency) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    StandingOrderDropdownField(
-        label = stringResource(Res.string.feature_payments_standing_order_frequency_label),
+    MifosDropdownField(
+        label = frequencyLabel(selected),
         selected = selected,
         options = StandingOrderFrequency.entries,
         optionLabel = { frequencyLabel(it) },
         optionTestTag = { StandingOrderTestTags.frequencyOption(it) },
         onSelect = onSelect,
         modifier = modifier.testTag(StandingOrderTestTags.FREQUENCY_FIELD),
+        caption = stringResource(Res.string.feature_payments_standing_order_frequency_label),
     )
 }
 

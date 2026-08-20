@@ -44,6 +44,9 @@ import template.core.base.designsystem.theme.KptTheme
 
 private val RowMinHeight = 64.dp
 
+/** Matches the outlined text fields the picker sits beside. */
+private val BorderThickness = 1.dp
+
 /**
  * One account the picker offers.
  *
@@ -90,8 +93,8 @@ fun MifosAccountPicker(
             .fillMaxWidth()
             .clip(KptTheme.shapes.small)
             .border(
-                width = 1.dp,
-                color = KptTheme.colorScheme.outlineVariant,
+                width = BorderThickness,
+                color = KptTheme.colorScheme.primary,
                 shape = KptTheme.shapes.small,
             )
             .background(KptTheme.colorScheme.surfaceContainerLowest),
@@ -105,7 +108,7 @@ fun MifosAccountPicker(
         )
 
         if (expanded) {
-            HorizontalDivider(color = KptTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = KptTheme.colorScheme.primary)
             Column {
                 options.forEach { option ->
                     AccountRow(

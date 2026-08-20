@@ -9,7 +9,7 @@
     See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
 -->
 <resources>
-    <string name="feature_vrp_setup_title">Set up a Variable Recurring Payment</string>
+    <string name="feature_vrp_setup_title">Setup VRP</string>
     <string name="feature_vrp_setup_payer_label">Pay from</string>
     <string name="feature_vrp_setup_payer_choose_at_bank">Choose at my bank</string>
     <string name="feature_vrp_setup_payer_choose_at_bank_supporting">Pick the account when you approve</string>

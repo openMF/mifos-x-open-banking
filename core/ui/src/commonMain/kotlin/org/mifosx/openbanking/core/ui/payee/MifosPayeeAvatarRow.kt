@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
-package org.mifosx.openbanking.feature.vrpsetup.components
+package org.mifosx.openbanking.core.ui.payee
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -37,14 +37,15 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
-import org.mifosx.openbanking.feature.vrpsetup.generated.resources.Res
-import org.mifosx.openbanking.feature.vrpsetup.generated.resources.feature_vrp_setup_payee_pay_new
-import org.mifosx.openbanking.feature.vrpsetup.setup.PayeeOptionUi
-import org.mifosx.openbanking.feature.vrpsetup.setup.VrpSetupTestTags
+import org.mifosx.openbanking.core.ui.generated.resources.Res
+import org.mifosx.openbanking.core.ui.generated.resources.core_ui_payee_pay_new
+import template.core.base.designsystem.component.KptShimmerLoadingBox
 import template.core.base.designsystem.theme.KptTheme
 
 private val AvatarSize = 56.dp
@@ -66,35 +67,69 @@ private const val CAPTION_LINES = 2
 private val BadgeSize = 20.dp
 private val BadgeIconSize = 14.dp
 
+/** How many placeholder avatars stand in while the payees load. */
+private const val LOADING_AVATARS = 3
+
+/**
+ * One payee the row offers.
+ *
+ * @property payeeId The value the row reports on select.
+ * @property shortName The caption, already shortened to fit two lines.
+ * @property initials Up to two letters for the avatar; see [initialsOf].
+ */
+data class MifosPayeeOption(
+    val payeeId: String,
+    val shortName: String,
+    val initials: String,
+)
+
 /**
  * The payees, as a horizontal row of avatars.
  *
  * "Pay new" leads rather than trails, so the escape from an empty list is the first thing under the
  * heading rather than the last thing after a scroll.
+ *
+ * @param payNewSelected Whether "Pay new" is itself the current choice, which it is while a new
+ *   payee is being typed.
+ * @param loading Replaces the payees with placeholders; "Pay new" stays usable throughout.
+ * @param payeeTestTag Applied per payee, so a caller's own suite can address one avatar.
  */
 @Composable
-internal fun VrpPayeeAvatarRow(
-    payees: List<PayeeOptionUi>,
+fun MifosPayeeAvatarRow(
+    payees: List<MifosPayeeOption>,
     selectedId: String?,
     payNewSelected: Boolean,
     onSelect: (String) -> Unit,
     onPayNew: () -> Unit,
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
+    loadingContentDescription: String = "",
+    payNewTestTag: String = PAY_NEW_TAG,
+    loadingTestTag: String = LOADING_TAG,
+    payeeTestTag: (String) -> String = ::payeeAvatarTag,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .testTag(VrpSetupTestTags.PAYEE_ROW),
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.md),
     ) {
-        PayNewAvatar(selected = payNewSelected, onClick = onPayNew)
+        PayNewAvatar(selected = payNewSelected, onClick = onPayNew, testTag = payNewTestTag)
+
+        if (loading) {
+            LoadingAvatars(
+                contentDescription = loadingContentDescription,
+                testTag = loadingTestTag,
+            )
+            return@Row
+        }
 
         payees.forEach { payee ->
             PayeeAvatar(
                 payee = payee,
                 selected = payee.payeeId == selectedId,
                 onClick = { onSelect(payee.payeeId) },
+                testTag = payeeTestTag(payee.payeeId),
             )
         }
     }
@@ -104,15 +139,16 @@ internal fun VrpPayeeAvatarRow(
 private fun PayNewAvatar(
     selected: Boolean,
     onClick: () -> Unit,
+    testTag: String,
 ) {
     val outline = KptTheme.colorScheme.outline
 
     AvatarColumn(
-        caption = stringResource(Res.string.feature_vrp_setup_payee_pay_new),
+        caption = stringResource(Res.string.core_ui_payee_pay_new),
         selected = selected,
         modifier = Modifier
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .testTag(VrpSetupTestTags.PAYEE_PAY_NEW),
+            .testTag(testTag),
     ) {
         Box(
             modifier = Modifier.size(AvatarSize),
@@ -138,16 +174,17 @@ private fun PayNewAvatar(
 
 @Composable
 private fun PayeeAvatar(
-    payee: PayeeOptionUi,
+    payee: MifosPayeeOption,
     selected: Boolean,
     onClick: () -> Unit,
+    testTag: String,
 ) {
     AvatarColumn(
         caption = payee.shortName,
         selected = selected,
         modifier = Modifier
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .testTag(VrpSetupTestTags.payeeAvatar(payee.payeeId)),
+            .testTag(testTag),
     ) {
         Box(
             modifier = Modifier
@@ -171,6 +208,24 @@ private fun PayeeAvatar(
                     KptTheme.colorScheme.onSurfaceVariant
                 },
             )
+        }
+    }
+}
+
+/** Placeholders in the avatars' own footprint, so the row does not jump when the payees land. */
+@Composable
+private fun LoadingAvatars(contentDescription: String, testTag: String) {
+    repeat(LOADING_AVATARS) { index ->
+        Column(
+            modifier = Modifier
+                .width(CaptionWidth)
+                .then(if (index == 0) Modifier.testTag(testTag) else Modifier)
+                .semantics { this.contentDescription = contentDescription },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(modifier = Modifier.size(SlotSize), contentAlignment = Alignment.Center) {
+                KptShimmerLoadingBox(modifier = Modifier.size(AvatarSize).clip(CircleShape))
+            }
         }
     }
 }
@@ -233,3 +288,9 @@ private fun AvatarColumn(
         )
     }
 }
+
+private const val PAY_NEW_TAG = "mifosPayeeRow:payNew"
+private const val LOADING_TAG = "mifosPayeeRow:loading"
+
+/** The default per-payee tag, matching [accountPickerRowTag]'s shape. */
+fun payeeAvatarTag(payeeId: String): String = "mifosPayeeRow:avatar:$payeeId"

@@ -20,6 +20,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mifosx.openbanking.core.designsystem.theme.MifosXOpenBankingTheme
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentErrorKind
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentStage
@@ -27,7 +28,6 @@ import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePayment
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import template.core.base.designsystem.KptTheme
 
 private const val ROBOLECTRIC_SDK = 34
 
@@ -132,7 +132,9 @@ class SchedulePaymentScreenScreenshotTest {
 
     private fun capture(state: String, screenState: SchedulePaymentState) {
         composeRule.setContent {
-            KptTheme {
+            // The app's theme, not a bare KptTheme: that leaves MaterialTheme at its own defaults
+            // and every golden renders in Material's baseline purple rather than the app palette.
+            MifosXOpenBankingTheme(darkTheme = false) {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()

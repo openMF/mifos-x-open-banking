@@ -39,7 +39,7 @@ import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
 import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
 import org.mifosx.openbanking.feature.paymentsstandingorder.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.paymentsstandingorder.components.currencyName
-import org.mifosx.openbanking.feature.paymentsstandingorder.components.initialsOf
+import org.mifosx.openbanking.core.ui.payee.initialsOf
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.Res
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_irreversible_body
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_irreversible_title

@@ -39,7 +39,7 @@ import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.model.hsbcProduct.HsbcProductCapability
 import org.mifosx.openbanking.core.model.hsbcProduct.HsbcProductType
-import org.mifosx.openbanking.feature.paymentsschedulepayment.components.initialsOf
+import org.mifosx.openbanking.core.ui.payee.initialsOf
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
 import template.core.base.common.screen.combineContent

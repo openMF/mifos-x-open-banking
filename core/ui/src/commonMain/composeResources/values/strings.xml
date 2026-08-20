@@ -20,4 +20,12 @@
     <string name="core_ui_account_picker_choose">Choose an account</string>
     <string name="core_ui_account_picker_expand">Show accounts</string>
     <string name="core_ui_account_picker_collapse">Hide accounts</string>
+    <string name="core_ui_account_picker_bank_choice">Choose at my bank</string>
+    <string name="core_ui_account_picker_bank_choice_supporting">Pick the account when you approve</string>
+    <string name="core_ui_payee_pay_new">Pay new</string>
+    <string name="core_ui_rail_domestic">Domestic</string>
+    <string name="core_ui_rail_international">International</string>
+    <string name="core_ui_amount_label">Amount</string>
+    <string name="core_ui_amount_placeholder">0.00</string>
+    <string name="core_ui_amount_available">You have %1$s available</string>
 </resources>

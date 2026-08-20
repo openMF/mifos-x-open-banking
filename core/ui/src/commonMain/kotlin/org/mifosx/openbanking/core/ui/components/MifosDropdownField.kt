@@ -7,7 +7,7 @@
  *
  * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
-package org.mifosx.openbanking.feature.paymentsstandingorder.components
+package org.mifosx.openbanking.core.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,69 +36,62 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardBorder
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardCorner
-import org.mifosx.openbanking.feature.paymentsstandingorder.CardPadding
-import org.mifosx.openbanking.feature.paymentsstandingorder.HeroGap
-import org.mifosx.openbanking.feature.paymentsstandingorder.RowGap
 import template.core.base.designsystem.theme.KptTheme
 
-/** Matches the payer picker's rows, so the two controls do not disagree about how tall a field is. */
+/** Matches the account picker's rows, so the two controls do not disagree about how tall a field is. */
 private val FieldMinHeight = 56.dp
 private val ChipIconSize = 18.dp
+private val FieldCorner = 12.dp
+private val FieldBorder = 1.dp
+private val FieldPadding = 16.dp
+private val RowGap = 12.dp
+private val BoxGap = 4.dp
+private val CaptionGap = 4.dp
 
 /**
  * A value and its alternatives, as one bordered field that opens a menu.
  *
  * Built here rather than reused: `ExposedDropdownMenuBox` and `SegmentedButton` appear nowhere in
- * this repo and `core/ui` carries no selection control at all. The only other menu is settings'
- * `ThemeDropdownRow`, which is private to that feature and hardcoded to `DarkThemeConfig` — so this
- * follows its shape (an anchor, `Icons.Filled.ArrowDropDown`, a `DropdownMenu` of
- * `DropdownMenuItem`s) without depending on it. Promote it to `core/ui` as a `Mifos*` when a second
- * feature needs one, the same reasoning `AccountSelectorSheet` records for the codebase's one sheet.
+ * this repo. It follows the shape of settings' private `ThemeDropdownRow` — an anchor,
+ * `Icons.Filled.ArrowDropDown`, a `DropdownMenu` of `DropdownMenuItem`s — without depending on it.
  *
- * It replaces two `FilterChip` rows. Nineteen currencies cannot be chips, and the four charge chips
- * wrapped and left "Whatever the scheme decides" orphaned on a row of its own.
+ * **Expansion is local `remember`, not hoisted.** [MifosAccountPicker] hoists its expansion because
+ * a view model has to collapse it on a selection made elsewhere; nothing collapses these but their
+ * own menu, so putting them on the state would be presentation state no form has a rule about.
  *
- * **Expansion is local `remember`, not hoisted.** `PayerPicker` hoists its expansion because the
- * ViewModel has to collapse it on a selection made elsewhere; nothing collapses these but their own
- * menu, so putting them on the state would be presentation state the form has no rule about.
- *
- * **The anchor reads the selection, not a fixed caption.** It used to render whatever [label] was
- * given, which made the control's correctness depend on what each caller happened to pass: the charge
- * picker passed `chargeBearerLabel(selected)` and so appeared to work, while the frequency field
- * passed the static "How often" and never changed no matter what was chosen. One parameter carrying
- * two meanings, and only one caller holding it right. The anchor now derives its text from [selected]
- * through [optionLabel], which is the same function the menu rows use, so the two cannot disagree.
- *
- * @param label The caption above the field, in the shape `DateField` uses. Null where a section
- *   heading already names the control and a caption would repeat it.
- * @param selected What the anchor displays, and marked in the menu's semantics so a screen reader
- *   says which of the options is the current one rather than reading nineteen equal-sounding rows.
+ * @param label What the anchor reads. Separate from [optionLabel] because the two are not always the
+ *   same string: the amount card's control shows the bare code beside the figure, while its menu
+ *   spells the currency out.
+ * @param caption Drawn above the field, for a control whose anchor shows the chosen value and so
+ *   has nowhere to say which question it answers. Omitted where the anchor names itself.
+ * @param selected Marked in the menu's semantics, so a screen reader says which of the options is
+ *   the current one rather than reading nineteen equal-sounding rows.
  */
 @Composable
-internal fun <T> StandingOrderDropdownField(
+fun <T> MifosDropdownField(
+    label: String,
     selected: T,
     options: List<T>,
     optionLabel: @Composable (T) -> String,
     optionTestTag: (T) -> String,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
-    label: String? = null,
+    caption: String? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        if (label != null) {
+        if (caption != null) {
             Text(
-                text = label,
+                text = caption,
                 style = KptTheme.typography.bodySmall,
                 color = KptTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = CaptionGap, start = CardPadding),
+                modifier = Modifier.padding(bottom = CaptionGap, start = FieldPadding),
             )
         }
         DropdownHost(
@@ -112,21 +105,18 @@ internal fun <T> StandingOrderDropdownField(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(CardCorner))
-                    .border(
-                        width = CardBorder,
-                        color = KptTheme.colorScheme.outlineVariant,
-                        shape = RoundedCornerShape(CardCorner),
-                    )
-                    .background(KptTheme.colorScheme.surfaceContainerLowest)
+                    .anchorSkin(
+                    border = KptTheme.colorScheme.primary,
+                    background = KptTheme.colorScheme.surfaceContainerLowest,
+                )
                     .clickable(role = Role.DropdownList, onClick = onOpen)
                     .heightIn(min = FieldMinHeight)
-                    .padding(horizontal = CardPadding, vertical = RowGap),
+                    .padding(horizontal = FieldPadding, vertical = RowGap),
                 horizontalArrangement = Arrangement.spacedBy(RowGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = optionLabel(selected),
+                    text = label,
                     style = KptTheme.typography.bodyLarge,
                     color = KptTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -147,20 +137,12 @@ internal fun <T> StandingOrderDropdownField(
  * The same control, sized to sit BESIDE the amount rather than under it.
  *
  * It belongs to the figure it qualifies — the currency the amount is instructed in is part of the
- * amount — so a full-width row of its own would read as a fourth question rather than as the unit
- * on the one already asked.
- *
- * **This is the adapted one, and [StandingOrderDropdownField] is not.** Both were candidates and only
- * one could take a caller-supplied width: the field hard-codes `fillMaxWidth()` onto the host and
- * pads its anchor by `CardPadding` on each side, which is right for a control that owns a row and
- * leaves a fifth-width box with nothing left for "GBP" and a caret. This one passes its [modifier]
- * straight through, which is what lets the amount card hand it a weight. What changed is only the
- * anchor's skin: it was a pill in `surfaceContainerHighest`, sized by its own text, and it is now
- * the field's corner, border, background and height, filling whatever box it is given. A pill
- * floating beside a bordered figure read as a tag ON the amount rather than as half of it.
+ * amount — so a full-width row of its own would read as another question rather than as the unit on
+ * the one already asked. Unlike [MifosDropdownField] it passes its [modifier] straight through,
+ * which is what lets an amount card hand it a weight.
  */
 @Composable
-internal fun <T> StandingOrderDropdownBox(
+fun <T> MifosDropdownBox(
     label: String,
     selected: T,
     options: List<T>,
@@ -180,18 +162,15 @@ internal fun <T> StandingOrderDropdownBox(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(CardCorner))
-                .border(
-                    width = CardBorder,
-                    color = KptTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(CardCorner),
+                .anchorSkin(
+                    border = KptTheme.colorScheme.primary,
+                    background = KptTheme.colorScheme.surfaceContainerLowest,
                 )
-                .background(KptTheme.colorScheme.surfaceContainerLowest)
                 .clickable(role = Role.DropdownList, onClick = onOpen)
-                // Narrower than the field's CardPadding on purpose: this box is a fifth of the row,
-                // and 16dp a side would leave a three-letter code ellipsised on a small phone.
-                .padding(horizontal = HeroGap * 2),
-            horizontalArrangement = Arrangement.spacedBy(HeroGap, Alignment.CenterHorizontally),
+                // Narrower than the field's padding on purpose: this box is a fifth of the row, and
+                // 16dp a side would leave a three-letter code ellipsised on a small phone.
+                .padding(horizontal = BoxGap * 2),
+            horizontalArrangement = Arrangement.spacedBy(BoxGap, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -211,6 +190,17 @@ internal fun <T> StandingOrderDropdownBox(
         }
     }
 }
+
+/**
+ * The corner, border and ground both anchors carry, so only their padding differs.
+ *
+ * The colours are passed rather than read from the theme here: a `@Composable` modifier builder
+ * recomposes more than it needs to, and the callers are already in a composable scope.
+ */
+private fun Modifier.anchorSkin(border: Color, background: Color): Modifier = this
+    .clip(RoundedCornerShape(FieldCorner))
+    .border(width = FieldBorder, color = border, shape = RoundedCornerShape(FieldCorner))
+    .background(background)
 
 /** The menu and the expansion both anchors share; only the anchor's own shape differs. */
 @Composable
@@ -246,6 +236,3 @@ private fun <T> DropdownHost(
         }
     }
 }
-
-/** Matches `DateField`'s label gap, so a captioned dropdown lines up with a captioned date row. */
-private val CaptionGap = 4.dp
