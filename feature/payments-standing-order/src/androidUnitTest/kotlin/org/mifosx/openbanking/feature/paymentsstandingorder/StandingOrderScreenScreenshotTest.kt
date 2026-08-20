@@ -63,6 +63,13 @@ class StandingOrderScreenScreenshotTest {
     @Test
     fun domesticFormGolden() = capture("form_domestic", StandingOrderFixtures.formState())
 
+    /** The recent standing orders under the form — set up, still setting up, and refused. */
+    @Test
+    fun recentStandingOrdersGolden() = capture(
+        "form_recent_standing_orders",
+        StandingOrderFixtures.formState().withPayments(StandingOrderFixtures.paymentHistory()),
+    )
+
     /**
      * The international form, which is not a styling variation on the one above it.
      *

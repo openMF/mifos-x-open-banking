@@ -91,6 +91,13 @@ class SendMoneyScreenScreenshotTest {
     @Test
     fun selectedPayeeGolden() = capture("form_payee_selected", SendMoneyFixtures.filledFormState())
 
+    /** The recent payments under the form, one of each outcome the list can render. */
+    @Test
+    fun recentPaymentsGolden() = capture(
+        "form_recent_payments",
+        SendMoneyFixtures.formState(recentPayments = SendMoneyFixtures.paymentHistory()),
+    )
+
     /** No saved payees: the avatar row survives, carrying only "Pay new". */
     @Test
     fun noSavedPayeesGolden() =

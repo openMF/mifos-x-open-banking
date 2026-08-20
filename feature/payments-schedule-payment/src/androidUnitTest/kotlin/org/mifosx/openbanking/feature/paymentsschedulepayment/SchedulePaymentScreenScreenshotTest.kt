@@ -63,6 +63,15 @@ class SchedulePaymentScreenScreenshotTest {
     @Test
     fun domesticFormGolden() = capture("form_domestic", SchedulePaymentFixtures.formState())
 
+    /** The recent scheduled payments under the form — booked, still booking, and refused. */
+    @Test
+    fun recentScheduledPaymentsGolden() = capture(
+        "form_recent_scheduled_payments",
+        SchedulePaymentFixtures.formState(
+            recentPayments = SchedulePaymentFixtures.paymentHistory(),
+        ),
+    )
+
     /**
      * The international form, which is not a styling variation on the one above it.
      *
