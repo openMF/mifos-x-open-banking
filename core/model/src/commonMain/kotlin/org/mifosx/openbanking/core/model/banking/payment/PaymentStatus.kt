@@ -42,11 +42,8 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
     /**
      * The instruction is set up and waiting for its execution date.
      *
-     * Both scheduled rails return this immediately after the payment resource is created, and it is
-     * the status a scheduled payment then holds for up to 365 days. Without it here the wire value
-     * `INCO` fell to [Unknown] — which is also `InProgress`, so nothing looked broken, but the hub's
-     * refresh re-read every scheduled payment on every visit for a status that cannot move until the
-     * date arrives.
+     * The declared disposition holds on the single-immediate rails; on the scheduled and
+     * standing-order rails it is terminal, which [dispositionFor] resolves.
      */
     InitiationCompleted(PaymentDisposition.InProgress),
 
@@ -108,3 +105,31 @@ enum class PaymentStatus(val disposition: PaymentDisposition) {
         }
     }
 }
+
+/**
+ * What this status means on [consentType]'s rail.
+ *
+ * [PaymentStatus.InitiationCompleted] is [PaymentDisposition.TerminalSuccess] on the scheduled and
+ * standing-order rails, where it means the instruction is set up; every other status resolves to
+ * [PaymentStatus.disposition].
+ */
+fun PaymentStatus.dispositionFor(consentType: ConsentType): PaymentDisposition =
+    if (this == PaymentStatus.InitiationCompleted && consentType.setsUpAnInstruction) {
+        PaymentDisposition.TerminalSuccess
+    } else {
+        disposition
+    }
+
+/** Whether this consent sets up a standing instruction rather than moving money once. */
+private val ConsentType.setsUpAnInstruction: Boolean
+    get() = when (this) {
+        ConsentType.DomesticScheduledPayment,
+        ConsentType.InternationalScheduledPayment,
+        ConsentType.DomesticStandingOrder,
+        ConsentType.InternationalStandingOrder,
+        -> true
+
+        ConsentType.DomesticSinglePayment,
+        ConsentType.InternationalSinglePayment,
+        -> false
+    }

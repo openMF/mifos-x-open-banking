@@ -23,6 +23,7 @@ import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
+import org.mifosx.openbanking.core.ui.payment.PaymentHistoryEntry
 import template.core.base.network.NetworkError
 
 /** The two steps of one screen, held as state rather than as separate destinations. */
@@ -200,6 +201,10 @@ sealed interface StandingOrderUiState {
         val availableBalanceLabel: String = "",
         val debtorCurrency: String = "",
         val offeredCurrencies: List<String> = emptyList(),
+        /** The most recent standing orders set up from this screen, newest first. */
+        val recentPayments: List<PaymentHistoryEntry> = emptyList(),
+        /** Whether more standing orders exist than [recentPayments] shows. */
+        val hasMorePayments: Boolean = false,
         val payeesFailed: Boolean = false,
         val payeesLoading: Boolean = false,
     ) : StandingOrderUiState {

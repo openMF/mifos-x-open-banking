@@ -70,8 +70,18 @@
     <string name="feature_payment_status_payment_id">Payment ID</string>
 
     <string name="feature_payment_status_refresh">Refresh</string>
-    <string name="feature_payment_status_new_payment">Make another payment</string>
     <string name="feature_payment_status_last_checked">Last checked · %1$s</string>
+
+    <!-- Standing orders only. Without these a mandate reads as a payment that happened once. -->
+    <string name="feature_payment_status_repeats">Repeats</string>
+    <string name="feature_payment_status_repeats_weekly">Every week</string>
+    <string name="feature_payment_status_repeats_fortnightly">Every two weeks</string>
+    <string name="feature_payment_status_repeats_monthly">Every month</string>
+    <string name="feature_payment_status_repeats_quarterly">Every three months</string>
+    <string name="feature_payment_status_repeats_yearly">Every year</string>
+    <string name="feature_payment_status_first_payment">First payment</string>
+    <string name="feature_payment_status_final_payment">Last payment</string>
+    <string name="feature_payment_status_recurring_amount">Each payment after the first</string>
 
     <string name="feature_payment_status_error_title">Could not load this payment</string>
     <string name="feature_payment_status_error_not_found">This payment could not be found. It may have been made from another device.</string>

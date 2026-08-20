@@ -9,6 +9,8 @@
  */
 package org.mifosx.openbanking.feature.paymentconsent
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
@@ -20,6 +22,7 @@ import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
@@ -286,6 +289,13 @@ class FakePaymentHistoryRepository : PaymentHistoryRepository {
 
     /** This fake keeps no rows, so it has no stage times to report. */
     override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
+
+    override fun observeHistory(
+        types: Set<ConsentType>,
+        limit: Int,
+    ): Flow<List<PaymentHistoryRow>> = flowOf(emptyList())
+
+    override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) = Unit
 }
 
 /**

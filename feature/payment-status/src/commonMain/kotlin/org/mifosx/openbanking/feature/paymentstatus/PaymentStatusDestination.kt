@@ -22,11 +22,8 @@ import template.core.base.ui.nav.composableWithStayTransitions
 @Serializable
 data class PaymentStatusRoute(val paymentId: String)
 
-fun NavGraphBuilder.paymentStatusScreen(
-    onBack: () -> Unit,
-    onStartNewPayment: () -> Unit,
-) {
+fun NavGraphBuilder.paymentStatusScreen(onBack: () -> Unit) {
     composableWithStayTransitions<PaymentStatusRoute> {
-        PaymentStatusScreen(onBack = onBack, onStartNewPayment = onStartNewPayment)
+        PaymentStatusScreen(onBack = onBack)
     }
 }

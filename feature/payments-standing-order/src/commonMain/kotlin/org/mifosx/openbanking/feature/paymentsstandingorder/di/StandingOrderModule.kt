@@ -10,7 +10,9 @@
 package org.mifosx.openbanking.feature.paymentsstandingorder.di
 
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderHistoryViewModel
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderViewModel
 
 /**
@@ -33,6 +35,9 @@ val StandingOrderModule = module {
             beneficiariesRepository = get(),
             paymentInitiationRepository = get(),
             capabilityRegistry = get(),
+            paymentHistoryRepository = get(),
+            paymentStatusRepository = get(),
         )
     }
+    viewModelOf(::StandingOrderHistoryViewModel)
 }

@@ -132,6 +132,17 @@ class PaymentStatusScreenScreenshotTest {
     @Test
     fun scheduledGolden() = capture("scheduled", PaymentStatusFixtures.scheduledState())
 
+    /** The mandate rows, which are what separate a standing order from a one-off payment. */
+    @Test
+    fun standingOrderGolden() =
+        capture("standing_order", PaymentStatusFixtures.standingOrderState())
+
+    @Test
+    fun standingOrderNoEndDateGolden() = capture(
+        "standing_order_open_ended",
+        PaymentStatusFixtures.standingOrderState(finalPaymentAt = ""),
+    )
+
     /**
      * The in-progress banner on an IMMEDIATE payment, which must not mention a scheduled date.
      *
@@ -206,13 +217,12 @@ class PaymentStatusScreenScreenshotTest {
                 ) {
                     Column {
                         PaymentStatusTopBar(
-                            disposition = (screenState.uiState as? PaymentStatusUiState.Content)?.disposition,
+                            content = screenState.uiState as? PaymentStatusUiState.Content,
                             onBack = {},
                         )
                         PaymentStatusScreenContent(
                             state = screenState,
                             onAction = {},
-                            onStartNewPayment = {},
                         )
                     }
                 }
@@ -227,7 +237,6 @@ class PaymentStatusScreenScreenshotTest {
                 PaymentStatusScreenContent(
                     state = screenState,
                     onAction = {},
-                    onStartNewPayment = {},
                 )
             }
         }

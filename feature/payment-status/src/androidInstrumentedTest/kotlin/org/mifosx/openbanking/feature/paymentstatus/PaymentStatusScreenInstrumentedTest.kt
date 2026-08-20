@@ -29,7 +29,6 @@ import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStepState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentTimelineEntry
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentTimelineStep
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 private const val PAYMENT_ID = "PMT-812774903-01"
 
@@ -106,14 +105,12 @@ class PaymentStatusScreenInstrumentedTest {
     val composeRule = createComposeRule()
 
     private val actions = mutableListOf<PaymentStatusAction>()
-    private var startedNewPayment = false
 
     private fun render(state: PaymentStatusState) {
         composeRule.setContent {
             PaymentStatusScreenContent(
                 state = state,
                 onAction = { actions.add(it) },
-                onStartNewPayment = { startedNewPayment = true },
             )
         }
     }
@@ -234,16 +231,6 @@ class PaymentStatusScreenInstrumentedTest {
         composeRule.onNodeWithTag(PaymentStatusTestTags.REFRESH_BUTTON).performScrollTo().performClick()
 
         assertEquals(listOf<PaymentStatusAction>(PaymentStatusAction.RefreshStatus), actions)
-    }
-
-    @Test
-    fun tappingMakeAnotherPaymentNavigatesWithoutDispatching() {
-        render(contentState())
-
-        composeRule.onNodeWithTag(PaymentStatusTestTags.NEW_PAYMENT_BUTTON).performScrollTo().performClick()
-
-        assertTrue(startedNewPayment)
-        assertTrue(actions.isEmpty())
     }
 
     @Test

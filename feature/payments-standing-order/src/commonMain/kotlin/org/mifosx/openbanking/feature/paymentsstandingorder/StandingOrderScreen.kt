@@ -39,6 +39,8 @@ import template.core.base.ui.effects.EventsEffect
 internal fun StandingOrderScreen(
     onLaunchAuthorisation: (String) -> Unit,
     onNavigateToConsents: () -> Unit,
+    onNavigateToPayment: (String) -> Unit,
+    onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StandingOrderViewModel = koinViewModel(),
 ) {
@@ -59,6 +61,8 @@ internal fun StandingOrderScreen(
             state = state,
             onAction = viewModel::trySendAction,
             onNavigateToConsents = onNavigateToConsents,
+            onOpenPayment = onNavigateToPayment,
+            onShowAllPayments = onNavigateToHistory,
         )
     }
 }
@@ -70,6 +74,8 @@ internal fun StandingOrderScreenContent(
     onAction: (StandingOrderAction) -> Unit,
     onNavigateToConsents: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPayment: (String) -> Unit = {},
+    onShowAllPayments: () -> Unit = {},
 ) {
     when (val current = state.uiState) {
         StandingOrderUiState.Loading -> StandingOrderSkeleton(modifier = modifier)
@@ -78,6 +84,8 @@ internal fun StandingOrderScreenContent(
             state = current,
             onAction = onAction,
             modifier = modifier,
+            onOpenPayment = onOpenPayment,
+            onShowAllPayments = onShowAllPayments,
         )
 
         is StandingOrderUiState.Submitting -> StandingOrderSubmitting(

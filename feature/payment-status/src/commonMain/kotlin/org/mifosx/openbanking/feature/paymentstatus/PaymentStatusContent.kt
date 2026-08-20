@@ -40,9 +40,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
+import org.mifosx.openbanking.core.ui.payment.paymentStatusLabel
 import org.mifosx.openbanking.feature.paymentstatus.components.PaymentTimeline
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.Res
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_completed
@@ -62,17 +65,25 @@ import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_details
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_failed
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_fee
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_final_payment
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_first_payment
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_from
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress_note
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_in_progress_note_scheduled
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_last_checked
-import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_new_payment
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_payment_id
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_recurring_amount
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_reference
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_reference_empty
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_refresh
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_refresh_failed
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats_fortnightly
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats_monthly
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats_quarterly
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats_weekly
+import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_repeats_yearly
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_scheduled_for
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_settled
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.feature_payment_status_status_changed
@@ -108,7 +119,6 @@ private val TitleGap = 8.dp
 internal fun PaymentStatusContent(
     state: PaymentStatusUiState.Content,
     onAction: (PaymentStatusAction) -> Unit,
-    onStartNewPayment: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -142,12 +152,6 @@ internal fun PaymentStatusContent(
             icon = Icons.Filled.Refresh,
             testTag = PaymentStatusTestTags.REFRESH_BUTTON,
             enabled = !state.refreshing,
-        )
-
-        MifosTonalPillButton(
-            label = stringResource(Res.string.feature_payment_status_new_payment),
-            onClick = onStartNewPayment,
-            testTag = PaymentStatusTestTags.NEW_PAYMENT_BUTTON,
         )
 
         // Without this, a refresh that returns the same status is indistinguishable from a button
@@ -194,7 +198,7 @@ private fun SummaryCard(state: PaymentStatusUiState.Content) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        StatusChip(state.disposition)
+        StatusChip(state.disposition, state.status, state.consentType)
 
         // The bank's own word, under the plain-English chip. "In progress" is our summary of ACSP;
         // this line is the thing the bank actually said, which is what someone checking whether a
@@ -236,7 +240,11 @@ internal fun dispositionColours(disposition: PaymentDisposition): DispositionCol
 }
 
 @Composable
-private fun StatusChip(disposition: PaymentDisposition) {
+private fun StatusChip(
+    disposition: PaymentDisposition,
+    status: PaymentStatus,
+    consentType: ConsentType?,
+) {
     val colours = dispositionColours(disposition)
     val container = colours.container
     val onContainer = colours.onContainer
@@ -262,7 +270,7 @@ private fun StatusChip(disposition: PaymentDisposition) {
             modifier = Modifier.size(ChipIconSize),
         )
         Text(
-            text = stringResource(disposition.labelResource()),
+            text = statusWord(status, consentType, disposition),
             style = MaterialTheme.typography.labelLarge,
             color = onContainer,
         )
@@ -379,12 +387,47 @@ private fun DetailsSection(state: PaymentStatusUiState.Content) {
             // A scheduled payment states when it is due. The wording is deliberately future tense
             // and never says paid or sent: nothing has moved, and on this rail nothing will until
             // the date. The app also cannot confirm that it did — no per-execution status exists.
+            // On a mandate the same field is the FIRST payment, not the only one, so it is labelled
+            // as such — "Scheduled for" would say the standing order happens once.
             if (state.scheduledForAt.isNotBlank()) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 DetailRow(
-                    label = stringResource(Res.string.feature_payment_status_scheduled_for),
+                    label = if (state.frequency == null) {
+                        stringResource(Res.string.feature_payment_status_scheduled_for)
+                    } else {
+                        stringResource(Res.string.feature_payment_status_first_payment)
+                    },
                     value = state.scheduledForAt,
                     tag = PaymentStatusTestTags.DETAIL_SCHEDULED_FOR,
+                )
+            }
+
+            state.frequency?.let { frequency ->
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DetailRow(
+                    label = stringResource(Res.string.feature_payment_status_repeats),
+                    value = stringResource(frequency.labelResource()),
+                    tag = PaymentStatusTestTags.DETAIL_REPEATS,
+                )
+            }
+
+            if (state.recurringAmountLabel.isNotBlank()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DetailRow(
+                    label = stringResource(Res.string.feature_payment_status_recurring_amount),
+                    value = state.recurringAmountLabel,
+                    tag = PaymentStatusTestTags.DETAIL_RECURRING_AMOUNT,
+                )
+            }
+
+            // Absent when the mandate runs until the customer stops it, which is a real answer and
+            // not a gap — drawing an empty row would read as a date the app failed to keep.
+            if (state.finalPaymentAt.isNotBlank()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DetailRow(
+                    label = stringResource(Res.string.feature_payment_status_final_payment),
+                    value = state.finalPaymentAt,
+                    tag = PaymentStatusTestTags.DETAIL_FINAL_PAYMENT,
                 )
             }
 
@@ -461,10 +504,34 @@ private fun DetailRow(label: String, value: String, tag: String) {
  * Shared with the app bar rather than duplicated, so the title and the chip can never disagree about
  * what state the payment is in.
  */
+/**
+ * The status in words, in the vocabulary of the rail it was made on.
+ *
+ * A settled mandate reads "Set up" and a booked payment "Scheduled"; only a single payment reads
+ * "Sent". With no [consentType] there is no rail to read, so the disposition answers alone.
+ */
+@Composable
+internal fun statusWord(
+    status: PaymentStatus,
+    consentType: ConsentType?,
+    disposition: PaymentDisposition,
+): String = consentType
+    ?.let { paymentStatusLabel(status, it) }
+    ?: stringResource(disposition.labelResource())
+
 internal fun PaymentDisposition.labelResource() = when (this) {
     PaymentDisposition.InProgress -> Res.string.feature_payment_status_in_progress
     PaymentDisposition.TerminalSuccess -> Res.string.feature_payment_status_completed
     PaymentDisposition.TerminalFailure -> Res.string.feature_payment_status_failed
+}
+
+/** How often a mandate repeats, in words. */
+internal fun StandingOrderFrequency.labelResource() = when (this) {
+    StandingOrderFrequency.Weekly -> Res.string.feature_payment_status_repeats_weekly
+    StandingOrderFrequency.Fortnightly -> Res.string.feature_payment_status_repeats_fortnightly
+    StandingOrderFrequency.Monthly -> Res.string.feature_payment_status_repeats_monthly
+    StandingOrderFrequency.Quarterly -> Res.string.feature_payment_status_repeats_quarterly
+    StandingOrderFrequency.Yearly -> Res.string.feature_payment_status_repeats_yearly
 }
 
 /**

@@ -114,6 +114,10 @@
     <string name="feature_send_money_reference_helper">Max 35 characters</string>
     <string name="feature_send_money_review_button">Review &amp; pay</string>
 
+    <string name="feature_send_money_history_title">Recent payments</string>
+    <string name="feature_send_money_history_screen_title">Payments sent</string>
+    <string name="feature_send_money_history_empty">You have not sent any payments yet.</string>
+
     <string name="feature_send_money_review_heading">Check this before you send it</string>
     <string name="feature_send_money_review_from_bank_choice">You’ll choose at your bank</string>
     <!-- No "Recipient receives" row on the review any more: the amount above it is already in the

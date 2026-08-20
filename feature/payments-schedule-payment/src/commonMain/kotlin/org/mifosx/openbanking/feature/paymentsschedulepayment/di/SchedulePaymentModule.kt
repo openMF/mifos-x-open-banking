@@ -10,7 +10,9 @@
 package org.mifosx.openbanking.feature.paymentsschedulepayment.di
 
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentHistoryViewModel
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentViewModel
 
 /**
@@ -33,6 +35,9 @@ val SchedulePaymentModule = module {
             beneficiariesRepository = get(),
             paymentInitiationRepository = get(),
             capabilityRegistry = get(),
+            paymentHistoryRepository = get(),
+            paymentStatusRepository = get(),
         )
     }
+    viewModelOf(::SchedulePaymentHistoryViewModel)
 }

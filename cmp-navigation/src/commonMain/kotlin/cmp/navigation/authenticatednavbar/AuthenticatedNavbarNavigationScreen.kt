@@ -60,15 +60,19 @@ import org.mifosx.openbanking.feature.login.LoginRenewRoute
 import org.mifosx.openbanking.feature.login.browser.BrowserLauncher
 import org.mifosx.openbanking.feature.login.loginRenewScreen
 import org.mifosx.openbanking.feature.paymentshub.paymentsHubGraph
+import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentHistoryRoute
 import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentRoute
 import org.mifosx.openbanking.feature.paymentsschedulepayment.schedulePaymentGraph
+import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderHistoryRoute
 import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderRoute
 import org.mifosx.openbanking.feature.paymentsstandingorder.standingOrderGraph
+import org.mifosx.openbanking.feature.paymentstatus.PaymentStatusRoute
 import org.mifosx.openbanking.feature.paymentstatus.paymentStatusScreen
 import org.mifosx.openbanking.feature.product.ProductRoute
 import org.mifosx.openbanking.feature.product.productScreen
 import org.mifosx.openbanking.feature.scheduledpayments.ScheduledPaymentsRoute
 import org.mifosx.openbanking.feature.scheduledpayments.scheduledPaymentsScreen
+import org.mifosx.openbanking.feature.sendmoney.SendMoneyHistoryRoute
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyRoute
 import org.mifosx.openbanking.feature.sendmoney.sendMoneyGraph
 import org.mifosx.openbanking.feature.settings.LicencesRoute
@@ -198,12 +202,22 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             sendMoneyGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},
+                onNavigateToPayment = { paymentId ->
+                    navController.navigate(PaymentStatusRoute(paymentId))
+                },
+                onNavigateToHistory = { navController.navigate(SendMoneyHistoryRoute) },
+                onBack = { navController.popBackStack() },
             )
             // A sibling of the hub graph, like send-money: the scheduled rails own their own browser
             // hand-off, and the return leg lands at the root navigator, not here.
             schedulePaymentGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},
+                onNavigateToPayment = { paymentId ->
+                    navController.navigate(PaymentStatusRoute(paymentId))
+                },
+                onNavigateToHistory = { navController.navigate(SchedulePaymentHistoryRoute) },
+                onBack = { navController.popBackStack() },
             )
 
             // A sibling of the hub graph too, for the same reason: each payment product owns its own
@@ -211,6 +225,11 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             standingOrderGraph(
                 onLaunchAuthorisation = { url -> runCatching { browserLauncher.launch(url) } },
                 onNavigateToConsents = {},
+                onNavigateToPayment = { paymentId ->
+                    navController.navigate(PaymentStatusRoute(paymentId))
+                },
+                onNavigateToHistory = { navController.navigate(StandingOrderHistoryRoute) },
+                onBack = { navController.popBackStack() },
             )
             // Registered here as well as at the root, because a route has to exist in the host that
             // navigates to it. The root copy serves the authorisation return leg, which lands outside
@@ -222,10 +241,7 @@ internal fun AuthenticatedNavbarNavigationScreenContent(
             // navigates here any more. Kept deliberately — the two hosts cannot see each other's
             // destinations in either direction, so the next screen in this host that wants to show a
             // payment needs this entry to already exist rather than to rediscover the crash.
-            paymentStatusScreen(
-                onBack = { navController.popBackStack() },
-                onStartNewPayment = { navController.navigate(SendMoneyRoute) },
-            )
+            paymentStatusScreen(onBack = { navController.popBackStack() })
             accountDetailScreen(
                 onNavigateToChip = { chip, accountId -> navController.navigateFromChip(chip, accountId) },
                 onBack = { navController.popBackStack() },

@@ -18,6 +18,7 @@ import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
+import org.mifosx.openbanking.core.ui.payment.PaymentHistoryEntry
 import template.core.base.network.NetworkError
 
 /**
@@ -232,6 +233,10 @@ sealed interface SendMoneyUiState {
         val debtorCurrency: String = "",
         /** What the amount's currency control offers. Empty on the domestic rail, which has none. */
         val offeredCurrencies: List<String> = emptyList(),
+        /** The most recent payments sent from this screen, newest first. */
+        val recentPayments: List<PaymentHistoryEntry> = emptyList(),
+        /** Whether more payments exist than [recentPayments] shows. */
+        val hasMorePayments: Boolean = false,
         /**
          * The saved-payee read failed, as opposed to succeeding with nothing saved.
          *

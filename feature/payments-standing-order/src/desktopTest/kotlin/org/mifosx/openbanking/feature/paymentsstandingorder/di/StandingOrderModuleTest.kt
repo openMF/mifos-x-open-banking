@@ -18,6 +18,8 @@ import org.koin.dsl.module
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
+import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.banking.StandingOrderInitiationRepository
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
@@ -25,6 +27,9 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
+import org.mifosx.openbanking.feature.paymentsstandingorder.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.paymentsstandingorder.FakePaymentStatusRepository
+import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderHistoryViewModel
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderViewModel
 import template.core.base.common.screen.ScreenState
 import template.core.base.network.NetworkError
@@ -94,6 +99,8 @@ class StandingOrderModuleTest {
                 override fun clear() = Unit
             }
         }
+        single<PaymentHistoryRepository> { FakePaymentHistoryRepository() }
+        single<PaymentStatusRepository> { FakePaymentStatusRepository() }
     }
 
     /**
@@ -108,5 +115,12 @@ class StandingOrderModuleTest {
         val koin = koinApplication { modules(stubs, StandingOrderModule) }.koin
 
         assertNotNull(koin.get<StandingOrderViewModel>())
+    }
+
+    @Test
+    fun theHistoryViewModelResolvesFromTheGraph() {
+        val koin = koinApplication { modules(stubs, StandingOrderModule) }.koin
+
+        assertNotNull(koin.get<StandingOrderHistoryViewModel>())
     }
 }

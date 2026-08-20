@@ -14,6 +14,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runComposeUiTest
@@ -24,7 +25,6 @@ import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStepState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentTimelineStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 // Kept identical to the field the view model derives the fourth stage from, so no fixture here
 // depicts a timeline the app could not actually produce.
@@ -37,7 +37,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun loadingRendersTheSkeleton() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.loadingState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.loadingState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.SKELETON).assertIsDisplayed()
         onNodeWithTag(PaymentStatusTestTags.SUMMARY_CARD).assertDoesNotExist()
@@ -46,7 +46,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun contentRendersTheSummaryAndEveryDetailRow() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.SUMMARY_CARD).assertIsDisplayed()
         onNodeWithTag(PaymentStatusTestTags.AMOUNT).assertIsDisplayed()
@@ -61,7 +61,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun anInFlightPaymentExplainsItself() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.IN_PROGRESS_NOTE).assertIsDisplayed()
     }
@@ -72,7 +72,6 @@ class PaymentStatusScreenUiTest {
             PaymentStatusScreenContent(
                 PaymentStatusFixtures.contentState(disposition = PaymentDisposition.TerminalSuccess),
                 {},
-                {},
             )
         }
         onNodeWithTag(PaymentStatusTestTags.IN_PROGRESS_NOTE).assertDoesNotExist()
@@ -82,7 +81,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun refreshIsDisabledWhileARefreshIsRunning() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(refreshing = true), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(refreshing = true), {})
         }
         onNodeWithTag(PaymentStatusTestTags.REFRESH_BUTTON).performScrollTo().assertIsNotEnabled()
     }
@@ -95,7 +94,6 @@ class PaymentStatusScreenUiTest {
                 PaymentStatusScreenContent(
                     state = PaymentStatusFixtures.contentState(),
                     onAction = { actions += it },
-                    onStartNewPayment = {},
                 )
             }
             onNodeWithTag(PaymentStatusTestTags.REFRESH_BUTTON).performScrollTo().performClick()
@@ -104,30 +102,10 @@ class PaymentStatusScreenUiTest {
         assertEquals<List<PaymentStatusAction>>(listOf(PaymentStatusAction.RefreshStatus), actions)
     }
 
-    /** Starting another payment is navigation, so it must not dispatch an action. */
-    @Test
-    fun tappingMakeAnotherPaymentNavigates() {
-        val actions = mutableListOf<PaymentStatusAction>()
-        var started = false
-        runComposeUiTest {
-            setContent {
-                PaymentStatusScreenContent(
-                    state = PaymentStatusFixtures.contentState(),
-                    onAction = { actions += it },
-                    onStartNewPayment = { started = true },
-                )
-            }
-            onNodeWithTag(PaymentStatusTestTags.NEW_PAYMENT_BUTTON).performScrollTo().performClick()
-        }
-
-        assertTrue(started)
-        assertTrue(actions.isEmpty())
-    }
-
     @Test
     fun errorRendersRetry() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.errorState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.errorState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.ERROR_STATE).assertIsDisplayed()
         onNodeWithTag(PaymentStatusTestTags.RETRY_BUTTON).assertIsDisplayed()
@@ -141,7 +119,6 @@ class PaymentStatusScreenUiTest {
                 PaymentStatusScreenContent(
                     state = PaymentStatusFixtures.errorState(),
                     onAction = { actions += it },
-                    onStartNewPayment = {},
                 )
             }
             onNodeWithTag(PaymentStatusTestTags.RETRY_BUTTON).performClick()
@@ -160,7 +137,6 @@ class PaymentStatusScreenUiTest {
             PaymentStatusScreenContent(
                 PaymentStatusFixtures.contentState(charges = PaymentStatusFixtures.twoCharges()),
                 {},
-                {},
             )
         }
         onNodeWithTag(PaymentStatusTestTags.detailFee(0)).performScrollTo().assertIsDisplayed()
@@ -173,7 +149,6 @@ class PaymentStatusScreenUiTest {
             PaymentStatusScreenContent(
                 PaymentStatusFixtures.contentState(charges = emptyList()),
                 {},
-                {},
             )
         }
         onNodeWithTag(PaymentStatusTestTags.detailFee(0)).assertDoesNotExist()
@@ -184,7 +159,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun contentRendersEveryTimelineStage() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.TIMELINE).performScrollTo().assertIsDisplayed()
         PaymentTimelineStep.entries.forEach { step ->
@@ -195,7 +170,7 @@ class PaymentStatusScreenUiTest {
     @Test
     fun anInFlightPaymentMarksItsFinalStageCurrentAndTheRestDone() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
         }
         assertStageState(PaymentTimelineStep.RequestCreated, PaymentStepState.Done)
         assertStageState(PaymentTimelineStep.ApprovedAtBank, PaymentStepState.Done)
@@ -210,7 +185,6 @@ class PaymentStatusScreenUiTest {
                 PaymentStatusFixtures.contentState(
                     timeline = PaymentStatusFixtures.timeline(completedState = PaymentStepState.Pending),
                 ),
-                {},
                 {},
             )
         }
@@ -229,7 +203,6 @@ class PaymentStatusScreenUiTest {
                         completedAt = SETTLED_AT,
                     ),
                 ),
-                {},
                 {},
             )
         }
@@ -251,7 +224,6 @@ class PaymentStatusScreenUiTest {
                     ),
                 ),
                 {},
-                {},
             )
         }
         assertStageState(PaymentTimelineStep.RequestCreated, PaymentStepState.Done)
@@ -270,7 +242,6 @@ class PaymentStatusScreenUiTest {
                     refreshFailure = PaymentStatusErrorKind.NetworkError,
                 ),
                 {},
-                {},
             )
         }
         onNodeWithTag(PaymentStatusTestTags.REFRESH_FAILURE).performScrollTo().assertIsDisplayed()
@@ -281,10 +252,90 @@ class PaymentStatusScreenUiTest {
     @Test
     fun aSuccessfulReadShowsNoRefreshNotice() = runComposeUiTest {
         setContent {
-            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {}, {})
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
         }
         onNodeWithTag(PaymentStatusTestTags.REFRESH_FAILURE).assertDoesNotExist()
     }
+
+    // region standing orders
+
+    /** Without these rows a mandate is indistinguishable from a payment that happened once. */
+    @Test
+    fun aStandingOrderStatesHowOftenItRepeatsAndWhenItEnds() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(PaymentStatusFixtures.standingOrderState(), {})
+        }
+
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_REPEATS).performScrollTo().assertIsDisplayed()
+        onNodeWithText("Every week").assertIsDisplayed()
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_RECURRING_AMOUNT)
+            .performScrollTo()
+            .assertIsDisplayed()
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_FINAL_PAYMENT)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    /** A mandate with no end date runs until it is stopped, which is an answer, not a gap. */
+    @Test
+    fun aStandingOrderWithNoEndDateDrawsNoLastPaymentRow() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(
+                PaymentStatusFixtures.standingOrderState(finalPaymentAt = ""),
+                {},
+            )
+        }
+
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_REPEATS).performScrollTo().assertIsDisplayed()
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_FINAL_PAYMENT).assertDoesNotExist()
+    }
+
+    /** The date on a mandate is its first payment, never the only one. */
+    @Test
+    fun aStandingOrderLabelsItsDateAsTheFirstPayment() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(PaymentStatusFixtures.standingOrderState(), {})
+        }
+
+        onNodeWithText("First payment").performScrollTo().assertIsDisplayed()
+        onNodeWithText("Scheduled for").assertDoesNotExist()
+    }
+
+    /** A settled mandate is set up. Reading it as sent would claim money has moved. */
+    @Test
+    fun aSettledStandingOrderReadsAsSetUp() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(PaymentStatusFixtures.standingOrderState(), {})
+        }
+
+        onNodeWithTag(PaymentStatusTestTags.STATUS_CHIP).assertIsDisplayed()
+        onNodeWithText("Set up").assertIsDisplayed()
+        onNodeWithText("Completed").assertDoesNotExist()
+    }
+
+    @Test
+    fun aBookedScheduledPaymentReadsAsScheduled() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(PaymentStatusFixtures.scheduledState(), {})
+        }
+
+        onNodeWithText("Scheduled").assertIsDisplayed()
+        onNodeWithText("Completed").assertDoesNotExist()
+    }
+
+    /** A single payment has no mandate, so none of those rows may appear. */
+    @Test
+    fun aSinglePaymentDrawsNoMandateRows() = runComposeUiTest {
+        setContent {
+            PaymentStatusScreenContent(PaymentStatusFixtures.contentState(), {})
+        }
+
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_REPEATS).assertDoesNotExist()
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_FINAL_PAYMENT).assertDoesNotExist()
+        onNodeWithTag(PaymentStatusTestTags.DETAIL_RECURRING_AMOUNT).assertDoesNotExist()
+    }
+
+    // endregion
 }
 
 @OptIn(ExperimentalTestApi::class)

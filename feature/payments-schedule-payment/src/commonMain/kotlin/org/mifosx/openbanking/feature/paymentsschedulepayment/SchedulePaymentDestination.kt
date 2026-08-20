@@ -31,6 +31,10 @@ data object SchedulePaymentDestination
 @Serializable
 data object SchedulePaymentRoute
 
+/** The full list of scheduled payments, reached from the form's "See all". */
+@Serializable
+data object SchedulePaymentHistoryRoute
+
 /**
  * Registers the scheduled-payment flow.
  *
@@ -44,12 +48,23 @@ data object SchedulePaymentRoute
 fun NavGraphBuilder.schedulePaymentGraph(
     onLaunchAuthorisation: (String) -> Unit,
     onNavigateToConsents: () -> Unit,
+    onNavigateToPayment: (String) -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onBack: () -> Unit,
 ) {
     navigation<SchedulePaymentDestination>(startDestination = SchedulePaymentRoute) {
         composableWithStayTransitions<SchedulePaymentRoute> {
             SchedulePaymentScreen(
                 onLaunchAuthorisation = onLaunchAuthorisation,
                 onNavigateToConsents = onNavigateToConsents,
+                onNavigateToPayment = onNavigateToPayment,
+                onNavigateToHistory = onNavigateToHistory,
+            )
+        }
+        composableWithStayTransitions<SchedulePaymentHistoryRoute> {
+            SchedulePaymentHistoryScreen(
+                onBack = onBack,
+                onNavigateToPayment = onNavigateToPayment,
             )
         }
     }

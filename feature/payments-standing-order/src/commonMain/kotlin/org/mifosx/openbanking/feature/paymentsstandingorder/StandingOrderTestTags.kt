@@ -29,8 +29,17 @@ internal object StandingOrderTestTags {
     /** The always-present collapsed summary. Tapping it toggles [DEBTOR_LIST] in and out. */
     const val PAYER_PICKER = "standingOrder:payerPicker"
 
+    /** The picker's collapsed row, which opens and closes it. */
+    const val PAYER_HEADER = "standingOrder:payerHeader"
+
     /** The expanded half of the picker. Absent entirely while it is collapsed. */
     const val DEBTOR_LIST = "standingOrder:debtorList"
+
+    /** The recent standing orders under the form. */
+    const val HISTORY = "standingOrder:history"
+
+    /** The full list of standing orders set up. */
+    const val HISTORY_SCREEN = "standingOrder:historyScreen"
     const val PAYER_BANK_CHOICE = "standingOrder:payerBankChoice"
     const val AMOUNT_CARD = "standingOrder:amountCard"
     const val AMOUNT_BALANCE = "standingOrder:amountBalance"
@@ -153,6 +162,9 @@ internal object StandingOrderTestTags {
 
     /** One payee row, keyed by OBIE `BeneficiaryId`. */
     fun creditorRow(beneficiaryId: String): String = "standingOrder:creditorRow:$beneficiaryId"
+
+    /** One standing-order row, keyed by the bank's payment id. */
+    fun historyRow(paymentId: String): String = "standingOrder:historyRow:$paymentId"
 
     fun frequencyOption(frequency: StandingOrderFrequency): String =
         "standingOrder:frequency:" + frequency.wireValue

@@ -20,6 +20,8 @@ import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeBeneficiariesRepository
+import org.mifosx.openbanking.feature.sendmoney.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.sendmoney.FakePaymentStatusRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyFixtures
 import template.core.base.common.screen.DataFreshness
@@ -61,7 +63,7 @@ class SendMoneyViewModelTest {
         accounts: FakeAccountsOverviewRepository = FakeAccountsOverviewRepository(),
         beneficiaries: FakeBeneficiariesRepository = FakeBeneficiariesRepository(),
         payments: FakeSinglePaymentInitiationRepository = FakeSinglePaymentInitiationRepository(),
-    ) = SendMoneyViewModel(accounts, beneficiaries, payments, registry)
+    ) = sendMoneyViewModel(accounts, beneficiaries, payments, registry)
 
     private fun content(vm: SendMoneyViewModel): SendMoneyUiState.Content =
         assertIs<SendMoneyUiState.Content>(vm.stateFlow.value.uiState)
@@ -986,3 +988,18 @@ class SendMoneyViewModelTest {
 
     // endregion
 }
+
+/** History plays no part in these cases, so both of its collaborators answer with nothing. */
+private fun sendMoneyViewModel(
+    accounts: FakeAccountsOverviewRepository,
+    beneficiaries: FakeBeneficiariesRepository,
+    payments: FakeSinglePaymentInitiationRepository,
+    registry: FakeAccountCapabilityRegistry,
+) = SendMoneyViewModel(
+    accounts,
+    beneficiaries,
+    payments,
+    registry,
+    FakePaymentHistoryRepository(),
+    FakePaymentStatusRepository(),
+)

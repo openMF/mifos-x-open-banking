@@ -17,12 +17,14 @@ import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
+import org.mifosx.openbanking.core.ui.payment.PaymentHistoryEntry
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.OFFERED_CURRENCIES
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderAccountRow
 import org.mifosx.openbanking.feature.paymentsstandingorder.ui.StandingOrderAmountProblem
@@ -458,4 +460,49 @@ object StandingOrderFixtures {
     ): StandingOrderState = StandingOrderState(
         uiState = StandingOrderUiState.Error(kind = kind, supportReference = supportReference),
     )
+
+    /**
+     * Three mandates: one set up, one still being set up, one refused.
+     *
+     * `InitiationCompleted` is the settled answer on this rail, which is what makes the first row
+     * read as set up rather than as money on its way.
+     */
+    fun paymentHistory(): List<PaymentHistoryEntry> = listOf(
+        PaymentHistoryEntry(
+            paymentId = "19916",
+            amountLabel = "£850.00",
+            dateLabel = "14 Aug 2026",
+            status = PaymentStatus.InitiationCompleted,
+            consentType = ConsentType.DomesticStandingOrder,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19917",
+            amountLabel = "£45.00",
+            dateLabel = "9 Aug 2026",
+            status = PaymentStatus.Pending,
+            consentType = ConsentType.DomesticStandingOrder,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19918",
+            amountLabel = "£20.00",
+            dateLabel = "6 Aug 2026",
+            status = PaymentStatus.Rejected,
+            consentType = ConsentType.InternationalStandingOrder,
+        ),
+    )
 }
+
+/**
+ * The same state, carrying the standing orders already set up.
+ *
+ * An extension rather than another `formState` parameter — that function is at the limit detekt
+ * allows.
+ */
+fun StandingOrderState.withPayments(
+    payments: List<PaymentHistoryEntry>,
+): StandingOrderState =
+    copy(uiState = (uiState as StandingOrderUiState.Content).copy(recentPayments = payments))
+
+/** The same state, with more standing orders stored than the form shows. */
+fun StandingOrderState.withMorePayments(): StandingOrderState =
+    copy(uiState = (uiState as StandingOrderUiState.Content).copy(hasMorePayments = true))

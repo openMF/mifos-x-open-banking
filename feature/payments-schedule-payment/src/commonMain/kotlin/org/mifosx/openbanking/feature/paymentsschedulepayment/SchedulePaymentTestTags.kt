@@ -30,6 +30,15 @@ internal object SchedulePaymentTestTags {
 
     /** The expanded half of the picker. Absent entirely while it is collapsed. */
     const val DEBTOR_LIST = "schedulePayment:debtorList"
+
+    /** The picker's collapsed row, which opens and closes it. */
+    const val PAYER_HEADER = "schedulePayment:payerHeader"
+
+    /** The recent scheduled payments under the form. */
+    const val HISTORY = "schedulePayment:history"
+
+    /** The full list of scheduled payments. */
+    const val HISTORY_SCREEN = "schedulePayment:historyScreen"
     const val PAYER_BANK_CHOICE = "schedulePayment:payerBankChoice"
     const val AMOUNT_CARD = "schedulePayment:amountCard"
     const val AMOUNT_BALANCE = "schedulePayment:amountBalance"
@@ -144,4 +153,7 @@ internal object SchedulePaymentTestTags {
 
     /** One payee row, keyed by OBIE `BeneficiaryId`. */
     fun creditorRow(beneficiaryId: String): String = "schedulePayment:creditorRow:$beneficiaryId"
+
+    /** One scheduled-payment row, keyed by the bank's payment id. */
+    fun historyRow(paymentId: String): String = "schedulePayment:historyRow:$paymentId"
 }

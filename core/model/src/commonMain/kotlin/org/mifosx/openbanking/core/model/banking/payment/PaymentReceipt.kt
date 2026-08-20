@@ -65,4 +65,10 @@ data class PaymentReceipt(
     val reference: String = "",
     val debtorIdentification: String = "",
     val charges: List<PaymentCharge> = emptyList(),
+    /** How often a standing order repeats, as the OBIE code — `MNTH`, `WEEK` — or blank. */
+    val frequency: String = "",
+    /** When a standing order stops, or blank when it runs until the customer stops it. */
+    val finalPaymentDateTime: String = "",
+    /** What each repeat after the first is for, formatted, or blank. */
+    val recurringAmountLabel: String = "",
 )

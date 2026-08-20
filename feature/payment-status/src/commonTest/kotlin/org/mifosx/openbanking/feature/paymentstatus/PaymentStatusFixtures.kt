@@ -9,17 +9,21 @@
  */
 package org.mifosx.openbanking.feature.paymentstatus
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentCharge
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusErrorKind
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusState
 import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentStatusUiState
@@ -136,6 +140,10 @@ object PaymentStatusFixtures {
         refreshFailure: PaymentStatusErrorKind? = null,
         statusChangedAt: String = "3 Aug 2026, 14:22",
         scheduledForAt: String = "",
+        consentType: ConsentType? = null,
+        frequency: StandingOrderFrequency? = null,
+        finalPaymentAt: String = "",
+        recurringAmountLabel: String = "",
         timeline: List<PaymentTimelineEntry> = timeline(),
     ): PaymentStatusState = PaymentStatusState(
         paymentId = PAYMENT_ID,
@@ -150,6 +158,10 @@ object PaymentStatusFixtures {
             submittedAt = "3 Aug 2026, 14:22",
             settledAt = settledAt,
             scheduledForAt = scheduledForAt,
+            consentType = consentType,
+            frequency = frequency,
+            finalPaymentAt = finalPaymentAt,
+            recurringAmountLabel = recurringAmountLabel,
             statusChangedAt = statusChangedAt,
             charges = charges,
             lastCheckedAt = lastCheckedAt,
@@ -168,10 +180,13 @@ object PaymentStatusFixtures {
      * be reporting today as the settlement date of something that has not happened.
      *
      * The status is `InitiationCompleted` (`INCO`), which is what both scheduled rails actually
-     * return on a read-back, and it stays `InProgress` until the bank executes.
+     * return on a read-back. On this rail that is the bank's final word — the instruction is
+     * booked — so the disposition is terminal and the word for it is "Scheduled", not "Sent".
      */
     fun scheduledState(): PaymentStatusState = contentState(
         status = PaymentStatus.InitiationCompleted,
+        disposition = PaymentDisposition.TerminalSuccess,
+        consentType = ConsentType.DomesticScheduledPayment,
         settledAt = "",
         scheduledForAt = "14 Aug 2026",
         statusChangedAt = "",
@@ -179,6 +194,28 @@ object PaymentStatusFixtures {
         // The final stage is Pending, not Current. `inFlightStepState` maps INCO that way in
         // production, and the default fixture's "Settling now" would have this golden assert the
         // opposite of what the app does — a payment that has not reached its date is not settling.
+        timeline = timeline(completedState = PaymentStepState.Pending),
+    )
+
+    /**
+     * A standing order, read back after the bank set it up.
+     *
+     * `scheduledForAt` is the FIRST payment rather than the only one, and the mandate rows beside it
+     * are what stop the screen reading as a payment that happened once.
+     */
+    fun standingOrderState(
+        finalPaymentAt: String = "4 Dec 2026",
+    ): PaymentStatusState = contentState(
+        status = PaymentStatus.InitiationCompleted,
+        disposition = PaymentDisposition.TerminalSuccess,
+        consentType = ConsentType.DomesticStandingOrder,
+        settledAt = "",
+        scheduledForAt = "13 Aug 2026",
+        statusChangedAt = "",
+        charges = emptyList(),
+        frequency = StandingOrderFrequency.Weekly,
+        finalPaymentAt = finalPaymentAt,
+        recurringAmountLabel = "£1.00",
         timeline = timeline(completedState = PaymentStepState.Pending),
     )
 
@@ -271,4 +308,11 @@ class FakePaymentHistoryRepository(
         errorKind: String,
         errorDescription: String,
     ) = Unit
+
+    override fun observeHistory(
+        types: Set<ConsentType>,
+        limit: Int,
+    ): Flow<List<PaymentHistoryRow>> = flowOf(emptyList())
+
+    override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) = Unit
 }

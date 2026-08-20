@@ -12,6 +12,7 @@ package org.mifosx.openbanking.core.data.banking.mapper
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
@@ -217,5 +218,47 @@ class PaymentHistoryMapperTest {
         val e2 = draft().toFailureEntity("NetworkError", "Connection failed")
 
         assertTrue(e1.id != e2.id)
+    }
+
+    @Test
+    fun historyRowCarriesTheStoredPaymentThrough() {
+        val row = receipt().toEntity(draft()).toHistoryRow()
+
+        assertEquals("19901", row?.paymentId)
+        assertEquals(ConsentType.DomesticSinglePayment, row?.consentType)
+        assertEquals(10_000L, row?.amountMinorUnits)
+        assertEquals("GBP", row?.currency)
+        assertEquals("Mr Dharani C", row?.creditorName)
+    }
+
+    @Test
+    fun historyRowIsNullForAPaymentThatNeverReachedTheBank() {
+        val row = draft().toFailureEntity("NetworkError", "Connection failed").toHistoryRow()
+
+        assertNull(row)
+    }
+
+    @Test
+    fun historyRowIsNullForAnUnrecognisedPaymentType() {
+        val entity = receipt().toEntity(draft()).copy(paymentType = "sepa_instant")
+
+        assertNull(entity.toHistoryRow())
+    }
+
+    @Test
+    fun historyRowResolvesTheStoredStatusName() {
+        val entity = receipt().toEntity(draft()).copy(status = "PartiallyAccepted")
+
+        assertEquals(PaymentStatus.PartiallyAccepted, entity.toHistoryRow()?.status)
+    }
+
+    @Test
+    fun historyRowResolvesAWireCodeStatusToo() {
+        val entity = receipt().toEntity(draft()).copy(status = "ACCC")
+
+        assertEquals(
+            PaymentStatus.AcceptedCreditSettlementCompleted,
+            entity.toHistoryRow()?.status,
+        )
     }
 }

@@ -16,11 +16,13 @@ import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.ui.payment.PaymentHistoryEntry
 import org.mifosx.openbanking.feature.sendmoney.ui.OFFERED_CURRENCIES
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAccountRow
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAmountProblem
@@ -269,6 +271,8 @@ object SendMoneyFixtures {
         instructedCurrency: String = "GBP",
         payeesFailed: Boolean = false,
         payeesLoading: Boolean = false,
+        recentPayments: List<PaymentHistoryEntry> = emptyList(),
+        hasMorePayments: Boolean = false,
     ): SendMoneyState = SendMoneyState(
         uiState = SendMoneyUiState.Content(
             step = SendMoneyStep.Form,
@@ -311,6 +315,33 @@ object SendMoneyFixtures {
             amountProblem = problem,
             availableBalanceMinorUnits = 2_153_092L,
             availableBalanceLabel = if (debtorAccountId == null) "" else "£21,530.92",
+            recentPayments = recentPayments,
+            hasMorePayments = hasMorePayments,
+        ),
+    )
+
+    /** Three payments on the single-payment rails: one settled, one in flight, one refused. */
+    fun paymentHistory(): List<PaymentHistoryEntry> = listOf(
+        PaymentHistoryEntry(
+            paymentId = "19901",
+            amountLabel = "£850.00",
+            dateLabel = "14 Aug 2026",
+            status = PaymentStatus.AcceptedCreditSettlementCompleted,
+            consentType = ConsentType.DomesticSinglePayment,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19902",
+            amountLabel = "£45.00",
+            dateLabel = "9 Aug 2026",
+            status = PaymentStatus.AcceptedSettlementInProcess,
+            consentType = ConsentType.DomesticSinglePayment,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19903",
+            amountLabel = "£20.00",
+            dateLabel = "6 Aug 2026",
+            status = PaymentStatus.Rejected,
+            consentType = ConsentType.InternationalSinglePayment,
         ),
     )
 

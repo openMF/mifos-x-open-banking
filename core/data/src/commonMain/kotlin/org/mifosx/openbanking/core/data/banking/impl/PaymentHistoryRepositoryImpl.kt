@@ -9,15 +9,19 @@
  */
 package org.mifosx.openbanking.core.data.banking.impl
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.mapper.toConsentType
 import org.mifosx.openbanking.core.data.banking.mapper.toEntity
 import org.mifosx.openbanking.core.data.banking.mapper.toFailureEntity
+import org.mifosx.openbanking.core.data.banking.mapper.toHistoryRow
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
@@ -25,13 +29,7 @@ import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import kotlin.time.Clock
 
 /**
- * Writes payment outcomes, and reads two lookups back out of them.
- *
- * It no longer reads anything for display. The hub's Recent list was the only reader, and with it
- * went `observeRecent` and `refreshStatuses` — the latter took the `Pisp` and `OAuth` collaborators
- * with it, since re-reading a stored payment's status from the bank was the only thing they served.
- * What survives is the record itself: the rail a payment was made on, and the two stage timestamps
- * OBIE does not report.
+ * Writes payment outcomes and reads them back for the feature history lists.
  *
  * Stateless — the only thing it holds are its injected collaborators.
  */
@@ -112,4 +110,21 @@ internal class PaymentHistoryRepositoryImpl(
         dao.observeById(paymentId).first()?.let {
             PaymentStageTimestamps(approvedAt = it.approvedAt, submittedAt = it.submittedAt)
         }
+
+    /** Rows the mapper cannot resolve are dropped rather than shown as an unknown product. */
+    override fun observeHistory(
+        types: Set<ConsentType>,
+        limit: Int,
+    ): Flow<List<PaymentHistoryRow>> =
+        dao.observeByType(types.map { it.wireValue }, limit)
+            .map { rows -> rows.mapNotNull { it.toHistoryRow() } }
+
+    override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) {
+        dao.updateStatus(
+            paymentId = paymentId,
+            status = receipt.status.name,
+            settledAt = receipt.settlementDateTime.takeIf { it.isNotBlank() },
+            syncedAt = Clock.System.now().toString(),
+        )
+    }
 }

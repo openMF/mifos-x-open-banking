@@ -28,4 +28,20 @@
     <string name="core_ui_amount_label">Amount</string>
     <string name="core_ui_amount_placeholder">0.00</string>
     <string name="core_ui_amount_available">You have %1$s available</string>
+
+    <!-- Status words. Three rails, three vocabularies: money moves once, an instruction is set up. -->
+    <string name="core_ui_payment_status_sending">Sending</string>
+    <string name="core_ui_payment_status_sent">Sent</string>
+    <string name="core_ui_payment_status_scheduling">Scheduling</string>
+    <string name="core_ui_payment_status_scheduled">Scheduled</string>
+    <string name="core_ui_payment_status_setting_up">Setting up</string>
+    <string name="core_ui_payment_status_set_up">Set up</string>
+    <string name="core_ui_payment_status_not_sent">Not sent</string>
+
+    <string name="core_ui_payment_history_title">Payments</string>
+    <string name="core_ui_payment_history_empty">No payments yet.</string>
+    <string name="core_ui_payment_history_see_all">See all</string>
+    <string name="core_ui_payment_history_failed">Your bank did not accept this payment</string>
+    <!-- Spoken on a row, which otherwise reads as an amount and a date with no hint that it opens. -->
+    <string name="core_ui_payment_history_open">Show this payment</string>
 </resources>

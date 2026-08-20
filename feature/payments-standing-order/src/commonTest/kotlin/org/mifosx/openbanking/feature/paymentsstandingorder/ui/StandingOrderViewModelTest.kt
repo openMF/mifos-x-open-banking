@@ -19,6 +19,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeBeneficiariesRepository
+import org.mifosx.openbanking.feature.paymentsstandingorder.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.paymentsstandingorder.FakePaymentStatusRepository
 import org.mifosx.openbanking.feature.paymentsstandingorder.FakeStandingOrderInitiationRepository
 import org.mifosx.openbanking.feature.paymentsstandingorder.StandingOrderFixtures
 import template.core.base.network.NetworkError
@@ -75,6 +77,8 @@ class StandingOrderViewModelTest {
         beneficiariesRepository = payees,
         paymentInitiationRepository = payments,
         capabilityRegistry = FakeAccountCapabilityRegistry(),
+        paymentHistoryRepository = FakePaymentHistoryRepository(),
+        paymentStatusRepository = FakePaymentStatusRepository(),
         clock = clock,
     )
 

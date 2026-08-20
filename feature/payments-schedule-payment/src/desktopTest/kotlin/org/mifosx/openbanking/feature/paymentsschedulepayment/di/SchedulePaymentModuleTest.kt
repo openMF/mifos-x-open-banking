@@ -18,6 +18,8 @@ import org.koin.dsl.module
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
+import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
@@ -25,6 +27,9 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
+import org.mifosx.openbanking.feature.paymentsschedulepayment.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.paymentsschedulepayment.FakePaymentStatusRepository
+import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentHistoryViewModel
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentViewModel
 import template.core.base.common.screen.ScreenState
 import template.core.base.network.NetworkError
@@ -94,6 +99,8 @@ class SchedulePaymentModuleTest {
                 override fun clear() = Unit
             }
         }
+        single<PaymentHistoryRepository> { FakePaymentHistoryRepository() }
+        single<PaymentStatusRepository> { FakePaymentStatusRepository() }
     }
 
     /**
@@ -108,5 +115,12 @@ class SchedulePaymentModuleTest {
         val koin = koinApplication { modules(stubs, SchedulePaymentModule) }.koin
 
         assertNotNull(koin.get<SchedulePaymentViewModel>())
+    }
+
+    @Test
+    fun theHistoryViewModelResolvesFromTheGraph() {
+        val koin = koinApplication { modules(stubs, SchedulePaymentModule) }.koin
+
+        assertNotNull(koin.get<SchedulePaymentHistoryViewModel>())
     }
 }

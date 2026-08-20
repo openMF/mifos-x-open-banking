@@ -51,6 +51,8 @@ import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
+import org.mifosx.openbanking.core.ui.payment.MifosPaymentHistoryList
+import org.mifosx.openbanking.core.ui.payment.toRowUi
 import org.mifosx.openbanking.feature.paymentsstandingorder.components.DateField
 import org.mifosx.openbanking.feature.paymentsstandingorder.components.FrequencyField
 import org.mifosx.openbanking.feature.paymentsstandingorder.components.StandingOrderDatePickerDialog
@@ -76,6 +78,7 @@ import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_first_payment_helper
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_first_payment_label
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_form_trust_note
+import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_history_title
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_manual_account_number
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_manual_account_number_error
 import org.mifosx.openbanking.feature.paymentsstandingorder.generated.resources.feature_payments_standing_order_manual_confirm
@@ -114,9 +117,13 @@ internal fun StandingOrderContent(
     state: StandingOrderUiState.Content,
     onAction: (StandingOrderAction) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPayment: (String) -> Unit = {},
+    onShowAllPayments: () -> Unit = {},
 ) {
     when (state.step) {
-        StandingOrderStep.Form -> StandingOrderFormPage(state, onAction, modifier)
+        StandingOrderStep.Form ->
+            StandingOrderFormPage(state, onAction, onOpenPayment, onShowAllPayments, modifier)
+
         StandingOrderStep.Review -> StandingOrderReviewPage(state, onAction, modifier)
     }
 }
@@ -133,6 +140,8 @@ internal fun StandingOrderContent(
 private fun StandingOrderFormPage(
     state: StandingOrderUiState.Content,
     onAction: (StandingOrderAction) -> Unit,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -166,6 +175,7 @@ private fun StandingOrderFormPage(
                 // flow rather than tucked under the amount as an afterthought.
                 DateSection(state, onAction)
                 AmountSection(state, onAction)
+                RecentPaymentsSection(state, onOpenPayment, onShowAllPayments)
             }
         }
         FormActions(state, onAction)
@@ -228,6 +238,30 @@ private fun DateSection(
     }
 }
 
+/**
+ * The standing orders already set up from here.
+ *
+ * Absent rather than empty until there is one: this sits under a form the customer came to fill in,
+ * and a notice saying they have set up nothing is not worth the space it takes on first use.
+ */
+@Composable
+private fun RecentPaymentsSection(
+    state: StandingOrderUiState.Content,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
+) {
+    if (state.recentPayments.isEmpty()) return
+
+    MifosPaymentHistoryList(
+        payments = state.recentPayments.map { it.toRowUi() },
+        title = stringResource(Res.string.feature_payments_standing_order_history_title),
+        onPaymentClick = onOpenPayment,
+        onSeeAll = onShowAllPayments.takeIf { state.hasMorePayments },
+        testTag = StandingOrderTestTags.HISTORY,
+        rowTestTag = StandingOrderTestTags::historyRow,
+    )
+}
+
 @Composable
 private fun PayerSection(
     state: StandingOrderUiState.Content,
@@ -252,6 +286,9 @@ private fun PayerSection(
             } else {
                 ""
             },
+            headerTestTag = StandingOrderTestTags.PAYER_HEADER,
+            listTestTag = StandingOrderTestTags.DEBTOR_LIST,
+            rowTestTag = StandingOrderTestTags::debtorRow,
             extraOptions = {
                 MifosBankChoiceRow(
                     selected = state.letBankChoosePayer,
@@ -338,6 +375,7 @@ private fun PayeeSection(
             ),
             payNewTestTag = StandingOrderTestTags.MANUAL_ENTRY_BUTTON,
             loadingTestTag = StandingOrderTestTags.PAYEES_LOADING,
+            payeeTestTag = StandingOrderTestTags::creditorRow,
         )
 
         if (state.manualEntryVisible) {

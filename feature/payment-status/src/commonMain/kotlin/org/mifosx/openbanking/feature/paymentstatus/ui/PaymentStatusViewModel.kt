@@ -20,10 +20,13 @@ import org.mifosx.openbanking.core.common.formatTimeOfDay
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.util.toThrowable
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
+import org.mifosx.openbanking.core.model.banking.payment.dispositionFor
 import template.core.base.network.NetworkResult
 import template.core.base.ui.viewmodel.BaseViewModel
 import kotlin.time.Clock
@@ -84,7 +87,8 @@ class PaymentStatusViewModel(
             when (val result = repository.paymentStatus(state.paymentId)) {
                 is NetworkResult.Success -> {
                     val stages = paymentHistoryRepository.stageTimestampsOf(state.paymentId)
-                    updateState { copy(uiState = result.data.toContent(stages)) }
+                    val type = paymentHistoryRepository.consentTypeOf(state.paymentId)
+                    updateState { copy(uiState = result.data.toContent(stages, type)) }
                 }
 
                 is NetworkResult.Error -> {
@@ -111,13 +115,18 @@ class PaymentStatusViewModel(
      */
     private fun PaymentReceipt.toContent(
         stages: PaymentStageTimestamps?,
+        consentType: ConsentType?,
     ): PaymentStatusUiState.Content {
         val settled = settlementDateTime.formatted()
         val statusChanged = statusUpdateDateTime.formatted()
         return PaymentStatusUiState.Content(
             paymentId = domesticPaymentId,
             status = status,
-            disposition = status.disposition,
+            // Rail-aware: `INCO` is the bank's final word on a mandate, and reading it as still in
+            // flight would leave a live standing order saying it is being set up for ever.
+            disposition = consentType
+                ?.let { status.dispositionFor(it) }
+                ?: status.disposition,
             amountLabel = amountLabel,
             creditorName = creditorName,
             reference = reference,
@@ -132,6 +141,12 @@ class PaymentStatusViewModel(
             // Guarded exactly as `settledAt` is. Unguarded, a blank wire value went through
             // `formatDateTime`, which returns its input unparsed — so a blank became a blank, and
             // whatever it returned drove the conditional row rather than the fact of the absence.
+            consentType = consentType,
+            frequency = StandingOrderFrequency.fromWire(frequency),
+            finalPaymentAt = finalPaymentDateTime.takeIf { it.isNotBlank() }
+                ?.let(::formatIsoDate)
+                .orEmpty(),
+            recurringAmountLabel = recurringAmountLabel,
             statusChangedAt = statusChanged,
             charges = charges,
             lastCheckedAt = formatTimeOfDay(clock.now(), timeZone),

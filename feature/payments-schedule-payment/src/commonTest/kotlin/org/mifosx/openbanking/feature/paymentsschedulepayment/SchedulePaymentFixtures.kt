@@ -17,11 +17,13 @@ import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.ui.payment.PaymentHistoryEntry
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.OFFERED_CURRENCIES
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentAccountRow
 import org.mifosx.openbanking.feature.paymentsschedulepayment.ui.SchedulePaymentAmountProblem
@@ -292,6 +294,7 @@ object SchedulePaymentFixtures {
         instructedCurrency: String = "GBP",
         payeesFailed: Boolean = false,
         payeesLoading: Boolean = false,
+        recentPayments: List<PaymentHistoryEntry> = emptyList(),
     ): SchedulePaymentState = SchedulePaymentState(
         uiState = SchedulePaymentUiState.Content(
             step = SchedulePaymentStep.Form,
@@ -334,6 +337,7 @@ object SchedulePaymentFixtures {
             amountProblem = problem,
             availableBalanceMinorUnits = 2_153_092L,
             availableBalanceLabel = if (debtorAccountId == null) "" else "£21,530.92",
+            recentPayments = recentPayments,
             today = TODAY,
             executionDate = executionDate,
             executionDateLabel = executionDate?.let { EXECUTION_DATE_LABEL }.orEmpty(),
@@ -454,4 +458,38 @@ object SchedulePaymentFixtures {
     ): SchedulePaymentState = SchedulePaymentState(
         uiState = SchedulePaymentUiState.Error(kind = kind, supportReference = supportReference),
     )
+
+    /**
+     * Three scheduled payments: one set up, one still being set up, one refused.
+     *
+     * `InitiationCompleted` is the settled answer on this rail, and means the instruction is booked
+     * for its due date — not that the money has moved.
+     */
+    fun paymentHistory(): List<PaymentHistoryEntry> = listOf(
+        PaymentHistoryEntry(
+            paymentId = "19919",
+            amountLabel = "£850.00",
+            dateLabel = "14 Aug 2026",
+            status = PaymentStatus.InitiationCompleted,
+            consentType = ConsentType.DomesticScheduledPayment,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19920",
+            amountLabel = "£45.00",
+            dateLabel = "9 Aug 2026",
+            status = PaymentStatus.Pending,
+            consentType = ConsentType.DomesticScheduledPayment,
+        ),
+        PaymentHistoryEntry(
+            paymentId = "19921",
+            amountLabel = "£20.00",
+            dateLabel = "6 Aug 2026",
+            status = PaymentStatus.Rejected,
+            consentType = ConsentType.InternationalScheduledPayment,
+        ),
+    )
 }
+
+/** The same state, with more scheduled payments stored than the form shows. */
+fun SchedulePaymentState.withMorePayments(): SchedulePaymentState =
+    copy(uiState = (uiState as SchedulePaymentUiState.Content).copy(hasMorePayments = true))

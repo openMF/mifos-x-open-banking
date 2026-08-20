@@ -438,6 +438,18 @@ private class FakePaymentHistoryDao : PaymentHistoryDao {
     override fun observeById(paymentId: String): Flow<PaymentHistoryEntity?> =
         MutableStateFlow(null)
 
+    override fun observeByType(
+        types: List<String>,
+        limit: Int,
+    ): Flow<List<PaymentHistoryEntity>> = MutableStateFlow(emptyList())
+
+    override suspend fun updateStatus(
+        paymentId: String,
+        status: String,
+        settledAt: String?,
+        syncedAt: String,
+    ) = Unit
+
     override suspend fun upsert(entity: PaymentHistoryEntity) {}
 
     override suspend fun clear() {

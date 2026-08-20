@@ -26,6 +26,9 @@ import org.mifosx.openbanking.core.common.parseMinorUnits
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
+import org.mifosx.openbanking.core.data.banking.PaymentHistoryFeed
+import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.banking.ScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.core.data.util.toThrowable
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
@@ -33,13 +36,16 @@ import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import org.mifosx.openbanking.core.model.hsbcProduct.HsbcProductCapability
 import org.mifosx.openbanking.core.model.hsbcProduct.HsbcProductType
 import org.mifosx.openbanking.core.ui.payee.initialsOf
+import org.mifosx.openbanking.core.ui.payment.toHistoryEntry
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
 import template.core.base.common.screen.combineContent
@@ -82,6 +88,17 @@ private fun String.isPlausibleIban(): Boolean = normaliseIban().let { candidate 
  * so neither currency is offered and both are normalised back to this whenever the rail is chosen.
  */
 private const val DOMESTIC_CURRENCY = "GBP"
+
+/** Both scheduled rails: the history is one list, whichever rail a payment was scheduled on. */
+private val SCHEDULED_PAYMENT_TYPES = setOf(
+    ConsentType.DomesticScheduledPayment,
+    ConsentType.InternationalScheduledPayment,
+)
+
+private const val HISTORY_LIMIT = 5
+
+/** One more than is shown, which is what answers whether "See all" has anything behind it. */
+private const val HISTORY_PROBE_LIMIT = HISTORY_LIMIT + 1
 
 /**
  * How many words an avatar caption keeps before the rest becomes an initial.
@@ -126,10 +143,14 @@ class SchedulePaymentViewModel(
      * clock would assert a different window every day it ran — and the midnight-rollover behaviour
      * could not be exercised at all.
      */
+    paymentHistoryRepository: PaymentHistoryRepository,
+    paymentStatusRepository: PaymentStatusRepository,
     private val clock: Clock = Clock.System,
 ) : BaseViewModel<SchedulePaymentState, SchedulePaymentEvent, SchedulePaymentAction>(
     initialState = SchedulePaymentState(),
 ) {
+
+    private val historyFeed = PaymentHistoryFeed(paymentHistoryRepository, paymentStatusRepository)
 
     /** Everything the PSU has entered. Held apart from loaded data so a refresh cannot clear it. */
     private data class Form(
@@ -190,6 +211,7 @@ class SchedulePaymentViewModel(
     private val form = MutableStateFlow(Form(today = todayUtc(clock)))
     private val phase = MutableStateFlow<Phase>(Phase.Form)
     private val selectedAccountId = MutableStateFlow("")
+    private val history = MutableStateFlow<List<PaymentHistoryRow>>(emptyList())
 
     /**
      * Payees for the chosen payer, re-fetched whenever that changes.
@@ -232,8 +254,18 @@ class SchedulePaymentViewModel(
             .onEach { beneficiariesScreen.value = it }
             .launchIn(viewModelScope)
 
-        combine(accountsScreen, beneficiariesScreen, form, phase) { accounts, payees, entered, current ->
-            render(accounts, payees, entered, current)
+        historyFeed.rows(SCHEDULED_PAYMENT_TYPES, HISTORY_PROBE_LIMIT, viewModelScope)
+            .onEach { rows -> history.value = rows }
+            .launchIn(viewModelScope)
+
+        combine(
+            accountsScreen,
+            beneficiariesScreen,
+            form,
+            phase,
+            history,
+        ) { accounts, payees, entered, current, payments ->
+            render(accounts, payees, entered, current, payments)
         }
             .onEach { rendered -> updateState { copy(uiState = rendered) } }
             .launchIn(viewModelScope)
@@ -660,6 +692,7 @@ class SchedulePaymentViewModel(
         payees: ScreenState<List<BeneficiaryItem>>,
         entered: Form,
         current: Phase,
+        payments: List<PaymentHistoryRow>,
     ): SchedulePaymentUiState = when (current) {
         is Phase.Submitting -> SchedulePaymentUiState.Submitting(
             stage = current.stage,
@@ -669,15 +702,16 @@ class SchedulePaymentViewModel(
         )
 
         is Phase.Error -> SchedulePaymentUiState.Error(current.kind, current.supportReference)
-        Phase.Form -> renderForm(accounts, payees, entered)
+        Phase.Form -> renderForm(accounts, payees, entered, payments)
     }
 
     private fun renderForm(
         accounts: ScreenState<List<AccountWithBalance>>,
         payees: ScreenState<List<BeneficiaryItem>>,
         entered: Form,
+        payments: List<PaymentHistoryRow>,
     ): SchedulePaymentUiState = when (accounts) {
-        is ScreenState.Content -> content(accounts.data, payees, entered)
+        is ScreenState.Content -> content(accounts.data, payees, entered, payments)
         is ScreenState.Error -> SchedulePaymentUiState.Error(classifySchedulePaymentError(accounts.error), null)
         is ScreenState.NoNetwork -> SchedulePaymentUiState.Error(SchedulePaymentErrorKind.NetworkError, null)
         ScreenState.Unauthenticated -> SchedulePaymentUiState.Error(SchedulePaymentErrorKind.TokenExpired, null)
@@ -688,6 +722,7 @@ class SchedulePaymentViewModel(
         accounts: List<AccountWithBalance>,
         payees: ScreenState<List<BeneficiaryItem>>,
         entered: Form,
+        payments: List<PaymentHistoryRow>,
     ): SchedulePaymentUiState.Content {
         // Every non-Content state used to flatten to an empty list here, and renderForm switches
         // only on the accounts stream — so a refused beneficiaries read rendered as "no saved
@@ -723,6 +758,8 @@ class SchedulePaymentViewModel(
             amountInput = entered.amountInput,
             amountLabel = amountLabel(entered),
             instructedCurrency = entered.instructedCurrency,
+            recentPayments = payments.take(HISTORY_LIMIT).map { it.toHistoryEntry() },
+            hasMorePayments = payments.size > HISTORY_LIMIT,
             payeesFailed = payees.isFailure(),
             // Gated on a payer, not read straight off the stream. beneficiariesScreen is seeded
             // Loading and the blank-id branch short-circuits to Content(emptyList()), so between

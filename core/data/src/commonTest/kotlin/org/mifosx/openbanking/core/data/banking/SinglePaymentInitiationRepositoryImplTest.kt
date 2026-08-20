@@ -21,6 +21,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.data.TestSigningKey
@@ -32,6 +34,7 @@ import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
@@ -197,6 +200,11 @@ class SinglePaymentInitiationRepositoryImplTest {
         ) = Unit
         override suspend fun consentTypeOf(paymentId: String): ConsentType? = type
         override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
+        override fun observeHistory(
+            types: Set<ConsentType>,
+            limit: Int,
+        ): Flow<List<PaymentHistoryRow>> = flowOf(emptyList())
+        override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) = Unit
     }
 
     private fun sessionHoldingAPsuToken(

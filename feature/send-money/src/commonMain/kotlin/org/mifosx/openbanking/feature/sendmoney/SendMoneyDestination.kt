@@ -24,6 +24,10 @@ data object SendMoneyDestination
 @Serializable
 data object SendMoneyRoute
 
+/** The full list of payments sent, reached from the form's "See all". */
+@Serializable
+data object SendMoneyHistoryRoute
+
 /**
  * Registers the Pay tab.
  *
@@ -34,12 +38,23 @@ data object SendMoneyRoute
 fun NavGraphBuilder.sendMoneyGraph(
     onLaunchAuthorisation: (String) -> Unit,
     onNavigateToConsents: () -> Unit,
+    onNavigateToPayment: (String) -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onBack: () -> Unit,
 ) {
     navigation<SendMoneyDestination>(startDestination = SendMoneyRoute) {
         composableWithStayTransitions<SendMoneyRoute> {
             SendMoneyScreen(
                 onLaunchAuthorisation = onLaunchAuthorisation,
                 onNavigateToConsents = onNavigateToConsents,
+                onNavigateToPayment = onNavigateToPayment,
+                onNavigateToHistory = onNavigateToHistory,
+            )
+        }
+        composableWithStayTransitions<SendMoneyHistoryRoute> {
+            SendMoneyHistoryScreen(
+                onBack = onBack,
+                onNavigateToPayment = onNavigateToPayment,
             )
         }
     }

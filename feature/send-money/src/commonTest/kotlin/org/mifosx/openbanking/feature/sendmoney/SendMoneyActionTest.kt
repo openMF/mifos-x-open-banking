@@ -67,7 +67,7 @@ class SendMoneyActionTest {
     fun tappingTheExpandedPayerClosesThePicker() {
         val actions = captureActions(
             SendMoneyFixtures.formState(payerPickerExpanded = true),
-            SendMoneyTestTags.PAYER_PICKER,
+            SendMoneyTestTags.PAYER_HEADER,
         )
 
         assertEquals(listOf(SendMoneyAction.TogglePayerPicker), actions)

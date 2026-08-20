@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.ui.scaffold.KptScaffold
 import org.mifosx.openbanking.core.ui.scaffold.rememberKptPullToRefreshState
 import org.mifosx.openbanking.feature.paymentstatus.generated.resources.Res
@@ -46,19 +45,18 @@ import org.mifosx.openbanking.feature.paymentstatus.ui.isReading
 @Composable
 internal fun PaymentStatusScreen(
     onBack: () -> Unit,
-    onStartNewPayment: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PaymentStatusViewModel = koinViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
 
-    // The disposition, or null while the status is still being read or could not be read at all.
-    // Null is a real case rather than a default: before the bank answers there is no status, and
-    // inventing one would put a colour and a word on the screen that nothing supports.
-    val disposition = (state.uiState as? PaymentStatusUiState.Content)?.disposition
+    // Null while the status is still being read or could not be read at all. Null is a real case
+    // rather than a default: before the bank answers there is no status, and inventing one would
+    // put a colour and a word on the screen that nothing supports.
+    val content = state.uiState as? PaymentStatusUiState.Content
 
     KptScaffold(
-        topBar = { PaymentStatusTopBar(disposition = disposition, onBack = onBack) },
+        topBar = { PaymentStatusTopBar(content = content, onBack = onBack) },
         pullToRefreshState = rememberKptPullToRefreshState(
             isEnabled = true,
             isRefreshing = state.uiState.isReading,
@@ -69,7 +67,6 @@ internal fun PaymentStatusScreen(
         PaymentStatusScreenContent(
             state = state,
             onAction = viewModel::trySendAction,
-            onStartNewPayment = onStartNewPayment,
         )
     }
 }
@@ -91,13 +88,17 @@ internal fun PaymentStatusScreen(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PaymentStatusTopBar(disposition: PaymentDisposition?, onBack: () -> Unit) {
+internal fun PaymentStatusTopBar(
+    content: PaymentStatusUiState.Content?,
+    onBack: () -> Unit,
+) {
+    val disposition = content?.disposition
     val colours = disposition?.let { dispositionColours(it) }
     TopAppBar(
         title = {
-            if (disposition != null) {
+            if (content != null && disposition != null) {
                 Text(
-                    text = stringResource(disposition.labelResource()),
+                    text = statusWord(content.status, content.consentType, disposition),
                     modifier = Modifier.testTag(PaymentStatusTestTags.APP_BAR_STATUS),
                 )
             }
@@ -125,7 +126,6 @@ internal fun PaymentStatusTopBar(disposition: PaymentDisposition?, onBack: () ->
 internal fun PaymentStatusScreenContent(
     state: PaymentStatusState,
     onAction: (PaymentStatusAction) -> Unit,
-    onStartNewPayment: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (val current = state.uiState) {
@@ -134,7 +134,6 @@ internal fun PaymentStatusScreenContent(
         is PaymentStatusUiState.Content -> PaymentStatusContent(
             state = current,
             onAction = onAction,
-            onStartNewPayment = onStartNewPayment,
             modifier = modifier,
         )
 

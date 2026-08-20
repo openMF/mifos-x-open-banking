@@ -130,4 +130,16 @@ internal object SendMoneyTestTags {
 
     /** One payee row, keyed by OBIE `BeneficiaryId`. */
     fun creditorRow(beneficiaryId: String): String = "sendMoney:creditorRow:$beneficiaryId"
+
+    /** The payer picker's collapsed row, which opens and closes it. */
+    const val PAYER_HEADER = "sendMoney:payerHeader"
+
+    /** The recent-payments list under the form. */
+    const val HISTORY = "sendMoney:history"
+
+    /** The full list of payments sent. */
+    const val HISTORY_SCREEN = "sendMoney:historyScreen"
+
+    /** One payment row, keyed by the bank's payment id. */
+    fun historyRow(paymentId: String): String = "sendMoney:historyRow:$paymentId"
 }

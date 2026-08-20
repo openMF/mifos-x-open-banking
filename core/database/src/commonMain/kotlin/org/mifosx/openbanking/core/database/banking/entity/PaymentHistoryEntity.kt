@@ -13,7 +13,7 @@ import androidx.room3.Entity
 import androidx.room3.PrimaryKey
 
 /**
- * Local snapshot of a submitted or failed payment — at most 5 rows, ordered by recency.
+ * Local record of a submitted or failed payment. The table is unbounded and is emptied at logout.
  *
  * Submitted payments carry the bank's [paymentId] and [status]; pre-submission failures carry an
  * [errorKind] and [errorDescription] instead. Only in-flight submitted payments are refreshed via
@@ -28,7 +28,8 @@ import androidx.room3.PrimaryKey
  *   rails; it was called `domesticPaymentId` until v5, which was never true of an international row.
  * @property errorKind The failure reason label (e.g. "InsufficientFunds"), or null on success.
  * @property errorDescription Human-readable failure message.
- * @property status The OBIE status code (ACSP, ACSC, RJCT…), or null for pre-submission failures.
+ * @property status The `PaymentStatus` name (e.g. `AcceptedSettlementInProcess`), not the OBIE wire
+ *   code, or null for pre-submission failures.
  * @property approvedAt When the PSU's authorisation came back and the consent read `AUTH`.
  * @property submittedAt When the payment POST succeeded.
  * @property chargeBearer International only; null on a domestic row.

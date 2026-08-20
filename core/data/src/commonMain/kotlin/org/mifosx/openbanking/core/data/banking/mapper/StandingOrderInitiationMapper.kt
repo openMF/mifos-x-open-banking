@@ -169,6 +169,17 @@ internal fun DomesticStandingOrderResponse.toStandingOrderReceipt(): PaymentRece
         reference = initiation?.remittanceInformation?.unstructured?.firstOrNull().orEmpty(),
         debtorIdentification = initiation?.debtorAccount?.identification.orEmpty(),
         charges = data?.charges.orEmpty().map { it.toStandingOrderPaymentCharge() },
+        frequency = initiation?.mandateRelatedInformation?.frequency?.type.orEmpty(),
+        finalPaymentDateTime = initiation
+            ?.mandateRelatedInformation
+            ?.finalPaymentDateTime
+            .orEmpty(),
+        recurringAmountLabel = initiation?.recurringPaymentAmount?.let {
+            formatMinorUnits(
+                minorUnits = it.amount.toMinorUnits(),
+                currency = it.currency.orEmpty(),
+            )
+        }.orEmpty(),
     )
 }
 

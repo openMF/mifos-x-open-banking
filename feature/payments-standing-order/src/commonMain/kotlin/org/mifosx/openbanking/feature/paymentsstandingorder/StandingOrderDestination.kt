@@ -31,6 +31,10 @@ data object StandingOrderDestination
 @Serializable
 data object StandingOrderRoute
 
+/** The full list of standing orders set up, reached from the form's "See all". */
+@Serializable
+data object StandingOrderHistoryRoute
+
 /**
  * Registers the scheduled-payment flow.
  *
@@ -44,12 +48,23 @@ data object StandingOrderRoute
 fun NavGraphBuilder.standingOrderGraph(
     onLaunchAuthorisation: (String) -> Unit,
     onNavigateToConsents: () -> Unit,
+    onNavigateToPayment: (String) -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onBack: () -> Unit,
 ) {
     navigation<StandingOrderDestination>(startDestination = StandingOrderRoute) {
         composableWithStayTransitions<StandingOrderRoute> {
             StandingOrderScreen(
                 onLaunchAuthorisation = onLaunchAuthorisation,
                 onNavigateToConsents = onNavigateToConsents,
+                onNavigateToPayment = onNavigateToPayment,
+                onNavigateToHistory = onNavigateToHistory,
+            )
+        }
+        composableWithStayTransitions<StandingOrderHistoryRoute> {
+            StandingOrderHistoryScreen(
+                onBack = onBack,
+                onNavigateToPayment = onNavigateToPayment,
             )
         }
     }

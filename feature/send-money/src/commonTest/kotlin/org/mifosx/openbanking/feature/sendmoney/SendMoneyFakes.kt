@@ -18,12 +18,19 @@ import kotlinx.coroutines.flow.update
 import org.mifosx.openbanking.core.data.banking.AccountCapabilityRegistry
 import org.mifosx.openbanking.core.data.banking.AccountsOverviewRepository
 import org.mifosx.openbanking.core.data.banking.BeneficiariesRepository
+import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
+import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.data.banking.SinglePaymentInitiationRepository
 import org.mifosx.openbanking.core.model.banking.AccountWithBalance
 import org.mifosx.openbanking.core.model.banking.BeneficiaryItem
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
+import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
+import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.hsbcProduct.AccountEndpoint
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
@@ -179,5 +186,63 @@ class FakeAccountCapabilityRegistry : AccountCapabilityRegistry {
 
     override fun clear() {
         state.value = emptyMap()
+    }
+}
+
+/** Stores what it is told and hands back whatever [rows] holds. */
+class FakePaymentHistoryRepository(
+    val rows: MutableStateFlow<List<PaymentHistoryRow>> = MutableStateFlow(emptyList()),
+) : PaymentHistoryRepository {
+
+    val recorded = mutableListOf<String>()
+
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: PaymentDraft) = Unit
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: ScheduledPaymentDraft) = Unit
+    override suspend fun saveSubmitted(receipt: PaymentReceipt, draft: StandingOrderDraft) = Unit
+
+    override suspend fun saveFailed(
+        draft: PaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = Unit
+
+    override suspend fun saveFailed(
+        draft: ScheduledPaymentDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = Unit
+
+    override suspend fun saveFailed(
+        draft: StandingOrderDraft,
+        errorKind: String,
+        errorDescription: String,
+    ) = Unit
+
+    override suspend fun consentTypeOf(paymentId: String): ConsentType? = null
+    override suspend fun stageTimestampsOf(paymentId: String): PaymentStageTimestamps? = null
+
+    override fun observeHistory(
+        types: Set<ConsentType>,
+        limit: Int,
+    ): Flow<List<PaymentHistoryRow>> = rows.map { it.take(limit) }
+
+    override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) {
+        recorded += paymentId
+    }
+}
+
+/** Answers every status read with [answer], recording which payments were asked about. */
+class FakePaymentStatusRepository(
+    private val answer: NetworkResult<PaymentReceipt, NetworkError> =
+        NetworkResult.Error(NetworkError.Network(IllegalStateException("not stubbed"))),
+) : PaymentStatusRepository {
+
+    val asked = mutableListOf<String>()
+
+    override suspend fun paymentStatus(
+        paymentId: String,
+    ): NetworkResult<PaymentReceipt, NetworkError> {
+        asked += paymentId
+        return answer
     }
 }

@@ -20,6 +20,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.sendmoney.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeBeneficiariesRepository
+import org.mifosx.openbanking.feature.sendmoney.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.sendmoney.FakePaymentStatusRepository
 import org.mifosx.openbanking.feature.sendmoney.FakeSinglePaymentInitiationRepository
 import org.mifosx.openbanking.feature.sendmoney.SendMoneyFixtures
 import kotlin.test.AfterTest
@@ -59,6 +61,8 @@ class SendMoneyRailTest {
         FakeBeneficiariesRepository(),
         payments,
         registry,
+        FakePaymentHistoryRepository(),
+        FakePaymentStatusRepository(),
     )
 
     private fun content(vm: SendMoneyViewModel): SendMoneyUiState.Content =

@@ -42,8 +42,4 @@ internal object VrpConsentDetailTestTags {
     const val NOT_FOUND_STATE = "vrpConsentDetail:notFoundState"
 
     fun paymentRow(localId: String): String = "vrpConsentDetail:paymentRow:$localId"
-
-    fun paymentStatus(localId: String): String = "vrpConsentDetail:paymentStatus:$localId"
-
-    fun paymentAmount(localId: String): String = "vrpConsentDetail:paymentAmount:$localId"
 }

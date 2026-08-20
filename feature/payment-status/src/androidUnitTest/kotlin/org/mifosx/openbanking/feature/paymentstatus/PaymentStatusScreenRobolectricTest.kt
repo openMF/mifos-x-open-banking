@@ -26,7 +26,6 @@ import org.mifosx.openbanking.feature.paymentstatus.ui.PaymentTimelineStep
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 private const val ROBOLECTRIC_SDK = 34
 
@@ -52,14 +51,11 @@ class PaymentStatusScreenRobolectricTest {
     val composeRule = createComposeRule()
 
     private val actions = mutableListOf<PaymentStatusAction>()
-    private var startedNewPayment = false
-
     private fun render(state: PaymentStatusState) {
         composeRule.setContent {
             PaymentStatusScreenContent(
                 state = state,
                 onAction = { actions.add(it) },
-                onStartNewPayment = { startedNewPayment = true },
             )
         }
     }
@@ -192,16 +188,6 @@ class PaymentStatusScreenRobolectricTest {
         composeRule.onNodeWithTag(PaymentStatusTestTags.REFRESH_BUTTON).performScrollTo().performClick()
 
         assertEquals(listOf<PaymentStatusAction>(PaymentStatusAction.RefreshStatus), actions)
-    }
-
-    @Test
-    fun tappingMakeAnotherPaymentNavigatesWithoutDispatching() {
-        render(PaymentStatusFixtures.contentState())
-
-        composeRule.onNodeWithTag(PaymentStatusTestTags.NEW_PAYMENT_BUTTON).performScrollTo().performClick()
-
-        assertTrue(startedNewPayment)
-        assertTrue(actions.isEmpty())
     }
 
     @Test

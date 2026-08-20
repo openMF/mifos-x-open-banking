@@ -41,7 +41,6 @@
     <string name="feature_vrp_consents_detail_pay">Send money</string>
     <string name="feature_vrp_consents_detail_history_title">Payments</string>
     <string name="feature_vrp_consents_detail_history_empty">No payments yet.</string>
-    <string name="feature_vrp_consents_detail_payment_failed">Your bank did not accept this payment</string>
     <string name="feature_vrp_consents_detail_revoke">Remove access</string>
     <string name="feature_vrp_consents_detail_revoke_title">Remove access?</string>
     <string name="feature_vrp_consents_detail_revoke_body">This stops all future payments and cannot be undone.</string>

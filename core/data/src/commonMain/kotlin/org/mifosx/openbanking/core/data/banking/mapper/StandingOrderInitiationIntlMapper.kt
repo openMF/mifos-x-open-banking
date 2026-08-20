@@ -136,6 +136,11 @@ internal fun InternationalStandingOrderResponse.toIntlStandingOrderReceipt(): Pa
         reference = "",
         debtorIdentification = initiation?.debtorAccount?.identification.orEmpty(),
         charges = data?.charges.orEmpty().map { it.toIntlStandingOrderPaymentCharge() },
+        frequency = initiation?.mandateRelatedInformation?.frequency?.type.orEmpty(),
+        finalPaymentDateTime = initiation
+            ?.mandateRelatedInformation
+            ?.finalPaymentDateTime
+            .orEmpty(),
     )
 }
 

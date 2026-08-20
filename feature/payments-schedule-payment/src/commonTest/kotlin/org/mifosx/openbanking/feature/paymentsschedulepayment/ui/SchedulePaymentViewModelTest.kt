@@ -19,6 +19,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.feature.paymentsschedulepayment.FakeAccountCapabilityRegistry
 import org.mifosx.openbanking.feature.paymentsschedulepayment.FakeAccountsOverviewRepository
 import org.mifosx.openbanking.feature.paymentsschedulepayment.FakeBeneficiariesRepository
+import org.mifosx.openbanking.feature.paymentsschedulepayment.FakePaymentHistoryRepository
+import org.mifosx.openbanking.feature.paymentsschedulepayment.FakePaymentStatusRepository
 import org.mifosx.openbanking.feature.paymentsschedulepayment.FakeScheduledPaymentInitiationRepository
 import org.mifosx.openbanking.feature.paymentsschedulepayment.SchedulePaymentFixtures
 import kotlin.test.AfterTest
@@ -73,6 +75,8 @@ class SchedulePaymentViewModelTest {
         beneficiariesRepository = payees,
         paymentInitiationRepository = payments,
         capabilityRegistry = FakeAccountCapabilityRegistry(),
+        paymentHistoryRepository = FakePaymentHistoryRepository(),
+        paymentStatusRepository = FakePaymentStatusRepository(),
         clock = clock,
     )
 

@@ -13,7 +13,9 @@ import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
+import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
+import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import kotlin.uuid.ExperimentalUuidApi
@@ -261,6 +263,37 @@ internal fun PaymentDraft.toFailureEntity(
     paymentType = paymentType(),
     syncedAt = null,
 )
+
+/**
+ * A stored row as a history entry, or null when it is not one.
+ *
+ * Null for a row with no bank id or an unrecognised [PaymentHistoryEntity.paymentType].
+ */
+internal fun PaymentHistoryEntity.toHistoryRow(): PaymentHistoryRow? {
+    val bankId = paymentId
+    val type = paymentType.toConsentType()
+    return if (bankId == null || type == null) {
+        null
+    } else {
+        PaymentHistoryRow(
+            paymentId = bankId,
+            consentType = type,
+            status = status.toPaymentStatus(),
+            amountMinorUnits = amountMinorUnits,
+            currency = currency,
+            creditorName = creditorName,
+            submittedAt = submittedAt.orEmpty(),
+            reference = reference,
+            requestedExecutionDateTime = requestedExecutionDateTime,
+            frequency = frequency,
+            finalPaymentDateTime = finalPaymentDateTime,
+        )
+    }
+}
+
+/** The status a stored string names, matching the persisted enum name before the wire codes. */
+private fun String?.toPaymentStatus(): PaymentStatus =
+    PaymentStatus.entries.firstOrNull { it.name == this } ?: PaymentStatus.fromWire(this)
 
 @OptIn(ExperimentalUuidApi::class)
 private fun errorId(): String = Uuid.random().toString()

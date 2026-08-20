@@ -51,6 +51,8 @@ import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
+import org.mifosx.openbanking.core.ui.payment.MifosPaymentHistoryList
+import org.mifosx.openbanking.core.ui.payment.toRowUi
 import org.mifosx.openbanking.feature.sendmoney.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.sendmoney.components.currencyName
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.Res
@@ -62,6 +64,7 @@ import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_creditor_heading
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_debtor_heading
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_form_trust_note
+import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_history_title
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_account_number
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_account_number_error
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_manual_confirm
@@ -98,9 +101,13 @@ internal fun SendMoneyContent(
     state: SendMoneyUiState.Content,
     onAction: (SendMoneyAction) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPayment: (String) -> Unit = {},
+    onShowAllPayments: () -> Unit = {},
 ) {
     when (state.step) {
-        SendMoneyStep.Form -> SendMoneyFormPage(state, onAction, modifier)
+        SendMoneyStep.Form ->
+            SendMoneyFormPage(state, onAction, onOpenPayment, onShowAllPayments, modifier)
+
         SendMoneyStep.Review -> SendMoneyReviewPage(state, onAction, modifier)
     }
 }
@@ -117,6 +124,8 @@ internal fun SendMoneyContent(
 private fun SendMoneyFormPage(
     state: SendMoneyUiState.Content,
     onAction: (SendMoneyAction) -> Unit,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -146,10 +155,35 @@ private fun SendMoneyFormPage(
                 PayerSection(state, onAction)
                 PayeeSection(state, onAction)
                 AmountSection(state, onAction)
+                RecentPaymentsSection(state, onOpenPayment, onShowAllPayments)
             }
         }
         FormActions(state, onAction)
     }
+}
+
+/**
+ * The payments already sent from here.
+ *
+ * Absent rather than empty until there is one: this sits under a form the customer came to fill in,
+ * and a notice saying they have sent nothing is not worth the space it takes on first use.
+ */
+@Composable
+private fun RecentPaymentsSection(
+    state: SendMoneyUiState.Content,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
+) {
+    if (state.recentPayments.isEmpty()) return
+
+    MifosPaymentHistoryList(
+        payments = state.recentPayments.map { it.toRowUi() },
+        title = stringResource(Res.string.feature_send_money_history_title),
+        onPaymentClick = onOpenPayment,
+        onSeeAll = onShowAllPayments.takeIf { state.hasMorePayments },
+        testTag = SendMoneyTestTags.HISTORY,
+        rowTestTag = SendMoneyTestTags::historyRow,
+    )
 }
 
 @Composable
@@ -176,6 +210,9 @@ private fun PayerSection(
             } else {
                 ""
             },
+            headerTestTag = SendMoneyTestTags.PAYER_HEADER,
+            listTestTag = SendMoneyTestTags.DEBTOR_LIST,
+            rowTestTag = SendMoneyTestTags::debtorRow,
             extraOptions = {
                 MifosBankChoiceRow(
                     selected = state.letBankChoosePayer,
@@ -260,6 +297,7 @@ private fun PayeeSection(
             loadingContentDescription = stringResource(Res.string.feature_send_money_payees_loading_a11y),
             payNewTestTag = SendMoneyTestTags.MANUAL_ENTRY_BUTTON,
             loadingTestTag = SendMoneyTestTags.PAYEES_LOADING,
+            payeeTestTag = SendMoneyTestTags::creditorRow,
         )
 
         if (state.manualEntryVisible) {

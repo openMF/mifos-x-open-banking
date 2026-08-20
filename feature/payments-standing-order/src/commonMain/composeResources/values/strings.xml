@@ -117,6 +117,10 @@
     <string name="feature_payments_standing_order_reference_helper">Max 35 characters</string>
     <string name="feature_payments_standing_order_review_button">Review standing order</string>
 
+    <string name="feature_payments_standing_order_history_title">Recent standing orders</string>
+    <string name="feature_payments_standing_order_history_screen_title">Standing orders set up</string>
+    <string name="feature_payments_standing_order_history_empty">You have not set up any standing orders yet.</string>
+
     <string name="feature_payments_standing_order_review_heading">Check this before you continue</string>
     <string name="feature_payments_standing_order_review_from_bank_choice">You’ll choose at your bank</string>
     <!-- No "Recipient receives" row on the review any more: the amount above it is already in the

@@ -17,21 +17,37 @@ import kotlinx.coroutines.flow.Flow
 import org.mifosx.openbanking.core.database.banking.entity.PaymentHistoryEntity
 
 /**
- * DAO for the `payment_history` local snapshot table.
+ * DAO for the `payment_history` table.
  *
- * Nothing lists these rows any more. `observeRecent` existed for the hub's Recent section and went
- * with it; what remains is written on every payment outcome and read back one row at a time by
- * [observeById], which answers two questions the bank cannot: which rail a payment id belongs to,
- * and when the app observed its approval and submission.
- *
- * [upsert] replaces a row by primary key, so a write for a payment already recorded is an in-place
- * update rather than a duplicate.
+ * [observeById] reads one payment by the bank's id; [observeByType] backs a feature's history list.
+ * [upsert] replaces a row by primary key.
  */
 @Dao
 interface PaymentHistoryDao {
 
     @Query("SELECT * FROM payment_history WHERE paymentId = :paymentId")
     fun observeById(paymentId: String): Flow<PaymentHistoryEntity?>
+
+    /** The payments of the given [types] that reached the bank, newest first. */
+    @Query(
+        "SELECT * FROM payment_history " +
+            "WHERE paymentId IS NOT NULL AND paymentType IN (:types) " +
+            "ORDER BY submittedAt DESC LIMIT :limit",
+    )
+    fun observeByType(types: List<String>, limit: Int): Flow<List<PaymentHistoryEntity>>
+
+    /** Writes back what a status read returned, leaving the rest of the row as submitted. */
+    @Query(
+        "UPDATE payment_history " +
+            "SET status = :status, settlementDateTime = :settledAt, syncedAt = :syncedAt " +
+            "WHERE paymentId = :paymentId",
+    )
+    suspend fun updateStatus(
+        paymentId: String,
+        status: String,
+        settledAt: String?,
+        syncedAt: String,
+    )
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: PaymentHistoryEntity)

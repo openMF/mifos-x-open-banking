@@ -51,6 +51,8 @@ import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
+import org.mifosx.openbanking.core.ui.payment.MifosPaymentHistoryList
+import org.mifosx.openbanking.core.ui.payment.toRowUi
 import org.mifosx.openbanking.feature.paymentsschedulepayment.components.DateField
 import org.mifosx.openbanking.feature.paymentsschedulepayment.components.ExecutionDatePickerDialog
 import org.mifosx.openbanking.feature.paymentsschedulepayment.components.chargeBearerLabel
@@ -66,6 +68,7 @@ import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resource
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_date_heading
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_debtor_heading
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_form_trust_note
+import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_history_title
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_manual_account_number
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_manual_account_number_error
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_manual_confirm
@@ -102,11 +105,39 @@ internal fun SchedulePaymentContent(
     state: SchedulePaymentUiState.Content,
     onAction: (SchedulePaymentAction) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPayment: (String) -> Unit = {},
+    onShowAllPayments: () -> Unit = {},
 ) {
     when (state.step) {
-        SchedulePaymentStep.Form -> SchedulePaymentFormPage(state, onAction, modifier)
+        SchedulePaymentStep.Form ->
+            SchedulePaymentFormPage(state, onAction, onOpenPayment, onShowAllPayments, modifier)
+
         SchedulePaymentStep.Review -> SchedulePaymentReviewPage(state, onAction, modifier)
     }
+}
+
+/**
+ * The payments already scheduled from here.
+ *
+ * Absent rather than empty until there is one: this sits under a form the customer came to fill in,
+ * and a notice saying they have scheduled nothing is not worth the space it takes on first use.
+ */
+@Composable
+private fun RecentPaymentsSection(
+    state: SchedulePaymentUiState.Content,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
+) {
+    if (state.recentPayments.isEmpty()) return
+
+    MifosPaymentHistoryList(
+        payments = state.recentPayments.map { it.toRowUi() },
+        title = stringResource(Res.string.feature_payments_schedule_payment_history_title),
+        onPaymentClick = onOpenPayment,
+        onSeeAll = onShowAllPayments.takeIf { state.hasMorePayments },
+        testTag = SchedulePaymentTestTags.HISTORY,
+        rowTestTag = SchedulePaymentTestTags::historyRow,
+    )
 }
 
 /**
@@ -121,6 +152,8 @@ internal fun SchedulePaymentContent(
 private fun SchedulePaymentFormPage(
     state: SchedulePaymentUiState.Content,
     onAction: (SchedulePaymentAction) -> Unit,
+    onOpenPayment: (String) -> Unit,
+    onShowAllPayments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -154,6 +187,7 @@ private fun SchedulePaymentFormPage(
                 // flow rather than tucked under the amount as an afterthought.
                 DateSection(state, onAction)
                 AmountSection(state, onAction)
+                RecentPaymentsSection(state, onOpenPayment, onShowAllPayments)
             }
         }
         FormActions(state, onAction)
@@ -212,6 +246,9 @@ private fun PayerSection(
             } else {
                 ""
             },
+            headerTestTag = SchedulePaymentTestTags.PAYER_HEADER,
+            listTestTag = SchedulePaymentTestTags.DEBTOR_LIST,
+            rowTestTag = SchedulePaymentTestTags::debtorRow,
             extraOptions = {
                 MifosBankChoiceRow(
                     selected = state.letBankChoosePayer,
@@ -298,6 +335,7 @@ private fun PayeeSection(
             ),
             payNewTestTag = SchedulePaymentTestTags.MANUAL_ENTRY_BUTTON,
             loadingTestTag = SchedulePaymentTestTags.PAYEES_LOADING,
+            payeeTestTag = SchedulePaymentTestTags::creditorRow,
         )
 
         if (state.manualEntryVisible) {

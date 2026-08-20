@@ -86,6 +86,9 @@ fun MifosAccountPicker(
     modifier: Modifier = Modifier,
     unselectedLabel: String? = null,
     unselectedSupporting: String = "",
+    headerTestTag: String? = null,
+    listTestTag: String? = null,
+    rowTestTag: (String) -> String = ::accountPickerRowTag,
     extraOptions: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Column(
@@ -105,16 +108,18 @@ fun MifosAccountPicker(
             onToggle = onToggle,
             unselectedLabel = unselectedLabel ?: stringResource(Res.string.core_ui_account_picker_choose),
             unselectedSupporting = unselectedSupporting,
+            testTag = headerTestTag,
         )
 
         if (expanded) {
             HorizontalDivider(color = KptTheme.colorScheme.primary)
-            Column {
+            Column(modifier = if (listTestTag == null) Modifier else Modifier.testTag(listTestTag)) {
                 options.forEach { option ->
                     AccountRow(
                         option = option,
                         selected = option.accountId == selectedId,
                         onClick = { onSelect(option.accountId) },
+                        testTag = rowTestTag(option.accountId),
                     )
                 }
                 extraOptions?.invoke(this)
@@ -131,13 +136,15 @@ private fun CollapsedRow(
     onToggle: () -> Unit,
     unselectedLabel: String,
     unselectedSupporting: String,
+    testTag: String?,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = RowMinHeight)
             .selectable(selected = false, role = Role.Button, onClick = onToggle)
-            .padding(KptTheme.spacing.md),
+            .padding(KptTheme.spacing.md)
+            .then(if (testTag == null) Modifier else Modifier.testTag(testTag)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -166,6 +173,7 @@ private fun AccountRow(
     option: MifosAccountOption,
     selected: Boolean,
     onClick: () -> Unit,
+    testTag: String,
 ) {
     Column(
         modifier = Modifier
@@ -173,7 +181,7 @@ private fun AccountRow(
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .heightIn(min = RowMinHeight)
             .padding(KptTheme.spacing.md)
-            .testTag(accountPickerRowTag(option.accountId)),
+            .testTag(testTag),
         verticalArrangement = Arrangement.Center,
     ) {
         option.Lines(emphasised = selected)

@@ -32,7 +32,11 @@ internal object PaymentStatusTestTags {
     const val DETAIL_STATUS_CHANGED = "paymentStatus:detailStatusChanged"
     const val LAST_CHECKED = "paymentStatus:lastChecked"
     const val REFRESH_BUTTON = "paymentStatus:refreshButton"
-    const val NEW_PAYMENT_BUTTON = "paymentStatus:newPaymentButton"
+
+    /** Standing orders only: how often it repeats, when it ends, and each later amount. */
+    const val DETAIL_REPEATS = "paymentStatus:detailRepeats"
+    const val DETAIL_FINAL_PAYMENT = "paymentStatus:detailFinalPayment"
+    const val DETAIL_RECURRING_AMOUNT = "paymentStatus:detailRecurringAmount"
     const val ERROR_STATE = "paymentStatus:errorState"
     const val RETRY_BUTTON = "paymentStatus:retryButton"
     const val TIMELINE = "paymentStatus:timeline"

@@ -120,7 +120,6 @@ fun RootNavScreen(
         )
         paymentStatusScreen(
             onBack = { navController.navigateToAuthenticatedGraph(rootNavOptions()) },
-            onStartNewPayment = { navController.navigateToAuthenticatedGraph(rootNavOptions()) },
         )
         consentCallbackDestination(
             onNavigateToHome = {

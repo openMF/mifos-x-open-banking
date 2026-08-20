@@ -11,6 +11,7 @@ package org.mifosx.openbanking.feature.sendmoney.di
 
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyHistoryViewModel
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyViewModel
 
 /**
@@ -18,4 +19,5 @@ import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyViewModel
  */
 val SendMoneyModule = module {
     viewModelOf(::SendMoneyViewModel)
+    viewModelOf(::SendMoneyHistoryViewModel)
 }

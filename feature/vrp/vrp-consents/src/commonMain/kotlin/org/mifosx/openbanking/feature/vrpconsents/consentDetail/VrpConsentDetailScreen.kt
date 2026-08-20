@@ -55,6 +55,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.ui.account.accountTypeLabel
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
+import org.mifosx.openbanking.core.ui.components.MifosSectionHeading
 import org.mifosx.openbanking.core.ui.scaffold.KptScaffold
 import org.mifosx.openbanking.feature.vrpconsents.consentStatusLabel
 import org.mifosx.openbanking.feature.vrpconsents.generated.resources.Res
@@ -313,7 +314,7 @@ private fun StatusPill(content: VrpConsentDetailUiState.Content) {
 @Composable
 private fun UsageCard(usage: PeriodicLimitUsageUi) {
     DetailCard {
-        SectionHeading(
+        MifosSectionHeading(
             stringResource(
                 Res.string.feature_vrp_consents_detail_this_period,
                 periodLabel(usage.periodType),
@@ -389,7 +390,7 @@ private fun AdvisoryNote() {
 @Composable
 private fun LimitsCard(content: VrpConsentDetailUiState.Content) {
     DetailCard {
-        SectionHeading(stringResource(Res.string.feature_vrp_consents_detail_limits))
+        MifosSectionHeading(stringResource(Res.string.feature_vrp_consents_detail_limits))
 
         LimitRow(
             title = stringResource(Res.string.feature_vrp_consents_detail_per_payment_limit),
@@ -437,7 +438,7 @@ private fun LimitRow(
 @Composable
 private fun PayerCard(payer: PayerAccountUi?) {
     DetailCard {
-        SectionHeading(stringResource(Res.string.feature_vrp_consents_detail_payer))
+        MifosSectionHeading(stringResource(Res.string.feature_vrp_consents_detail_payer))
 
         Row(
             modifier = Modifier
@@ -553,16 +554,6 @@ private fun DetailCard(content: @Composable () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(KptTheme.spacing.md)) { content() }
     }
-}
-
-@Composable
-internal fun SectionHeading(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = KptTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = KptTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 @Composable

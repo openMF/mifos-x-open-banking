@@ -114,6 +114,10 @@
     <string name="feature_payments_schedule_payment_reference_helper">Max 35 characters</string>
     <string name="feature_payments_schedule_payment_review_button">Review payment</string>
 
+    <string name="feature_payments_schedule_payment_history_title">Recent scheduled payments</string>
+    <string name="feature_payments_schedule_payment_history_screen_title">Scheduled payments</string>
+    <string name="feature_payments_schedule_payment_history_empty">You have not scheduled any payments yet.</string>
+
     <string name="feature_payments_schedule_payment_review_heading">Check this before you continue</string>
     <string name="feature_payments_schedule_payment_review_from_bank_choice">You’ll choose at your bank</string>
     <!-- No "Recipient receives" row on the review any more: the amount above it is already in the

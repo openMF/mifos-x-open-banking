@@ -10,9 +10,11 @@
 package org.mifosx.openbanking.feature.paymentstatus.ui
 
 import org.mifosx.openbanking.core.data.util.RemoteException
+import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentCharge
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDisposition
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
 import template.core.base.network.NetworkError
 
 /**
@@ -115,6 +117,24 @@ sealed interface PaymentStatusUiState {
          * next week, so the scheduled mapper leaves it empty and this carries the real date instead.
          */
         val scheduledForAt: String = "",
+        /**
+         * The product and rail this payment was made on, or null when no local row names it.
+         *
+         * Decides both the disposition and the word for it — a settled mandate is "Set up", not
+         * "Completed". Null falls back to the rail-neutral reading.
+         */
+        val consentType: ConsentType? = null,
+        /**
+         * How often a standing order repeats, or null on any product that runs once.
+         *
+         * Null rather than blank for an unrecognised code: the row is then omitted rather than
+         * claiming a mandate repeats on a schedule this build cannot name.
+         */
+        val frequency: StandingOrderFrequency? = null,
+        /** When a standing order stops, formatted, or empty when it runs until it is stopped. */
+        val finalPaymentAt: String = "",
+        /** What each repeat after the first is for, formatted, or empty. */
+        val recurringAmountLabel: String = "",
         val statusChangedAt: String = "",
         val charges: List<PaymentCharge> = emptyList(),
         val lastCheckedAt: String = "",
