@@ -36,9 +36,9 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.ui.account.accountDisplayName
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
 import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
+import org.mifosx.openbanking.core.ui.payee.initialsOf
 import org.mifosx.openbanking.feature.paymentsschedulepayment.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.paymentsschedulepayment.components.currencyName
-import org.mifosx.openbanking.core.ui.payee.initialsOf
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.Res
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_auth_notice
 import org.mifosx.openbanking.feature.paymentsschedulepayment.generated.resources.feature_payments_schedule_payment_review_charge_bearer

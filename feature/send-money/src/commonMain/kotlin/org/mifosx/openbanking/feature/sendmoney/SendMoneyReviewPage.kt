@@ -37,8 +37,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
 import org.mifosx.openbanking.core.ui.account.accountDisplayName
 import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
 import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
-import org.mifosx.openbanking.feature.sendmoney.components.chargeBearerLabel
 import org.mifosx.openbanking.core.ui.payee.initialsOf
+import org.mifosx.openbanking.feature.sendmoney.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.Res
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_confirm
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_edit_payment

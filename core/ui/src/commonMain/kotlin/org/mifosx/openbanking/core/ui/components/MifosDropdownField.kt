@@ -106,9 +106,9 @@ fun <T> MifosDropdownField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .anchorSkin(
-                    border = KptTheme.colorScheme.primary,
-                    background = KptTheme.colorScheme.surfaceContainerLowest,
-                )
+                        border = KptTheme.colorScheme.primary,
+                        background = KptTheme.colorScheme.surfaceContainerLowest,
+                    )
                     .clickable(role = Role.DropdownList, onClick = onOpen)
                     .heightIn(min = FieldMinHeight)
                     .padding(horizontal = FieldPadding, vertical = RowGap),

@@ -41,22 +41,19 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.mifosx.openbanking.core.common.currencySymbol
 import org.mifosx.openbanking.core.model.banking.payment.PaymentRail
-import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
-import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
-import org.mifosx.openbanking.core.ui.components.MifosAmountCard
-import org.mifosx.openbanking.core.ui.components.MifosDropdownBox
-import org.mifosx.openbanking.core.ui.components.MifosDropdownField
-import org.mifosx.openbanking.core.ui.components.MifosRailToggle
 import org.mifosx.openbanking.core.ui.account.MifosAccountOption
 import org.mifosx.openbanking.core.ui.account.MifosAccountPicker
 import org.mifosx.openbanking.core.ui.account.MifosBankChoiceRow
+import org.mifosx.openbanking.core.ui.components.MifosAmountCard
+import org.mifosx.openbanking.core.ui.components.MifosDropdownBox
+import org.mifosx.openbanking.core.ui.components.MifosDropdownField
+import org.mifosx.openbanking.core.ui.components.MifosFilledPillButton
+import org.mifosx.openbanking.core.ui.components.MifosRailToggle
+import org.mifosx.openbanking.core.ui.components.MifosTonalPillButton
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice
 import org.mifosx.openbanking.core.ui.generated.resources.core_ui_account_picker_bank_choice_supporting
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeAvatarRow
 import org.mifosx.openbanking.core.ui.payee.MifosPayeeOption
-import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAccountRow
-import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyPickerRow
-import org.mifosx.openbanking.core.ui.generated.resources.Res as CoreRes
 import org.mifosx.openbanking.feature.sendmoney.components.chargeBearerLabel
 import org.mifosx.openbanking.feature.sendmoney.components.currencyName
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.Res
@@ -87,13 +84,15 @@ import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_reference_label
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_retry
 import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_review_button
-import org.mifosx.openbanking.feature.sendmoney.generated.resources.feature_send_money_selected_a11y
 import org.mifosx.openbanking.feature.sendmoney.ui.OFFERED_CHARGE_BEARERS
+import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAccountRow
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAction
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyAmountProblem
+import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyPickerRow
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyStep
 import org.mifosx.openbanking.feature.sendmoney.ui.SendMoneyUiState
 import template.core.base.designsystem.theme.KptTheme
+import org.mifosx.openbanking.core.ui.generated.resources.Res as CoreRes
 
 private const val REFERENCE_MAX_LENGTH = 35
 
