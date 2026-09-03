@@ -9,14 +9,17 @@
  */
 package org.mifosx.openbanking.feature.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -28,9 +31,9 @@ import org.mifosx.openbanking.feature.settings.components.SettingsRow
 import org.mifosx.openbanking.feature.settings.components.SettingsRowChevron
 import org.mifosx.openbanking.feature.settings.components.SettingsRowExternalLink
 import org.mifosx.openbanking.feature.settings.components.SettingsSection
-import org.mifosx.openbanking.feature.settings.components.ThemeDropdownRow
+import org.mifosx.openbanking.feature.settings.components.SettingsSectionLabel
+import org.mifosx.openbanking.feature.settings.components.ThemePreviewRow
 import org.mifosx.openbanking.feature.settings.generated.resources.Res
-import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_app_version_title
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_consents_subtitle
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_consents_title
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_content_accessibility
@@ -41,74 +44,74 @@ import org.mifosx.openbanking.feature.settings.generated.resources.feature_setti
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_section_about
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_section_account
 import org.mifosx.openbanking.feature.settings.generated.resources.feature_settings_section_appearance
+import org.mifosx.openbanking.feature.settings.ui.SettingsAction
+import org.mifosx.openbanking.feature.settings.ui.SettingsState
+import template.core.base.designsystem.theme.KptTheme
+
+/** The Mifos Initiative privacy policy page, opened in an external browser. */
+private const val PRIVACY_URL = "https://mifos.org/privacy-policy/"
 
 /**
  * The settings body: Appearance, Account, and About & Legal, in that order.
  *
- * A plain scrolling column rather than a lazy list — the row count is fixed and small, and every
- * row is composed anyway, so laziness would buy nothing while costing the ability to assert on
- * off-screen rows without scrolling to them first.
+ * Free of the view model so the Compose suites can drive it directly.
  */
 @Composable
-@Suppress("LongParameterList")
-internal fun SettingsContent(
-    themeConfig: DarkThemeConfig,
-    appVersionLabel: String,
-    isThemeMenuExpanded: Boolean,
-    onSelectTheme: (DarkThemeConfig) -> Unit,
-    onToggleThemeMenu: () -> Unit,
-    onDismissThemeMenu: () -> Unit,
-    onNavigateToConsents: () -> Unit,
-    onOpenPrivacy: () -> Unit,
-    onNavigateToLicences: () -> Unit,
+internal fun SettingsScreenContent(
+    state: SettingsState,
+    onAction: (SettingsAction) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToConsents: () -> Unit = {},
+    onNavigateToLicences: () -> Unit = {},
+    onOpenUrl: (String) -> Unit = {},
 ) {
     val description = stringResource(Res.string.feature_settings_content_accessibility)
     Column(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .padding(horizontal = KptTheme.spacing.md, vertical = KptTheme.spacing.lg)
             .testTag(SettingsTestTags.CONTENT)
             .semantics { contentDescription = description },
+        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.xl),
     ) {
         AppearanceSection(
-            themeConfig = themeConfig,
-            isThemeMenuExpanded = isThemeMenuExpanded,
-            onSelectTheme = onSelectTheme,
-            onToggleThemeMenu = onToggleThemeMenu,
-            onDismissThemeMenu = onDismissThemeMenu,
+            themeConfig = state.themeConfig,
+            onSelectTheme = { onAction(SettingsAction.SelectTheme(it)) },
         )
         AccountSection(
             onNavigateToConsents = onNavigateToConsents,
         )
         AboutSection(
-            appVersionLabel = appVersionLabel,
-            onOpenPrivacy = onOpenPrivacy,
+            onOpenPrivacy = { onOpenUrl(PRIVACY_URL) },
             onNavigateToLicences = onNavigateToLicences,
         )
     }
 }
 
+/**
+ * The theme picker. Unlike the other sections it has no card of its own — the three preview cards
+ * carry the elevation, so wrapping them would stack two shadows.
+ */
 @Composable
 private fun AppearanceSection(
     themeConfig: DarkThemeConfig,
-    isThemeMenuExpanded: Boolean,
     onSelectTheme: (DarkThemeConfig) -> Unit,
-    onToggleThemeMenu: () -> Unit,
-    onDismissThemeMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SettingsSection(
-        title = stringResource(Res.string.feature_settings_section_appearance),
-        testTag = SettingsTestTags.SECTION_APPEARANCE,
-        modifier = modifier,
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(SettingsTestTags.SECTION_APPEARANCE),
+        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
     ) {
-        ThemeDropdownRow(
+        SettingsSectionLabel(
+            title = stringResource(Res.string.feature_settings_section_appearance),
+        )
+        ThemePreviewRow(
             selected = themeConfig,
-            expanded = isThemeMenuExpanded,
-            onToggle = onToggleThemeMenu,
-            onDismiss = onDismissThemeMenu,
             onSelect = onSelectTheme,
+            modifier = Modifier.testTag(SettingsTestTags.SECTION),
         )
     }
 }
@@ -139,13 +142,9 @@ private fun AccountSection(
     }
 }
 
-/**
- * Privacy leaves for a browser and says so with the external-link glyph; Licences opens in the app
- * and gets a chevron. App Version closes the group as a static readout.
- */
+/** Privacy, which opens a browser, and Licences, which opens in the app. */
 @Composable
 private fun AboutSection(
-    appVersionLabel: String,
     onOpenPrivacy: () -> Unit,
     onNavigateToLicences: () -> Unit,
     modifier: Modifier = Modifier,
@@ -168,6 +167,10 @@ private fun AboutSection(
                 testTag = SettingsTestTags.externalLink(SettingsTestTags.PRIVACY_ROW),
             )
         }
+        HorizontalDivider(
+            color = KptTheme.colorScheme.outlineVariant,
+            modifier = Modifier.padding(horizontal = KptTheme.spacing.md),
+        )
         SettingsRow(
             title = stringResource(Res.string.feature_settings_licences_title),
             testTag = SettingsTestTags.LICENCES_ROW,
@@ -179,21 +182,5 @@ private fun AboutSection(
                 testTag = SettingsTestTags.chevron(SettingsTestTags.LICENCES_ROW),
             )
         }
-        AppVersionRow(appVersionLabel = appVersionLabel)
     }
-}
-
-/**
- * The build identity. No icon, no trailing affordance and no click handler — it reports a value
- * and offers nothing, and anything that looked tappable here would lead nowhere.
- */
-@Composable
-private fun AppVersionRow(appVersionLabel: String, modifier: Modifier = Modifier) {
-    SettingsRow(
-        title = stringResource(Res.string.feature_settings_app_version_title),
-        testTag = SettingsTestTags.APP_VERSION_ROW,
-        modifier = modifier,
-        subtitle = appVersionLabel,
-        subtitleTestTag = SettingsTestTags.APP_VERSION_VALUE,
-    )
 }

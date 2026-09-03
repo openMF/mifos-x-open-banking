@@ -37,6 +37,9 @@ interface UserPreferencesRepository {
 
     val observeScreenCapturePreference: Flow<Boolean>
 
+    /** The cached open-source licence text; `null` until one has been fetched. */
+    val openSourceLicenceText: Flow<String?>
+
     suspend fun setLanguage(language: LanguageConfig)
 
     suspend fun setThemeBrand(themeBrand: ThemeBrand)
@@ -58,6 +61,8 @@ interface UserPreferencesRepository {
     suspend fun setSelectedAccountId(accountId: String)
 
     suspend fun setScreenCapturePreference(isScreenCaptureEnabled: Boolean)
+
+    suspend fun setOpenSourceLicenceText(text: String)
 
     suspend fun clearUserData()
 }

@@ -13,8 +13,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import org.mifosx.openbanking.core.data.user.UserDataRepository
 import org.mifosx.openbanking.core.model.user.DarkThemeConfig
@@ -23,16 +21,10 @@ import org.mifosx.openbanking.core.model.user.ThemeBrand
 import org.mifosx.openbanking.core.model.user.UserData
 
 /**
- * Hand-written [UserDataRepository] backed by an in-memory [UserData], written rather than mocked
- * because this project ships no mocking framework.
+ * Hand-written [UserDataRepository] backed by an in-memory [UserData].
  *
- * Two properties make the settings screen testable at all. [writtenThemes] records every write in
- * order, so a picker that writes twice, writes the wrong value, or writes nothing is visible.
- * [failNextRead] fails the next subscription, because the error and empty states have no
- * production trigger — nothing else in the app can make a local preference read fail on demand.
- *
- * A write is fed back into the observed flow, exactly as the real store does. Without that a
- * one-way binding — a view model that writes but never re-reads — would pass every assertion.
+ * Written rather than mocked — this project ships no mocking framework. A write is fed back into
+ * the observed flow, as the real store does.
  */
 class FakeUserDataRepository(
     initialTheme: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
@@ -48,14 +40,8 @@ class FakeUserDataRepository(
 
     private val writes = mutableListOf<DarkThemeConfig>()
 
-    private var failNextRead = false
-
     /** Every theme written, in the order the view model wrote it. */
     val writtenThemes: List<DarkThemeConfig> get() = writes.toList()
-
-    /** How many times the theme preference was subscribed to — retry's observable effect. */
-    var readCount: Int = 0
-        private set
 
     override val userData: StateFlow<UserData> = users.asStateFlow()
 
@@ -67,20 +53,7 @@ class FakeUserDataRepository(
 
     override val observeScreenCapturePreference: Flow<Boolean> = users.map { it.enableScreenCapture }
 
-    override val observeDarkThemeConfig: Flow<DarkThemeConfig>
-        get() = flow {
-            readCount += 1
-            if (failNextRead) {
-                failNextRead = false
-                error("preference store unavailable")
-            }
-            emitAll(users.map { it.darkThemeConfig })
-        }
-
-    /** Makes the next subscription to [observeDarkThemeConfig] fail, then clears itself. */
-    fun failNextRead() {
-        failNextRead = true
-    }
+    override val observeDarkThemeConfig: Flow<DarkThemeConfig> = users.map { it.darkThemeConfig }
 
     /** Pushes a stored value in from outside the view model, as another writer would. */
     fun emitTheme(config: DarkThemeConfig) {

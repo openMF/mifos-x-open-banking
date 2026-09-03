@@ -16,6 +16,7 @@ import org.mifosx.openbanking.core.network.HSBCUKSandboxConfig
 import org.mifosx.openbanking.core.network.TOKEN_ENDPOINT
 import org.mifosx.openbanking.core.network.api.Aisp
 import org.mifosx.openbanking.core.network.api.OAuth
+import org.mifosx.openbanking.core.network.api.OpenSourceLicenceAPI
 import org.mifosx.openbanking.core.network.api.Pisp
 import org.mifosx.openbanking.core.network.api.Vrp
 import org.mifosx.openbanking.core.network.config.HsbcConfig
@@ -50,6 +51,8 @@ val NetworkModule = module {
     }
 
     single { Aisp(get()) }
+
+    single { OpenSourceLicenceAPI(get()) }
 
     single {
         Pisp(

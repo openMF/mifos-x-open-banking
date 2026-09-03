@@ -10,43 +10,42 @@
 package org.mifosx.openbanking.feature.settings
 
 import org.mifosx.openbanking.core.model.user.DarkThemeConfig
-import org.mifosx.openbanking.feature.settings.ui.SettingsErrorKind
+import org.mifosx.openbanking.feature.settings.ui.LicencesState
 import org.mifosx.openbanking.feature.settings.ui.SettingsState
-import org.mifosx.openbanking.feature.settings.ui.SettingsUiState
-import org.mifosx.openbanking.feature.settings.ui.labelResource
 
-/**
- * The settings states the suites render, carrying the values the design was drawn against:
- * the System theme and the shipped build identity.
- *
- * Shared by the view-model and Compose suites so both assert against one screen rather than two
- * that happen to look alike.
- */
+/** The settings states the suites render, shared by the view-model and Compose suites. */
 object SettingsFixtures {
 
-    const val APP_VERSION: String = "0.1.0 (build 1)"
+    /** Rows the screen offers: consents, privacy, licences. The theme picker is cards, not rows. */
+    const val EXPECTED_ROW_COUNT: Int = 3
 
-    /** How many rows the screen offers in total: theme, one account row, three about rows. */
-    const val EXPECTED_ROW_COUNT: Int = 5
-
-    /** Appearance, Account, About & Legal — Security and Notifications are not offered. */
+    /** Appearance, Account, About & Legal. */
     const val EXPECTED_SECTION_COUNT: Int = 3
 
     fun contentState(
         themeConfig: DarkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
-        isThemeMenuExpanded: Boolean = false,
-    ): SettingsState = SettingsState(
-        uiState = SettingsUiState.Content(
-            themeConfig = themeConfig,
-            themeLabel = themeConfig.labelResource(),
-            appVersionLabel = APP_VERSION,
-            isThemeMenuExpanded = isThemeMenuExpanded,
-        ),
-    )
+    ): SettingsState = SettingsState(themeConfig = themeConfig)
+}
+
+/** The licences states the suites render. */
+object LicencesFixtures {
+
+    /** Stand-in licence text; the real one is fetched from the project repository. */
+    const val LICENCE_TEXT: String = "Mozilla Public License Version 2.0"
+
+    fun contentState(licence: String = LICENCE_TEXT): LicencesState =
+        LicencesState(licence = licence)
+
+    fun loadingState(): LicencesState =
+        LicencesState(dialogState = LicencesState.DialogState.Loading)
 
     fun errorState(
-        kind: SettingsErrorKind = SettingsErrorKind.PreferencesUnavailable,
-    ): SettingsState = SettingsState(uiState = SettingsUiState.Error(kind))
-
-    fun emptyState(): SettingsState = SettingsState(uiState = SettingsUiState.Empty)
+        message: String? = "Something went wrong.",
+        isNetworkError: Boolean = false,
+    ): LicencesState = LicencesState(
+        dialogState = LicencesState.DialogState.Error(
+            message = message,
+            isNetworkError = isNetworkError,
+        ),
+    )
 }

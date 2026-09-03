@@ -246,6 +246,7 @@ internal fun AuthenticatedNavHostScreenContent(
                 },
             )
             settingsScreen(
+                onBack = { navController.popBackStack() },
                 onNavigateToConsents = { navController.navigate(ConsentListRoute) },
                 onNavigateToLicences = { navController.navigate(LicencesRoute) },
                 onOpenUrl = { url -> uriHandler.openUri(url) },

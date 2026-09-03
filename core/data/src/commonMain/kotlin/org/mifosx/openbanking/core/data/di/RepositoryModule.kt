@@ -45,6 +45,9 @@ import org.mifosx.openbanking.core.data.infra.NetworkMonitor
 import org.mifosx.openbanking.core.data.infra.impl.RoomFetchedAtRepository
 import org.mifosx.openbanking.core.data.login.LoginRepository
 import org.mifosx.openbanking.core.data.login.impl.LoginRepositoryImpl
+import org.mifosx.openbanking.core.data.openSourceLicence.OpenSourceLicenceRepo
+import org.mifosx.openbanking.core.data.openSourceLicence.OpenSourceLicenceRepoImpl
+import org.mifosx.openbanking.core.data.openSourceLicence.OpenSourceLicenceStore
 import org.mifosx.openbanking.core.data.user.AppLogout
 import org.mifosx.openbanking.core.data.user.UserDataRepository
 import org.mifosx.openbanking.core.data.user.UserLogoutManager
@@ -65,6 +68,8 @@ import org.mifosx.openbanking.core.database.AppDatabase
 import org.mifosx.openbanking.core.database.di.DatabaseModule
 import org.mifosx.openbanking.core.datastore.di.DatastoreModule
 import org.mifosx.openbanking.core.network.di.NetworkModule
+import org.mifosx.openbanking.core.store.AppStoreRegistry
+import org.mobilenativefoundation.store.store5.Store
 import template.core.base.common.di.CommonModule
 import template.core.base.store.infra.FetchedAtRepository
 import kotlin.time.Clock
@@ -239,8 +244,22 @@ val DataModule = module {
         )
     }
 
-    // App-scoped  for cross-VM long-running coroutines.
     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
+    single<Store<String, String>>(AppStoreRegistry.OpenSourceLicence) {
+        OpenSourceLicenceStore.licenceStore(
+            openSourceLicenceAPI = get(),
+            userPreferencesRepository = get(),
+        )
+    }
+
+    single<OpenSourceLicenceRepo> {
+        OpenSourceLicenceRepoImpl(
+            store = get(AppStoreRegistry.OpenSourceLicence),
+            networkMonitor = get(),
+            fetchedAtRepository = get(),
+        )
+    }
 }
 
 expect val platformModule: Module

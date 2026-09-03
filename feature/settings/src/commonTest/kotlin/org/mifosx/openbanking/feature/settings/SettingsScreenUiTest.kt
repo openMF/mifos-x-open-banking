@@ -10,22 +10,21 @@
 package org.mifosx.openbanking.feature.settings
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import org.mifosx.openbanking.core.model.user.DarkThemeConfig
 import org.mifosx.openbanking.feature.settings.ui.SettingsAction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Headless smoke coverage for [SettingsScreenContent] on the desktop renderer, over the same
- * [SettingsTestTags] the Robolectric and instrumented suites drive.
- *
- * This class lives in `commonTest`, so it also compiles into `androidUnitTest`, where there is no
- * Robolectric runner to stand up a composition. The module's build script filters it out of the
- * JVM unit-test tasks; the depth belongs to [SettingsScreenRobolectricTest].
+ * Headless coverage for [SettingsScreenContent] on the desktop renderer, over the same
+ * [SettingsTestTags] the Robolectric suite drives.
  *
  * Test names are camelCase — this source set compiles for Kotlin/Native, whose frontend rejects
  * punctuation inside backticked names.
@@ -66,7 +65,33 @@ class SettingsScreenUiTest {
     }
 
     @Test
-    fun tappingTheThemeRowDispatchesToggleThemeMenu() = runComposeUiTest {
+    fun everyThemeConfigGetsAPreviewCard() = runComposeUiTest {
+        setContent {
+            SettingsScreenContent(state = SettingsFixtures.contentState(), onAction = {})
+        }
+
+        DarkThemeConfig.entries.forEach { config ->
+            onNodeWithTag(SettingsTestTags.themeCard(config)).assertExists()
+        }
+    }
+
+    @Test
+    fun onlyTheStoredThemeCardReadsAsSelected() = runComposeUiTest {
+        setContent {
+            SettingsScreenContent(
+                state = SettingsFixtures.contentState(themeConfig = DarkThemeConfig.DARK),
+                onAction = {},
+            )
+        }
+
+        onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.DARK)).assertIsSelected()
+        onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.LIGHT)).assertIsNotSelected()
+        onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.FOLLOW_SYSTEM))
+            .assertIsNotSelected()
+    }
+
+    @Test
+    fun tappingAThemeCardDispatchesSelectTheme() = runComposeUiTest {
         val actions = mutableListOf<SettingsAction>()
         setContent {
             SettingsScreenContent(
@@ -75,9 +100,12 @@ class SettingsScreenUiTest {
             )
         }
 
-        onNodeWithTag(SettingsTestTags.THEME_ROW).performClick()
+        onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.LIGHT)).performClick()
 
-        assertEquals(listOf<SettingsAction>(SettingsAction.ToggleThemeMenu), actions)
+        assertEquals(
+            listOf<SettingsAction>(SettingsAction.SelectTheme(DarkThemeConfig.LIGHT)),
+            actions,
+        )
     }
 
     @Test
@@ -114,32 +142,5 @@ class SettingsScreenUiTest {
         onNodeWithTag(SettingsTestTags.PRIVACY_ROW).performClick()
 
         assertEquals(listOf("https://mifos.org/privacy-policy/"), opened)
-    }
-
-    @Test
-    fun errorRendersRetryAndDispatchesRetryLoad() = runComposeUiTest {
-        val actions = mutableListOf<SettingsAction>()
-        setContent {
-            SettingsScreenContent(
-                state = SettingsFixtures.errorState(),
-                onAction = { actions.add(it) },
-            )
-        }
-
-        onNodeWithTag(SettingsTestTags.ERROR_STATE).assertExists()
-        onNodeWithTag(SettingsTestTags.RETRY_BUTTON).performClick()
-
-        assertEquals(listOf<SettingsAction>(SettingsAction.RetryLoad), actions)
-    }
-
-    @Test
-    fun emptyRendersItsTitleAndBody() = runComposeUiTest {
-        setContent {
-            SettingsScreenContent(state = SettingsFixtures.emptyState(), onAction = {})
-        }
-
-        onNodeWithTag(SettingsTestTags.EMPTY_STATE).assertExists()
-        onNodeWithTag(SettingsTestTags.EMPTY_TITLE, useUnmergedTree = true).assertExists()
-        onNodeWithTag(SettingsTestTags.EMPTY_BODY, useUnmergedTree = true).assertExists()
     }
 }

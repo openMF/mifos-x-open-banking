@@ -38,5 +38,9 @@ kotlin {
             implementation(libs.multiplatform.settings.serialization)
             implementation(libs.multiplatform.settings.coroutines)
         }
+
+        commonTest.dependencies {
+            implementation(libs.multiplatform.settings.test)
+        }
     }
 }

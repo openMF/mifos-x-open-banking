@@ -15,30 +15,27 @@ import androidx.navigation.NavGraphBuilder
 import kotlinx.serialization.Serializable
 import template.core.base.ui.nav.composableWithStayTransitions
 
-/**
- * The settings route. A tab root reached from the bottom bar, and an object rather than a class
- * because it carries no argument.
- *
- * Flat, with no nested graph: settings has a single screen, and wrapping one destination in a
- * graph would add a back-stack entry that nothing navigates within.
- */
+/** The settings route. A tab root reached from the bottom bar; it carries no argument. */
 @Serializable
 data object SettingsRoute
 
 /**
  * Registers the settings screen in the host graph.
  *
- * Every outbound move is the host's: [onNavigateToConsents] and [onNavigateToLicences] take no
- * argument, and [onOpenUrl] hands off the privacy policy to a browser. The feature never sees the
- * route table.
+ * @param onBack Returns to the screen that opened settings.
+ * @param onNavigateToConsents Opens the consent list.
+ * @param onNavigateToLicences Opens the open-source licences screen.
+ * @param onOpenUrl Hands the privacy policy to a browser.
  */
 fun NavGraphBuilder.settingsScreen(
+    onBack: () -> Unit,
     onNavigateToConsents: () -> Unit,
     onNavigateToLicences: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     composableWithStayTransitions<SettingsRoute> {
         SettingsScreen(
+            onBack = onBack,
             onNavigateToConsents = onNavigateToConsents,
             onNavigateToLicences = onNavigateToLicences,
             onOpenUrl = onOpenUrl,
@@ -47,8 +44,8 @@ fun NavGraphBuilder.settingsScreen(
 }
 
 /**
- * The open-source licences route. Reached as a single pushed screen from the About & Legal section,
- * carrying no argument — the catalogue it renders is bundled in the module's Compose resources.
+ * The open-source licences route. A single pushed screen from the About & Legal section; it
+ * carries no argument.
  */
 @Serializable
 data object LicencesRoute

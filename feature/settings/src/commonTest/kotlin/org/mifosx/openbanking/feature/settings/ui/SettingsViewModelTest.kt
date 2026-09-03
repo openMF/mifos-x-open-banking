@@ -15,45 +15,30 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.mifosx.openbanking.core.model.user.DarkThemeConfig
 import org.mifosx.openbanking.feature.settings.FakeUserDataRepository
-import org.mifosx.openbanking.feature.settings.SettingsFixtures
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 /**
- * Covers [SettingsViewModel]'s preference reads, theme writes and picker state.
+ * Covers [SettingsViewModel]'s preference reads and theme writes.
  *
- * Test names are camelCase, not backticked: this source set also compiles for Kotlin/Native, whose
- * frontend rejects the parentheses and commas a prose-style backticked name would carry.
+ * Test names are camelCase: this source set also compiles for Kotlin/Native, whose frontend
+ * rejects punctuation inside backticked names.
  */
 class SettingsViewModelTest {
 
     private fun viewModel(
         repository: FakeUserDataRepository = FakeUserDataRepository(),
-        appVersion: String = SettingsFixtures.APP_VERSION,
     ): SettingsViewModel {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        return SettingsViewModel(
-            userDataRepository = repository,
-            appVersion = SettingsAppVersion(appVersion),
-        )
+        return SettingsViewModel(userDataRepository = repository)
     }
 
-    private fun content(viewModel: SettingsViewModel): SettingsUiState.Content =
-        assertIs<SettingsUiState.Content>(viewModel.stateFlow.value.uiState)
-
-    @Test
-    fun initialStateIsContentRatherThanLoading() {
-        val state = viewModel().stateFlow.value.uiState
-        assertIs<SettingsUiState.Content>(state)
-    }
+    private fun state(viewModel: SettingsViewModel): SettingsState = viewModel.stateFlow.value
 
     @Test
     fun contentReflectsTheStoredTheme() {
         val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.DARK)
-        assertEquals(DarkThemeConfig.DARK, content(viewModel(repository)).themeConfig)
+        assertEquals(DarkThemeConfig.DARK, state(viewModel(repository)).themeConfig)
     }
 
     @Test
@@ -86,10 +71,6 @@ class SettingsViewModelTest {
         assertEquals(listOf(DarkThemeConfig.DARK), repository.writtenThemes)
     }
 
-    /**
-     * A picker that skips the write when the value is unchanged would silently do nothing after
-     * any drift between stored and displayed state.
-     */
     @Test
     fun selectingTheAlreadySelectedThemeStillWritesExactlyOnce() = runTest {
         val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.LIGHT)
@@ -100,7 +81,6 @@ class SettingsViewModelTest {
         assertEquals(listOf(DarkThemeConfig.LIGHT), repository.writtenThemes)
     }
 
-    /** Pins the round trip: a write that never re-reads would leave the state on the old value. */
     @Test
     fun aWriteIsReflectedBackThroughTheObservedFlow() = runTest {
         val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.FOLLOW_SYSTEM)
@@ -108,7 +88,7 @@ class SettingsViewModelTest {
 
         vm.trySendAction(SettingsAction.SelectTheme(DarkThemeConfig.DARK))
 
-        assertEquals(DarkThemeConfig.DARK, content(vm).themeConfig)
+        assertEquals(DarkThemeConfig.DARK, state(vm).themeConfig)
     }
 
     @Test
@@ -118,7 +98,7 @@ class SettingsViewModelTest {
 
         repository.emitTheme(DarkThemeConfig.LIGHT)
 
-        assertEquals(DarkThemeConfig.LIGHT, content(vm).themeConfig)
+        assertEquals(DarkThemeConfig.LIGHT, state(vm).themeConfig)
     }
 
     @Test
@@ -136,10 +116,6 @@ class SettingsViewModelTest {
         )
     }
 
-    /**
-     * Construction must not clobber the stored preference. A view model that wrote its own default
-     * on the way up would reset every user's theme on the first visit to this screen.
-     */
     @Test
     fun nothingIsWrittenBeforeAnyActionIsDispatched() = runTest {
         val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.DARK)
@@ -151,75 +127,5 @@ class SettingsViewModelTest {
     @Test
     fun everyDarkThemeConfigEntryIsOfferedByThePicker() {
         assertEquals(3, DarkThemeConfig.entries.size)
-    }
-
-    @Test
-    fun themeMenuStartsCollapsed() {
-        assertFalse(content(viewModel()).isThemeMenuExpanded)
-    }
-
-    @Test
-    fun toggleExpandsTheThemeMenu() = runTest {
-        val vm = viewModel()
-
-        vm.trySendAction(SettingsAction.ToggleThemeMenu)
-
-        assertTrue(content(vm).isThemeMenuExpanded)
-    }
-
-    @Test
-    fun dismissCollapsesTheThemeMenu() = runTest {
-        val vm = viewModel()
-
-        vm.trySendAction(SettingsAction.ToggleThemeMenu)
-        vm.trySendAction(SettingsAction.DismissThemeMenu)
-
-        assertFalse(content(vm).isThemeMenuExpanded)
-    }
-
-    @Test
-    fun selectingAThemeCollapsesTheMenu() = runTest {
-        val vm = viewModel()
-
-        vm.trySendAction(SettingsAction.ToggleThemeMenu)
-        vm.trySendAction(SettingsAction.SelectTheme(DarkThemeConfig.DARK))
-
-        assertFalse(content(vm).isThemeMenuExpanded)
-    }
-
-    @Test
-    fun aReadFailureRendersTheErrorState() = runTest {
-        val repository = FakeUserDataRepository()
-        repository.failNextRead()
-
-        val state = viewModel(repository).stateFlow.value.uiState
-
-        val error = assertIs<SettingsUiState.Error>(state)
-        assertEquals(SettingsErrorKind.PreferencesUnavailable, error.kind)
-    }
-
-    @Test
-    fun retryReReadsThePreferenceStoreAndRecovers() = runTest {
-        val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.LIGHT)
-        repository.failNextRead()
-        val vm = viewModel(repository)
-        assertIs<SettingsUiState.Error>(vm.stateFlow.value.uiState)
-
-        vm.trySendAction(SettingsAction.RetryLoad)
-
-        assertEquals(2, repository.readCount)
-        assertEquals(DarkThemeConfig.LIGHT, content(vm).themeConfig)
-    }
-
-    @Test
-    fun appVersionComesFromTheInjectedValueRatherThanALiteral() {
-        val vm = viewModel(appVersion = "9.9.9 (build 42)")
-        assertEquals("9.9.9 (build 42)", content(vm).appVersionLabel)
-    }
-
-    @Test
-    fun theThemeLabelTracksTheStoredTheme() {
-        val repository = FakeUserDataRepository(initialTheme = DarkThemeConfig.DARK)
-        assertEquals(DarkThemeConfig.DARK.labelResource(), content(viewModel(repository)).themeLabel)
     }
 }

@@ -31,6 +31,8 @@ import template.core.base.common.manager.DispatcherManager
 private const val USER_DATA_KEY = "user_data_key"
 private const val SECURE_DATA_KEY = "secure_data_key"
 
+private const val OSS_LICENCE = "open_source_licence_text"
+
 /**
  * Splits user data storage between plain (UI preferences) and secure
  * (credentials/auth state) Settings backends.
@@ -58,20 +60,17 @@ class UserPreferencesRepositoryImpl(
             serializer = UserData.serializer(),
         ) ?: return
 
-        // Check if secure store already has data (already migrated)
         val existing = secureSettings.decodeValueOrNull(
             key = SECURE_DATA_KEY,
             serializer = UserData.serializer(),
         )
         if (existing != null) return
 
-        // Write secure fields to secure store first
         secureSettings.encodeValue(
             key = SECURE_DATA_KEY,
             serializer = UserData.serializer(),
             value = legacy,
         )
-        // Plain store retains the full UserData for UI fields (shared key)
     }
 
     private fun loadCombinedUserData(): UserData {
@@ -116,6 +115,11 @@ class UserPreferencesRepositoryImpl(
     override val observeScreenCapturePreference: Flow<Boolean>
         get() = _userData.map { it.enableScreenCapture }
 
+    private val _openSourceLicenceText = MutableStateFlow(plainSettings.getStringOrNull(OSS_LICENCE))
+
+    override val openSourceLicenceText: Flow<String?>
+        get() = _openSourceLicenceText.asStateFlow()
+
     private suspend fun updatePreference(transform: (UserData) -> UserData) {
         withContext(dispatcher.io) {
             val current = loadCombinedUserData()
@@ -158,6 +162,13 @@ class UserPreferencesRepositoryImpl(
 
     override suspend fun setScreenCapturePreference(isScreenCaptureEnabled: Boolean) =
         updatePreference { it.copy(enableScreenCapture = isScreenCaptureEnabled) }
+
+    override suspend fun setOpenSourceLicenceText(text: String) {
+        withContext(dispatcher.io) {
+            plainSettings.putString(OSS_LICENCE, text)
+            _openSourceLicenceText.value = text
+        }
+    }
 
     override suspend fun clearUserData() = updatePreference {
         it.copy(

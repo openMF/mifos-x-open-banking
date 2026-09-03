@@ -14,51 +14,38 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import org.mifosx.openbanking.core.designsystem.theme.DesignToken
 import org.mifosx.openbanking.feature.settings.SettingsTestTags
-
-private val RowHorizontalPadding = 16.dp
-private val RowVerticalPadding = 14.dp
-private val LeadingIconSize = 24.dp
-private val TrailingIconSize = 20.dp
-private val LeadingGap = 16.dp
-private val LineGap = 2.dp
-private val LeadingSlotWidth = 24.dp
+import template.core.base.designsystem.theme.KptTheme
 
 /**
- * One settings row: an optional leading icon, a title over an optional subtitle, and an optional
- * trailing slot.
+ * One settings row: a leading icon, a title over an optional subtitle, and an optional trailing
+ * slot.
  *
- * [onClick] is null for a row that only reports a value, which is what keeps the App Version row
- * honest — a row with no destination gets no ripple, no click target and no trailing affordance,
- * so it cannot look tappable while doing nothing.
- *
- * The row carries [testTag]; its title carries [SettingsTestTags.ROW], on a separate node because
- * a second `testTag` on one node replaces the first. The generic tag is what lets a suite count
- * rows without naming each one.
+ * @param testTag Carried by the row itself; its title carries [SettingsTestTags.ROW].
+ * @param onClick `null` for a row that only reports a value — it then takes no click and shows no
+ *   ripple.
  */
 @Composable
 internal fun SettingsRow(
     title: String,
     testTag: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
     subtitle: String? = null,
     subtitleTestTag: String? = null,
     onClick: (() -> Unit)? = null,
@@ -68,13 +55,19 @@ internal fun SettingsRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = DesignToken.sizes.rowMin)
             .then(clickable)
             .testTag(testTag)
-            .padding(horizontal = RowHorizontalPadding, vertical = RowVerticalPadding),
+            .padding(KptTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(LeadingGap),
+        horizontalArrangement = Arrangement.spacedBy(KptTheme.spacing.md),
     ) {
-        RowLeadingIcon(icon = icon)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = KptTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(DesignToken.sizes.iconMedium),
+        )
         RowText(
             title = title,
             subtitle = subtitle,
@@ -85,27 +78,7 @@ internal fun SettingsRow(
     }
 }
 
-/**
- * Rows with a leading icon and rows without it share one left edge for their text.
- *
- * The About group mixes both — Privacy carries an icon, App Version does not — and letting the
- * unadorned row start further left would read as a different kind of row rather than the same one
- * without a glyph.
- */
-@Composable
-private fun RowLeadingIcon(icon: ImageVector?, modifier: Modifier = Modifier) {
-    if (icon == null) {
-        Spacer(modifier = modifier.width(LeadingSlotWidth))
-    } else {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = modifier.size(LeadingIconSize),
-        )
-    }
-}
-
+/** A row's title over its optional subtitle. */
 @Composable
 private fun RowText(
     title: String,
@@ -113,18 +86,21 @@ private fun RowText(
     subtitleTestTag: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(LineGap)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.xs),
+    ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = KptTheme.typography.bodyLarge,
+            color = KptTheme.colorScheme.onSurface,
             modifier = Modifier.testTag(SettingsTestTags.ROW),
         )
         if (subtitle != null) {
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = KptTheme.typography.bodyMedium,
+                color = KptTheme.colorScheme.onSurfaceVariant,
                 modifier = subtitleTestTag?.let { Modifier.testTag(it) } ?: Modifier,
             )
         }
@@ -141,9 +117,9 @@ internal fun SettingsRowChevron(
     Icon(
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = description,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        tint = KptTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
-            .size(TrailingIconSize)
+            .size(DesignToken.sizes.iconSmall)
             .testTag(testTag),
     )
 }
@@ -158,9 +134,9 @@ internal fun SettingsRowExternalLink(
     Icon(
         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
         contentDescription = description,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        tint = KptTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
-            .size(TrailingIconSize)
+            .size(DesignToken.sizes.iconSmall)
             .testTag(testTag),
     )
 }

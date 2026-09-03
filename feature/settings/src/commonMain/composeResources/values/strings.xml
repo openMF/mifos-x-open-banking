@@ -16,38 +16,27 @@
     <string name="feature_settings_section_account">Account</string>
     <string name="feature_settings_section_about">About &amp; Legal</string>
 
-    <string name="feature_settings_theme_title">Theme</string>
     <!--
       The three options are the DarkThemeConfig entries. "System" rather than the enum's own
       "Follow System" constant name: the enum's configName is a persistence value, and the
-      preview shows the shorter word.
+      picker shows the shorter word.
     -->
     <string name="feature_settings_theme_follow_system">System</string>
     <string name="feature_settings_theme_light">Light</string>
     <string name="feature_settings_theme_dark">Dark</string>
-    <string name="feature_settings_theme_select_accessibility">Select theme, currently %s</string>
     <string name="feature_settings_theme_option_accessibility">Use %s theme</string>
+    <!-- Sample text inside each theme preview; not a sentence, no translation needed. -->
+    <string name="feature_settings_theme_sample">Aa</string>
 
     <string name="feature_settings_consents_title">Manage Consents</string>
     <string name="feature_settings_consents_subtitle">View, revoke or reconfirm Open Banking consents</string>
 
     <string name="feature_settings_privacy_title">Privacy Policy</string>
-    <string name="feature_settings_licences_title">Open-Source Licences</string>
-    <string name="feature_settings_licences_screen_title">Open-Source Licences</string>
-    <string name="feature_settings_licences_intro">mifos-x-open-banking is open-source software, licensed under the Mozilla Public License 2.0.</string>
-    <string name="feature_settings_app_version_title">App Version</string>
+    <string name="feature_settings_licences_title">Open Source Licences</string>
+    <string name="feature_settings_licences_screen_title">Open Source Licences</string>
+    <string name="feature_settings_licences_intro">MifosXOpenBanking App is an open-source software.</string>
+    <string name="feature_settings_licences_error">The licence could not be loaded. Please try again.</string>
 
     <string name="feature_settings_opens_in_app_accessibility">Opens in the app</string>
     <string name="feature_settings_opens_externally_accessibility">Opens in your browser</string>
-
-    <string name="feature_settings_empty_title">No preferences saved</string>
-    <string name="feature_settings_empty_body">Your settings will appear here. Customise theme, security, and notification preferences.</string>
-    <string name="feature_settings_empty_accessibility">No preferences saved yet</string>
-
-    <string name="feature_settings_error_title">Could not load settings</string>
-    <string name="feature_settings_error_accessibility">Error loading settings</string>
-    <string name="feature_settings_error_preferences_unavailable">There was a problem loading your preferences. Default settings are shown below.</string>
-    <string name="feature_settings_error_unknown">Something went wrong loading your settings. Please try again.</string>
-    <string name="feature_settings_retry">Retry</string>
-    <string name="feature_settings_retry_accessibility">Retry loading settings</string>
 </resources>

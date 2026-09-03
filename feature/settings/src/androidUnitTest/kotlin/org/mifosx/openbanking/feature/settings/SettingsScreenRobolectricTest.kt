@@ -9,7 +9,8 @@
  */
 package org.mifosx.openbanking.feature.settings
 
-import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -27,11 +28,7 @@ import kotlin.test.assertTrue
 
 private const val ROBOLECTRIC_SDK = 34
 
-/**
- * Renders [SettingsScreenContent] across its states under Robolectric (JVM, no device) and drives
- * it through the shared [SettingsTestTags]. A verbatim on-device mirror lives in
- * [SettingsScreenInstrumentedTest].
- */
+/** Renders [SettingsScreenContent] and [LicencesScreenContent] under Robolectric. */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [ROBOLECTRIC_SDK])
 class SettingsScreenRobolectricTest {
@@ -56,6 +53,12 @@ class SettingsScreenRobolectricTest {
         .positionInRoot
         .y
 
+    private fun leftOf(tag: String): Float = composeRule
+        .onNodeWithTag(tag, useUnmergedTree = true)
+        .fetchSemanticsNode()
+        .positionInRoot
+        .x
+
     @Test
     fun allThreeSectionsRenderInThePreviewOrder() {
         render(SettingsFixtures.contentState())
@@ -66,41 +69,41 @@ class SettingsScreenRobolectricTest {
     }
 
     @Test
-    fun themeRowRendersTheCurrentValueAndItsDropdownChip() {
-        render(SettingsFixtures.contentState(themeConfig = DarkThemeConfig.DARK))
-
-        composeRule.onNodeWithTag(SettingsTestTags.THEME_ROW).assertExists()
-        composeRule.onNodeWithTag(SettingsTestTags.THEME_VALUE, useUnmergedTree = true)
-            .assertExists()
-        composeRule.onNodeWithTag(SettingsTestTags.THEME_DROPDOWN, useUnmergedTree = true)
-            .assertExists()
-    }
-
-    @Test
-    fun tappingTheThemeRowDispatchesToggleThemeMenu() {
+    fun everyThemeConfigGetsAPreviewCard() {
         render(SettingsFixtures.contentState())
 
-        composeRule.onNodeWithTag(SettingsTestTags.THEME_ROW).performClick()
-
-        assertEquals(listOf<SettingsAction>(SettingsAction.ToggleThemeMenu), actions)
-    }
-
-    @Test
-    fun anExpandedMenuOffersEveryThemeOption() {
-        render(SettingsFixtures.contentState(isThemeMenuExpanded = true))
-
         DarkThemeConfig.entries.forEach { config ->
-            composeRule.onNodeWithTag(SettingsTestTags.themeOption(config), useUnmergedTree = true)
-                .assertExists()
+            composeRule.onNodeWithTag(SettingsTestTags.themeCard(config)).assertExists()
         }
     }
 
+    /** Light, Dark, System — the picked design's order, not the enum's declaration order. */
     @Test
-    fun selectingLightDispatchesSelectThemeWithLight() {
-        render(SettingsFixtures.contentState(isThemeMenuExpanded = true))
+    fun themeCardsRunLightThenDarkThenSystem() {
+        render(SettingsFixtures.contentState())
 
-        composeRule.onNodeWithTag(SettingsTestTags.themeOption(DarkThemeConfig.LIGHT))
-            .performClick()
+        val light = leftOf(SettingsTestTags.themeCard(DarkThemeConfig.LIGHT))
+        val dark = leftOf(SettingsTestTags.themeCard(DarkThemeConfig.DARK))
+        val system = leftOf(SettingsTestTags.themeCard(DarkThemeConfig.FOLLOW_SYSTEM))
+        assertTrue(light < dark)
+        assertTrue(dark < system)
+    }
+
+    @Test
+    fun onlyTheStoredThemeCardReadsAsSelected() {
+        render(SettingsFixtures.contentState(themeConfig = DarkThemeConfig.DARK))
+
+        composeRule.onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.DARK))
+            .assertIsSelected()
+        composeRule.onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.LIGHT))
+            .assertIsNotSelected()
+    }
+
+    @Test
+    fun tappingLightDispatchesSelectThemeWithLight() {
+        render(SettingsFixtures.contentState())
+
+        composeRule.onNodeWithTag(SettingsTestTags.themeCard(DarkThemeConfig.LIGHT)).performClick()
 
         assertEquals(
             listOf<SettingsAction>(SettingsAction.SelectTheme(DarkThemeConfig.LIGHT)),
@@ -139,37 +142,6 @@ class SettingsScreenRobolectricTest {
     }
 
     @Test
-    fun appVersionRowIsStaticWithNoTrailingAffordance() {
-        render(SettingsFixtures.contentState())
-
-        composeRule.onNodeWithTag(SettingsTestTags.APP_VERSION_ROW).assertExists()
-        composeRule.onNodeWithTag(SettingsTestTags.APP_VERSION_VALUE, useUnmergedTree = true)
-            .assertExists()
-        composeRule.onNodeWithTag(
-            SettingsTestTags.chevron(SettingsTestTags.APP_VERSION_ROW),
-            useUnmergedTree = true,
-        ).assertDoesNotExist()
-        composeRule.onNodeWithTag(
-            SettingsTestTags.externalLink(SettingsTestTags.APP_VERSION_ROW),
-            useUnmergedTree = true,
-        ).assertDoesNotExist()
-    }
-
-    @Test
-    fun tappingAppVersionDispatchesNothing() {
-        render(SettingsFixtures.contentState())
-
-        composeRule.onNodeWithTag(SettingsTestTags.APP_VERSION_ROW).performClick()
-
-        assertEquals(emptyList(), actions)
-    }
-
-    /**
-     * The rendered preview still carries Security and Notifications groups that this screen
-     * deliberately does not offer. Counting sections pins the exclusion against a design that
-     * disagrees with it.
-     */
-    @Test
     fun noSecurityOrNotificationsSectionIsRendered() {
         render(SettingsFixtures.contentState())
 
@@ -179,10 +151,6 @@ class SettingsScreenRobolectricTest {
         composeRule.onNodeWithTag(SettingsTestTags.SECTION_ABOUT).assertExists()
     }
 
-    /**
-     * The preview's Account group has a third, destructive Clear Local Data row. Counting rows
-     * fails the moment it — or any other row — is added back.
-     */
     @Test
     fun noClearLocalDataRowIsRendered() {
         render(SettingsFixtures.contentState())
@@ -191,28 +159,10 @@ class SettingsScreenRobolectricTest {
     }
 
     @Test
-    fun errorStateRendersRetryAndDispatchesRetryLoad() {
-        render(SettingsFixtures.errorState())
-
-        composeRule.onNodeWithTag(SettingsTestTags.ERROR_STATE).assertExists()
-        composeRule.onNodeWithTag(SettingsTestTags.ERROR_TITLE, useUnmergedTree = true)
-            .assertIsDisplayed()
-        composeRule.onNodeWithTag(SettingsTestTags.ERROR_BODY, useUnmergedTree = true)
-            .assertIsDisplayed()
-
-        composeRule.onNodeWithTag(SettingsTestTags.RETRY_BUTTON).performClick()
-
-        assertEquals(listOf<SettingsAction>(SettingsAction.RetryLoad), actions)
-    }
-
-    /**
-     * The licences screen composes without a crash and stands up its scaffold and the licence body.
-     * The MPL-2.0 text loads asynchronously off a Compose resource, so this pins the frame and the
-     * body node rather than the resolved text.
-     */
-    @Test
-    fun licencesScreenRendersItsScaffoldFrame() {
-        composeRule.setContent { LicencesScreen(onBack = {}) }
+    fun licencesScreenRendersItsScaffoldAndLicenceBox() {
+        composeRule.setContent {
+            LicencesScreenContent(state = LicencesFixtures.contentState(), onAction = {})
+        }
 
         composeRule.onNodeWithTag(SettingsTestTags.LICENCES_SCREEN).assertExists()
         composeRule.onNodeWithTag(SettingsTestTags.LICENCES_LIST, useUnmergedTree = true)
@@ -220,15 +170,13 @@ class SettingsScreenRobolectricTest {
     }
 
     @Test
-    fun emptyStateRendersTitleAndBodyWithNoSections() {
-        render(SettingsFixtures.emptyState())
+    fun licencesScreenOmitsTheLicenceBoxWhileLoading() {
+        composeRule.setContent {
+            LicencesScreenContent(state = LicencesFixtures.loadingState(), onAction = {})
+        }
 
-        composeRule.onNodeWithTag(SettingsTestTags.EMPTY_STATE).assertExists()
-        composeRule.onNodeWithTag(SettingsTestTags.EMPTY_TITLE, useUnmergedTree = true)
-            .assertIsDisplayed()
-        composeRule.onNodeWithTag(SettingsTestTags.EMPTY_BODY, useUnmergedTree = true)
-            .assertIsDisplayed()
-        assertEquals(0, countOf(SettingsTestTags.SECTION))
-        assertEquals(0, countOf(SettingsTestTags.ROW))
+        composeRule.onNodeWithTag(SettingsTestTags.LICENCES_SCREEN).assertExists()
+        composeRule.onNodeWithTag(SettingsTestTags.LICENCES_LIST, useUnmergedTree = true)
+            .assertDoesNotExist()
     }
 }

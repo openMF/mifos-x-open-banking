@@ -9,34 +9,26 @@
  */
 package org.mifosx.openbanking.feature.settings.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
+import org.mifosx.openbanking.core.designsystem.theme.DesignToken
 import org.mifosx.openbanking.feature.settings.SettingsTestTags
-
-private val HeaderHorizontalPadding = 16.dp
-private val HeaderTopPadding = 20.dp
-private val HeaderBottomPadding = 8.dp
+import template.core.base.designsystem.theme.KptTheme
 
 /**
- * One titled group of settings rows: a tinted header band above a surface holding the rows.
+ * One titled group of settings rows: a label above an elevated, outlined card holding the rows.
  *
- * The header is coloured with the primary role rather than rendered as plain body text — it is the
- * only landmark separating groups on a screen that is otherwise an undifferentiated column of
- * rows, and a neutral header would leave the boundaries invisible.
- *
- * The group carries [testTag] and its header band carries [SettingsTestTags.SECTION], on separate
- * nodes because a second `testTag` on one node replaces the first rather than adding to it. The
- * generic tag is what lets a suite count sections without enumerating them.
+ * @param testTag Carried by the group; its card carries [SettingsTestTags.SECTION] and its label
+ *   [SettingsTestTags.SECTION_TITLE].
  */
 @Composable
 internal fun SettingsSection(
@@ -49,31 +41,32 @@ internal fun SettingsSection(
         modifier = modifier
             .fillMaxWidth()
             .testTag(testTag),
+        verticalArrangement = Arrangement.spacedBy(KptTheme.spacing.sm),
     ) {
+        SettingsSectionLabel(title = title)
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = KptTheme.colorScheme.surfaceContainerLowest,
+            shape = KptTheme.shapes.large,
+            shadowElevation = KptTheme.elevation.level1,
+            border = BorderStroke(DesignToken.strokes.hairline, KptTheme.colorScheme.outlineVariant),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(SettingsTestTags.SECTION),
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(
-                        start = HeaderHorizontalPadding,
-                        end = HeaderHorizontalPadding,
-                        top = HeaderTopPadding,
-                        bottom = HeaderBottomPadding,
-                    )
-                    .testTag(SettingsTestTags.SECTION_TITLE),
-            )
-        }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
             Column(content = content)
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
+}
+
+/** A section's heading, sitting above its content rather than inside it. */
+@Composable
+internal fun SettingsSectionLabel(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = KptTheme.typography.labelMedium,
+        color = KptTheme.colorScheme.primary,
+        modifier = modifier
+            .padding(start = KptTheme.spacing.md)
+            .testTag(SettingsTestTags.SECTION_TITLE),
+    )
 }

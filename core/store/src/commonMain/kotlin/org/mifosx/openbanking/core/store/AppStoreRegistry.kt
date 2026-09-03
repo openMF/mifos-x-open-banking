@@ -50,4 +50,6 @@ object AppStoreRegistry : StoreRegistry() {
     val Statements = store("statements")
     val StatementDetail = store("statementDetail")
     val StatementTransactions = store("statementTransactions")
+
+    val OpenSourceLicence = store("openSourceLicence")
 }

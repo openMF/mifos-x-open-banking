@@ -93,10 +93,6 @@ data class OBPermission(
                 "Products",
                 "Product type, tier, and features for each authorised account",
             ),
-            // ReadRefundAccount is a valid OBIE scope but NOT supported by HSBC UK Personal — sending
-            // it makes the bank reject the whole consent with 400 U005 "Invalid value" at
-            // /Data/Permissions. It is intentionally absent from HSBC's own UK Personal reference
-            // permission set, so it is excluded here. (The enum value is kept as OBIE vocabulary.)
             OBPermission(
                 PermissionId.ReadScheduledPaymentsBasic,
                 "Basic scheduled payments",
