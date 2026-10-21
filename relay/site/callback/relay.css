@@ -1,0 +1,18 @@
+/*
+ * Copyright 2026 Mifos Initiative — MPL-2.0. See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ */
+:root { color-scheme: light dark; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; margin: 0; padding: 1.5rem; text-align: center;
+}
+main { max-width: 26rem; }
+h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+p { margin: 0 0 1rem; line-height: 1.5; opacity: .8; }
+button {
+  font: inherit; min-height: 44px; padding: .6rem 1.2rem; border-radius: .5rem;
+  border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer;
+}
+button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.manual { display: none; }

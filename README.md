@@ -108,16 +108,16 @@ After changing any value, regenerate the config: `./gradlew :core:network:genera
 
 ### 5. Handle the OAuth redirect (consent callback)
 
-After the customer authorises consent, HSBC redirects back to your **registered `redirect_uri`** — a single HTTPS page, the same for every platform. HSBC uses the OIDC hybrid flow, so the result comes back in the URL *fragment*, which only the browser can read. That page is therefore a small **relay** (`docs/consent-callback-page/`): its JavaScript reads the fragment and hands the result to the running app — through a **custom URL scheme** on Android/iOS, or a **localhost loopback** on desktop. The value registered with HSBC is always that HTTPS relay page; the per-platform scheme/port below only govern the relay's second hop back into the app.
+After the customer authorises consent, HSBC redirects back to your **registered `redirect_uri`** — a single HTTPS page, the same for every platform. HSBC uses the OIDC hybrid flow, so the result comes back in the URL *fragment*, which only the browser can read. That page is therefore a small **relay** ([`relay/`](relay/README.md), live at `https://mifos-x-open-banking-relay.pages.dev/callback/` on Cloudflare Pages): its JavaScript reads the fragment and hands the result to the running app — through a **custom URL scheme** on Android/iOS, or a **localhost loopback** on desktop. The value registered with HSBC is always that HTTPS relay page; the per-platform scheme/port below only govern the relay's second hop back into the app.
 
 **If you fork this project, you must:**
 
-1. **Host your own relay page** — deploy a copy of `docs/consent-callback-page/` (`index.html` + `bridge.js`) at an HTTPS URL you control (e.g. GitHub Pages), set `HSBC_REDIRECT_URI` in `local.properties` to it, and register the identical URL with HSBC.
+1. **Host your own relay page** — deploy `relay/site/` to an HTTPS host you control (the reference uses Cloudflare Pages so the security headers in `relay/site/_headers` apply — see [`relay/README.md`](relay/README.md)), set `HSBC_REDIRECT_URI` in `local.properties` to its `/callback/` URL, and register the identical URL with HSBC.
 2. **Choose your own custom scheme** (the reference uses `org.mifosx.openbanking`) and set it — identically — in every file below.
 
 | Platform | File | What to set |
 |----------|------|-------------|
-| Relay page | `docs/consent-callback-page/bridge.js` | `SCHEME` (your scheme) and `LOOPBACK_PORT` (desktop, default `8765`) |
+| Relay page | `relay/site/callback/bridge.js` | `SCHEME` (your scheme) and `LOOPBACK_PORT` (desktop, default `8765`) |
 | Android | `cmp-android/src/main/AndroidManifest.xml` | the `<data android:scheme="…">` entries in the redirect `<intent-filter>` |
 | Android | `cmp-android/src/main/kotlin/cmp/android/app/ConsentRedirectIntent.kt` | `CONSENT_REDIRECT_SCHEME` (must match the manifest) |
 | iOS | `cmp-ios/iosApp/Info.plist` | the `CFBundleURLSchemes` entry |
@@ -141,10 +141,30 @@ Android and iOS receive the custom scheme directly (the OS wakes the app and del
 
 Never commit or log the private key, `transport.p12`, the PKCS#12 passphrase, the Software Statement, or any access / refresh / id tokens. The `certs/` directories and all `*.pem` / `*.p12` files are git-ignored. `client_id` and `kid` are non-secret identifiers.
 
+## 🔐 Consent relay
+
+**Live:** <https://mifos-x-open-banking-relay.pages.dev> · **Redirect URI:** `https://mifos-x-open-banking-relay.pages.dev/callback/` · **Source:** [`relay/`](relay/README.md)
+
+The consent relay is the small web page your bank redirects to after you approve access or a payment. HSBC returns its answer in the URL fragment, which only the browser can read, so the page reads it and hands it to the app: over `127.0.0.1:8765` on desktop, or by opening the app on mobile.
+
+- **Stores nothing.** It has no server code, database, cookies, analytics or third-party scripts.
+- **Holds no keys.** It cannot sign in or make payments on its own.
+- **Scrubs the code from browser history** as soon as it has been read.
+- **Locked down by headers** in [`relay/site/_headers`](relay/site/_headers):
+  - a strict CSP with no inline code
+  - no framing and no caching
+  - no referrer, plus HSTS
+- **Verify the headers yourself:** `curl -I https://mifos-x-open-banking-relay.pages.dev/callback/`
+
+It's hosted on Cloudflare Pages and released under MPL-2.0 like the rest of the app. Tests, deploy and rollback steps are in [`relay/README.md`](relay/README.md).
+
+**Forking the app?** Deploy your own copy of `relay/site/` and register your own URL with your bank. Never point your build at this one.
+
 ## 📁 Project Structure
 
 The project follows a modular architecture:
 
+- **Consent relay**: `relay/`, the OAuth redirect page on Cloudflare Pages (see [Consent relay](#-consent-relay))
 - **Platform Modules**: `cmp-android`, `cmp-ios`, `cmp-desktop`, `cmp-web`, `cmp-navigation`
 - **Core Modules**: common, reusable components shared across all features (`core/*`, `core-base/*`)
 - **Feature Modules**: self-contained feature implementations (`feature/*`)

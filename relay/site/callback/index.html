@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>Returning to the app…</title>
+  <link rel="stylesheet" href="relay.css">
+</head>
+<body>
+<main>
+  <h1 id="heading" aria-live="polite">Returning to the app…</h1>
+  <p id="detail">You can close this tab once the app reopens.</p>
+  <div id="manual" class="manual">
+    <button type="button" id="retry">Reopen the app</button>
+  </div>
+</main>
+<!--
+  Bridge for the HSBC OBIE consent redirect. bridge.js holds the pure helpers, relay.js the flow; both are
+  tested with `node --test "relay/test/*.test.js"`. No inline script, so the page runs under script-src 'self'.
+-->
+<script src="bridge.js"></script>
+<script src="relay.js"></script>
+</body>
+</html>
