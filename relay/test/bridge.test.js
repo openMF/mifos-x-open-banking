@@ -196,3 +196,47 @@ test('_headers ships the strict policy for every page', () => {
     'X-Content-Type-Options: nosniff',
   ]) assert.ok(h.includes(needle), `_headers missing: ${needle}`);
 });
+
+/* ── legal pages + branding ── */
+
+for (const page of ['privacy', 'terms']) {
+  test(`${page} page is static, styled from the shared sheet and cross-linked`, () => {
+    const html = fs.readFileSync(path.join(SITE, page, 'index.html'), 'utf8');
+    assert.doesNotMatch(html, /<script\b/, `${page} needs no script`);
+    assert.doesNotMatch(html, /<style\b|style="/, 'no inline styles — CSP style-src self');
+    assert.doesNotMatch(html, /<form\b|<input\b/, 'legal pages never collect anything');
+    assert.ok(html.includes('href="../site.css"'), 'styles come from the shared sheet');
+    assert.match(html, /Last updated \d{1,2} \w+ \d{4}/, 'legal pages carry a dated version');
+    for (const needle of ['href="../"', 'not affiliated with HSBC', 'security-disclosure@mifos.org'])
+      assert.ok(html.includes(needle), `${page} missing: ${needle}`);
+  });
+}
+
+test('every public page links both legal pages', () => {
+  const pages = {
+    'index.html': ['href="privacy/"', 'href="terms/"'],
+    'callback/index.html': ['href="../privacy/"', 'href="../terms/"'],
+    'privacy/index.html': ['href="../terms/"'],
+    'terms/index.html': ['href="../privacy/"'],
+  };
+  for (const [file, needles] of Object.entries(pages)) {
+    const html = fs.readFileSync(path.join(SITE, file), 'utf8');
+    for (const n of needles) assert.ok(html.includes(n), `${file} missing ${n}`);
+  }
+});
+
+test('privacy policy states the facts the relay is built on', () => {
+  const html = fs.readFileSync(path.join(SITE, 'privacy', 'index.html'), 'utf8');
+  for (const needle of ['127.0.0.1', 'org.mifosx.openbanking://callback', 'no cookies', 'https://www.cloudflare.com/privacypolicy/', 'info@mifos.org', 'https://mifos.org/privacy-policy/'])
+    assert.ok(html.includes(needle), `privacy policy missing: ${needle}`);
+});
+
+test('brand assets referenced by the pages exist and nothing loads cross-origin', () => {
+  for (const f of ['mifos-logo.png', 'mifos-logo-dark.png', 'mifos-mark.svg'])
+    assert.ok(fs.statSync(path.join(SITE, 'assets', f)).size > 0, `missing asset ${f}`);
+  for (const file of ['index.html', 'privacy/index.html', 'terms/index.html', 'callback/index.html']) {
+    const html = fs.readFileSync(path.join(SITE, file), 'utf8');
+    const loads = html.match(/<(?:img|script|link)\b[^>]*(?:src|href)="https?:\/\/[^"]*"/g) || [];
+    assert.deepEqual(loads, [], `${file} loads a cross-origin resource`);
+  }
+});

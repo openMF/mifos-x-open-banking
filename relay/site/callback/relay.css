@@ -1,18 +1,39 @@
 /*
  * Copyright 2026 Mifos Initiative — MPL-2.0. See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * Colours from the Mifos logo's four-part X (see ../site.css).
  */
-:root { color-scheme: light dark; }
+:root {
+  color-scheme: light dark;
+  --navy: #125eaa; --sky: #1e9de7; --green: #21a53f; --lime: #a6cf62;
+  --ink: #1f2328; --muted: #535a63; --paper: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #e8ebef; --muted: #a9b1bb; --paper: #15191e; --navy: #6cbcf0; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; margin: 0; padding: 1.5rem; text-align: center;
+  background: var(--paper); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column; min-height: 100vh; text-align: center;
 }
-main { max-width: 26rem; }
-h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
-p { margin: 0 0 1rem; line-height: 1.5; opacity: .8; }
+.band { display: flex; height: 6px; }
+.band span { flex: 1; }
+.band span:nth-child(1) { background: #125eaa; }
+.band span:nth-child(2) { background: var(--lime); }
+.band span:nth-child(3) { background: var(--sky); }
+.band span:nth-child(4) { background: var(--green); }
+main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; max-width: 26rem; margin: 0 auto; }
+.mark { display: block; margin-bottom: 1rem; }
+.product { margin: 0 0 .25rem; font-size: .9rem; font-weight: 600; color: var(--muted); }
+h1 { font-size: 1.4rem; margin: 0 0 .5rem; letter-spacing: -.01em; }
+p { margin: 0 0 1.25rem; line-height: 1.5; color: var(--muted); }
 button {
-  font: inherit; min-height: 44px; padding: .6rem 1.2rem; border-radius: .5rem;
-  border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer;
+  font: inherit; font-weight: 600; min-height: 44px; padding: .6rem 1.4rem; border-radius: 8px;
+  border: 0; background: var(--navy); color: #fff; cursor: pointer;
 }
-button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { button { color: #0d1620; } }
+button:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
 .manual { display: none; }
+footer { display: flex; justify-content: center; gap: 1.25rem; padding: 1rem; font-size: .85rem; }
+footer a { color: var(--muted); }

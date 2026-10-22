@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mifos">
+  <title>Mifos</title>
+  <path fill="#A6CF62" d="M4 4h56L32 32z"/>
+  <path fill="#1E9DE7" d="M60 4v56L32 32z"/>
+  <path fill="#21A53F" d="M60 60H4l28-28z"/>
+  <path fill="#125EAA" d="M4 60V4l28 28z"/>
+  <path stroke="#fff" stroke-width="6" d="M4 4l56 56M60 4L4 60"/>
+</svg>

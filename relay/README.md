@@ -24,7 +24,10 @@ It holds **no secrets** and stores nothing.
 relay/
 ├── site/                     ← exactly what is deployed
 │   ├── index.html            ← public root page: what the relay does, data handling, source, licence, security contact
-│   ├── site.css              ← root page styles (external — CSP has no 'unsafe-inline')
+│   ├── privacy/index.html    ← privacy policy (dated; update the date + text if the relay's data handling changes)
+│   ├── terms/index.html      ← terms of use (dated)
+│   ├── site.css              ← shared styles for the public pages (external — CSP has no 'unsafe-inline')
+│   ├── assets/               ← Mifos logo (light + dark) and the X mark used as favicon — self-hosted, img-src 'self'
 │   ├── _headers              ← security headers for every response
 │   └── callback/
 │       ├── index.html        ← the redirect target — no inline script
