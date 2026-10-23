@@ -28,7 +28,7 @@ private const val CONSENTS = "/v1/consents/vrp"
 private const val PAYMENTS = "/v1/vrp/payments"
 
 /**
- * The Worker's variable-recurring-payments surface (bff/src/routes.ts). The Worker holds the
+ * The Worker's variable-recurring-payments surface (bank-gateway/src/routes.ts). The Worker holds the
  * consent's refresh token and refreshes on 401; the app only presents its session. Writes carry the
  * caller's idempotency key and are sent as compact JSON, which the Worker signs byte-for-byte.
  */

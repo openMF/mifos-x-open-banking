@@ -12,7 +12,7 @@ package org.mifosx.openbanking.feature.login.browser
 import kotlinx.browser.window
 
 /**
- * Web (js / wasmJs): the app is a plain HTTPS client of the Worker BFF (no client certificate), so it
+ * Web (js / wasmJs): the app is a plain HTTPS client of the bank gateway Worker (no client certificate), so it
  * can start the consent journey — the tab navigates to the Worker-signed HSBC authorize URL.
  *
  * Known gap: the relay page does not yet hand the result back to a web origin (it knows the mobile

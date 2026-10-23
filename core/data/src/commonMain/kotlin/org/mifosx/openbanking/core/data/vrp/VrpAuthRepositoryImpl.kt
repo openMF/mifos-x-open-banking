@@ -19,7 +19,7 @@ import template.core.base.network.NetworkResult
 private const val ERROR_ACCESS_DENIED = "access_denied"
 
 internal class VrpAuthRepositoryImpl(
-    private val bff: Session,
+    private val gateway: Session,
     private val session: VrpAuthSession,
 ) : VrpAuthRepository {
 
@@ -81,7 +81,7 @@ internal class VrpAuthRepositoryImpl(
         validated = null
 
         val request = CompleteAuthRequest(flowId, code, callback.idToken.orEmpty(), callback.state.orEmpty())
-        return when (val result = bff.completeAuth(request)) {
+        return when (val result = gateway.completeAuth(request)) {
             is NetworkResult.Error -> result
             is NetworkResult.Success -> {
                 session.clearAuthorisationInFlight()

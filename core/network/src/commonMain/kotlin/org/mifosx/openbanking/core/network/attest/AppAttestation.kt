@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
 package org.mifosx.openbanking.core.network.attest
 
@@ -13,7 +13,7 @@ package org.mifosx.openbanking.core.network.attest
  * Device attestation for the Worker's `attest: true` routes (every consent POST, `/v1/auth/complete`,
  * the VRP funds check). Bound per platform in `networkPlatformModule`.
  *
- * Wire format (bff/src/attest/gate.ts): both platforms sign over `clientData` = UTF-8
+ * Wire format (bank-gateway/src/attest/gate.ts): both platforms sign over `clientData` = UTF-8
  * `"METHOD /path\n"` followed by the exact body bytes.
  * - Android: `play <challenge>.<token>`, the Play Integrity standard request with
  *   `requestHash = base64url(SHA-256(challenge ‖ clientData))`.
@@ -25,11 +25,11 @@ interface AppAttestation {
     val platform: String
 
     /** The `X-Attestation` header over [clientData], or null when this device cannot attest. */
-    suspend fun header(clientData: ByteArray, bff: AttestationBff): String?
+    suspend fun header(clientData: ByteArray, gateway: AttestationGateway): String?
 }
 
 /** The Worker calls an attestation provider may make. */
-interface AttestationBff {
+interface AttestationGateway {
     /** A single-use challenge from `POST /v1/attest/challenge`, or null. */
     suspend fun challenge(): String?
 
@@ -39,5 +39,5 @@ interface AttestationBff {
 
 /** Desktop and web: no attestation — the Worker gates them on session + rate limits only (GOAL D3). */
 class NoAttestation(override val platform: String) : AppAttestation {
-    override suspend fun header(clientData: ByteArray, bff: AttestationBff): String? = null
+    override suspend fun header(clientData: ByteArray, gateway: AttestationGateway): String? = null
 }

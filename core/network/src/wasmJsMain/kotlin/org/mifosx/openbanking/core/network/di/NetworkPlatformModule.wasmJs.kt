@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
 package org.mifosx.openbanking.core.network.di
 

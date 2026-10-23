@@ -14,10 +14,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.callback.impl.ConsentCallbackRepositoryImpl
 import org.mifosx.openbanking.core.data.completedAuthJson
 import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.login.ConsentResult
 import org.mifosx.openbanking.core.data.login.impl.LoginRepositoryImpl
@@ -41,7 +41,7 @@ import kotlin.test.assertTrue
  * [ConsentCallbackRepositoryImpl] and real [SettingsConsentSession] together and feeds the callback
  * the `state` the Worker's authorize URL carried — the join no unit test can check: whether the values
  * one side produces are the values the other side accepts, and whether the session lands where the
- * BFF client reads it.
+ * gateway client reads it.
  */
 class ConsentJourneyIntegrationTest {
 
@@ -50,11 +50,15 @@ class ConsentJourneyIntegrationTest {
     private val pendingAuthStore = SettingsPendingAuthStore(settings) { now }
     private var minted = 0
 
-    private fun client(consentStatus: String = "AUTH") = bffClient(settings) { request ->
+    private fun client(consentStatus: String = "AUTH") = gatewayClient(settings) { request ->
         when {
             request.url.encodedPath == "/v1/consents/ais" -> {
                 minted++
-                respond(consentStartJson(CONSENT_ID, flowId = "flow-$minted", state = "state-$minted"), HttpStatusCode.OK, jsonHeaders)
+                respond(
+                    consentStartJson(CONSENT_ID, flowId = "flow-$minted", state = "state-$minted"),
+                    HttpStatusCode.OK,
+                    jsonHeaders,
+                )
             }
             request.url.encodedPath == "/v1/auth/complete" ->
                 respond(completedAuthJson(CONSENT_ID), HttpStatusCode.OK, jsonHeaders)

@@ -17,17 +17,17 @@ import org.mifosx.openbanking.core.network.api.OpenSourceLicenceAPI
 import org.mifosx.openbanking.core.network.api.Pisp
 import org.mifosx.openbanking.core.network.api.Session
 import org.mifosx.openbanking.core.network.api.Vrp
-import org.mifosx.openbanking.core.network.bffHttpClient
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 
 /**
- * The networking graph: one plain HTTPS client to the Cloudflare Worker BFF and the API facades over
+ * The networking graph: one plain HTTPS client to the bank gateway (Cloudflare Worker) and the API facades over
  * it. No certificate, signing key or bank identifier is bound anywhere — the Worker holds them.
  * [networkPlatformModule] contributes only the platform's attestation provider.
  */
 val NetworkModule = module {
     includes(networkPlatformModule)
 
-    single { bffHttpClient(settings = get<Settings>(named("secure")), attestation = get()) }
+    single { gatewayHttpClient(settings = get<Settings>(named("secure")), attestation = get()) }
 
     single { Session(get()) }
 

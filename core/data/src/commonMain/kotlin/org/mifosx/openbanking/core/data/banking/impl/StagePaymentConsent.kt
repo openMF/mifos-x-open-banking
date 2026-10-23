@@ -27,21 +27,20 @@ private const val AWAITING_AUTHORISATION = "AWAU"
 internal fun PaymentAuthSession.recordStaged(
     started: NetworkResult<ConsentStart, NetworkError>,
     type: ConsentType,
-): NetworkResult<StagedConsent, NetworkError> {
-    val start = when (started) {
-        is NetworkResult.Success -> started.data
-        is NetworkResult.Error -> return started
+): NetworkResult<StagedConsent, NetworkError> = when (started) {
+    is NetworkResult.Error -> started
+    is NetworkResult.Success -> {
+        val state = started.data.authorizeState()
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("authorizeUrl carries no state"))
+        savePending(consentId = started.data.consentId, state = state, flowId = started.data.flowId, type = type)
+        NetworkResult.Success(
+            StagedConsent(
+                consentId = started.data.consentId,
+                status = AWAITING_AUTHORISATION,
+                authorizationUrl = started.data.authorizeUrl,
+                state = state,
+                flowId = started.data.flowId,
+            ),
+        )
     }
-    val state = start.authorizeState()
-        ?: return NetworkResult.Error(NetworkError.Client.BadRequest("authorizeUrl carries no state"))
-    savePending(consentId = start.consentId, state = state, flowId = start.flowId, type = type)
-    return NetworkResult.Success(
-        StagedConsent(
-            consentId = start.consentId,
-            status = AWAITING_AUTHORISATION,
-            authorizationUrl = start.authorizeUrl,
-            state = state,
-            flowId = start.flowId,
-        ),
-    )
 }

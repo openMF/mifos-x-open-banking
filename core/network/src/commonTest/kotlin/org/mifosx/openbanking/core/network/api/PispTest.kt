@@ -10,12 +10,6 @@
 package org.mifosx.openbanking.core.network.api
 
 import com.russhwolf.settings.MapSettings
-import org.mifosx.openbanking.core.network.FakeAttestation
-import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
-import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
-import org.mifosx.openbanking.core.network.SESSION_KEY
-import org.mifosx.openbanking.core.network.TEST_SESSION
-import org.mifosx.openbanking.core.network.bffHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
@@ -27,6 +21,12 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.mifosx.openbanking.core.network.FakeAttestation
+import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
+import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
+import org.mifosx.openbanking.core.network.SESSION_KEY
+import org.mifosx.openbanking.core.network.TEST_SESSION
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.CreditorAccount
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Data
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DebtorAccount
@@ -104,7 +104,11 @@ class PispTest {
     ): Pisp {
         val engine = MockEngine { request ->
             if (request.url.encodedPath == "/v1/attest/challenge") {
-                return@MockEngine respond("""{"challenge":"c"}""", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                return@MockEngine respond(
+                    """{"challenge":"c"}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
             }
             captured += RecordedRequest(
                 method = request.method,
@@ -118,7 +122,8 @@ class PispTest {
                 body = request.body.toByteArray().decodeToString(),
             )
             // A consent create answers with the Worker's {flowId, consentId, authorizeUrl}.
-            val isConsentCreate = request.method == HttpMethod.Post && request.url.encodedPath.startsWith("/v1/consents/")
+            val isConsentCreate = request.method == HttpMethod.Post &&
+                request.url.encodedPath.startsWith("/v1/consents/")
             respond(
                 content = if (isConsentCreate) CONSENT_START else responseBody,
                 status = status,
@@ -126,7 +131,7 @@ class PispTest {
             )
         }
         val settings = MapSettings(SESSION_KEY to TEST_SESSION)
-        return Pisp(bffHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
+        return Pisp(gatewayHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
     }
 
     private fun consumerConsentRequest(): DomesticPaymentConsentRequest = DomesticPaymentConsentRequest(

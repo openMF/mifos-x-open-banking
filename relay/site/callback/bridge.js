@@ -19,7 +19,7 @@
  * Keep in lock-step with:
  *   - CONSENT_REDIRECT_SCHEME  (cmp-android ConsentRedirectIntent.kt, cmp-shared ConsentRedirectBridge.kt)
  *   - ConsentRedirectListener.PORT  (cmp-desktop)
- *   - WEB_RETURN_ORIGINS  (bff/wrangler.toml — same entries, same order; the relay test pins it)
+ *   - WEB_RETURN_ORIGINS  (bank-gateway/wrangler.toml — same entries, same order; the relay test pins it)
  */
 
 var SCHEME = 'org.mifosx.openbanking';

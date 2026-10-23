@@ -18,10 +18,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.mifosx.openbanking.core.data.callback.CallbackSecurityRejected
 import org.mifosx.openbanking.core.data.callback.ConsentRejectedAtBank
-import org.mifosx.openbanking.core.data.callback.ConsentStatusResult
 import org.mifosx.openbanking.core.data.callback.SettingsConsentSession
 import org.mifosx.openbanking.core.data.callback.ValidationResult
-import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackAction
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackEvent
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackUiState
@@ -91,7 +89,7 @@ class ConsentCallbackViewModelTest {
         vm.processCallback()
         vm.stateFlow.first { it is ConsentCallbackUiState.Content }
 
-        assertEquals("worker-session", secureSettings.getStringOrNull("bff_session"))
+        assertEquals("worker-session", secureSettings.getStringOrNull("gateway_session"))
         assertTrue(consentSession.isActive())
         assertTrue(secureSettings.keys.none { "token" in it }, "keys: ${secureSettings.keys}")
     }
@@ -276,18 +274,18 @@ class ConsentCallbackViewModelTest {
 
     @Test
     fun `NavigateRetry emits NavigateToLogin and keeps the session`() = runTest {
-        secureSettings.putString("bff_session", "existing")
+        secureSettings.putString("gateway_session", "existing")
         val vm = createViewModel()
 
         vm.trySendAction(ConsentCallbackAction.NavigateRetry)
 
         assertIs<ConsentCallbackEvent.NavigateToLogin>(vm.eventFlow.first())
-        assertEquals("existing", secureSettings.getStringOrNull("bff_session"))
+        assertEquals("existing", secureSettings.getStringOrNull("gateway_session"))
     }
 
     @Test
     fun `NavigateLogin clears the secure session before emitting NavigateToLogin`() = runTest {
-        secureSettings.putString("bff_session", "existing")
+        secureSettings.putString("gateway_session", "existing")
         val vm = createViewModel()
 
         vm.trySendAction(ConsentCallbackAction.NavigateLogin)

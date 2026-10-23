@@ -20,12 +20,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.common.AccountScheme
 import org.mifosx.openbanking.core.data.WORKER_SESSION
-import org.mifosx.openbanking.core.data.bffClient
-import org.mifosx.openbanking.core.data.consentStartJson
-import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.banking.impl.ScheduledPaymentInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.callback.SettingsPaymentAuthSession
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
@@ -145,7 +145,7 @@ class ScheduledPaymentInitiationRepositoryImplTest {
         errorBody: String? = null,
         status: HttpStatusCode = HttpStatusCode.Created,
     ): ScheduledPaymentInitiationRepositoryImpl {
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             val path = request.url.encodedPath
             captured += Recorded(
                 path = path,
@@ -293,7 +293,8 @@ class ScheduledPaymentInitiationRepositoryImplTest {
 
     @Test
     fun aWorkerAnswerWithNoConsentIdIsAnError() = runTest {
-        val result = repository(errorBody = """{"flowId":"f","authorizeUrl":"https://x/?state=s"}""").stagePayment(draft())
+        val result = repository(errorBody = """{"flowId":"f","authorizeUrl":"https://x/?state=s"}""")
+            .stagePayment(draft())
 
         assertIs<NetworkResult.Error<*>>(result)
     }

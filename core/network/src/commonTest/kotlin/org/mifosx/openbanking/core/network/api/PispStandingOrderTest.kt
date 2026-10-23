@@ -10,12 +10,6 @@
 package org.mifosx.openbanking.core.network.api
 
 import com.russhwolf.settings.MapSettings
-import org.mifosx.openbanking.core.network.FakeAttestation
-import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
-import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
-import org.mifosx.openbanking.core.network.SESSION_KEY
-import org.mifosx.openbanking.core.network.TEST_SESSION
-import org.mifosx.openbanking.core.network.bffHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
@@ -27,6 +21,12 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.mifosx.openbanking.core.network.FakeAttestation
+import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
+import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
+import org.mifosx.openbanking.core.network.SESSION_KEY
+import org.mifosx.openbanking.core.network.TEST_SESSION
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderConsentRequest
@@ -34,7 +34,6 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder
 import org.mifosx.openbanking.core.network.pisp.obieBody
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.CreditorAccount as SoCreditorAccount
@@ -283,7 +282,11 @@ class PispStandingOrderTest {
     ): Pisp {
         val engine = MockEngine { request ->
             if (request.url.encodedPath == "/v1/attest/challenge") {
-                return@MockEngine respond("""{"challenge":"c"}""", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                return@MockEngine respond(
+                    """{"challenge":"c"}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
             }
             captured += RecordedRequest(
                 method = request.method,
@@ -297,7 +300,8 @@ class PispStandingOrderTest {
                 body = request.body.toByteArray().decodeToString(),
             )
             // A consent create answers with the Worker's {flowId, consentId, authorizeUrl}.
-            val isConsentCreate = request.method == HttpMethod.Post && request.url.encodedPath.startsWith("/v1/consents/")
+            val isConsentCreate = request.method == HttpMethod.Post &&
+                request.url.encodedPath.startsWith("/v1/consents/")
             respond(
                 content = if (isConsentCreate) CONSENT_START else responseBody,
                 status = status,
@@ -305,6 +309,6 @@ class PispStandingOrderTest {
             )
         }
         val settings = MapSettings(SESSION_KEY to TEST_SESSION)
-        return Pisp(bffHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
+        return Pisp(gatewayHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
     }
 }

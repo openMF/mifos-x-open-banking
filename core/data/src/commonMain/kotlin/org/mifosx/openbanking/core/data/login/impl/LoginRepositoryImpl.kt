@@ -31,19 +31,20 @@ class LoginRepositoryImpl(
 
     override suspend fun createConsentAndBuildAuthorizationUrl(): NetworkResult<ConsentResult, NetworkError> {
         val request = AisConsentRequest(permissions = OBPermission.ALL.map { it.id.obieScope })
-        val start = when (val result = session.startAisConsent(request)) {
-            is NetworkResult.Success -> result.data
-            is NetworkResult.Error -> return result
+        return when (val result = session.startAisConsent(request)) {
+            is NetworkResult.Error -> result
+            is NetworkResult.Success -> {
+                val state = result.data.authorizeState()
+                    ?: return NetworkResult.Error(NetworkError.Client.BadRequest("authorizeUrl carries no state"))
+                NetworkResult.Success(
+                    ConsentResult(
+                        authorizationUrl = result.data.authorizeUrl,
+                        state = state,
+                        flowId = result.data.flowId,
+                        consentId = result.data.consentId,
+                    ),
+                )
+            }
         }
-        val state = start.authorizeState()
-            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("authorizeUrl carries no state"))
-        return NetworkResult.Success(
-            ConsentResult(
-                authorizationUrl = start.authorizeUrl,
-                state = state,
-                flowId = start.flowId,
-                consentId = start.consentId,
-            ),
-        )
     }
 }

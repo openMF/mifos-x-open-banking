@@ -21,7 +21,7 @@ import kotlin.time.Instant
 
 /**
  * Pins the storage contract [SettingsConsentSession] backs: the Worker session gates the "signed in"
- * state, lives under the one key the BFF client reads, and the consent id + expiry round-trip and are
+ * state, lives under the one key the gateway client reads, and the consent id + expiry round-trip and are
  * wiped alongside it on [ConsentSession.clear].
  */
 @OptIn(ExperimentalTime::class)
@@ -33,7 +33,7 @@ class ConsentSessionTest {
     private val token = "worker-session-id"
 
     @Test
-    fun aSavedSessionMakesItActiveUnderTheKeyTheBffClientReads() {
+    fun aSavedSessionMakesItActiveUnderTheKeyTheGatewayClientReads() {
         session.save(token)
 
         assertTrue(session.isActive())

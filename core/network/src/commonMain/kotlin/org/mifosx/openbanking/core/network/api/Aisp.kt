@@ -38,7 +38,7 @@ private const val AIS = "/v1/ais"
 private const val CONSENTS = "/v1/consents/ais"
 
 /**
- * The Worker's AIS surface (bff/src/routes.ts). One call per HSBC read; every call is session-gated
+ * The Worker's AIS surface (bank-gateway/src/routes.ts). One call per HSBC read; every call is session-gated
  * (`Authorization: Session`, attached by the client) and returns a [NetworkResult]. The Worker holds
  * the PSU token, refreshes it, and rewrites every `Links` URL to its own `/v1/ais/page?cursor=` form.
  * AIS consent creation lives in [Session.startAisConsent], because it runs before a session exists.

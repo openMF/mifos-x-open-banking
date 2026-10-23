@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.data.WORKER_SESSION
-import org.mifosx.openbanking.core.data.bffClient
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
@@ -138,7 +138,7 @@ class VrpPaymentRepositoryImplTest {
         paymentStatus: String = "ACSP",
         resourceStatus: HttpStatusCode = HttpStatusCode.Created,
     ): Triple<VrpPaymentRepositoryImpl, FakePaymentDao, MutableList<Recorded>> {
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             val path = request.url.encodedPath
             captured += Recorded(
                 path = path,

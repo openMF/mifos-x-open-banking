@@ -20,8 +20,8 @@ import org.mifosx.openbanking.core.data.callback.workerErrorCode
 import org.mifosx.openbanking.core.data.util.toScreenState
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.network.api.Aisp
-import org.mifosx.openbanking.core.network.api.CompletedAuth
 import org.mifosx.openbanking.core.network.api.CompleteAuthRequest
+import org.mifosx.openbanking.core.network.api.CompletedAuth
 import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState

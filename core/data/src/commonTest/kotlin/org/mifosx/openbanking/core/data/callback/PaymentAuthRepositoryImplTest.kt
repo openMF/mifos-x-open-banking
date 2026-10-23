@@ -20,10 +20,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.mifosx.openbanking.core.data.WORKER_SESSION
-import org.mifosx.openbanking.core.data.bffClient
-import org.mifosx.openbanking.core.data.completedAuthJson
-import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.callback.impl.PaymentAuthRepositoryImpl
+import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
@@ -60,7 +60,7 @@ class PaymentAuthRepositoryImplTest {
     private fun repository(
         session: PaymentAuthSession = SettingsPaymentAuthSession(MapSettings()),
     ): PaymentAuthRepositoryImpl {
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             captured += Recorded(
                 path = request.url.encodedPath,
                 authorization = request.headers[HttpHeaders.Authorization],
@@ -81,7 +81,12 @@ class PaymentAuthRepositoryImplTest {
 
     private fun pendingSession(): PaymentAuthSession =
         SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = CONSENT_ID, state = STATE, flowId = FLOW_ID, type = ConsentType.DomesticSinglePayment)
+            savePending(
+                consentId = CONSENT_ID,
+                state = STATE,
+                flowId = FLOW_ID,
+                type = ConsentType.DomesticSinglePayment,
+            )
         }
 
     /**

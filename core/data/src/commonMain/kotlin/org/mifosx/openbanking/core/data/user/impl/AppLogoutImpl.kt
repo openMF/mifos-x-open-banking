@@ -31,7 +31,7 @@ import org.mifosx.openbanking.core.store.infra.StoreCacheManager
  * user id this AISP app does not have and emits a logout event nothing consumes.
  */
 internal class AppLogoutImpl(
-    private val bffSession: Session,
+    private val gatewaySession: Session,
     private val consentSession: ConsentSession,
     private val paymentAuthSession: PaymentAuthSession,
     private val userDataRepository: UserDataRepository,
@@ -50,7 +50,7 @@ internal class AppLogoutImpl(
         // 2. End the Worker session, revoking the sign-in consent at the bank on the way (best effort:
         //    an expired, revoked or unreachable consent must not stop the user signing out).
         if (consentSession.isActive()) {
-            runCatching { bffSession.logout(revoke = consentSession.consentId() != null) }
+            runCatching { gatewaySession.logout(revoke = consentSession.consentId() != null) }
         }
 
         // 3. Forget the session locally. This is what makes ConsentSession.isActive() false.

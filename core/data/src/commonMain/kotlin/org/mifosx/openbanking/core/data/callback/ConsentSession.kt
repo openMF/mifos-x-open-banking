@@ -22,7 +22,7 @@ import kotlin.time.Instant
  * a session. Deriving it from the stored session keeps the two from drifting.
  *
  * The app holds no bank token at all: the Worker keeps the PSU tokens and refreshes them. The session
- * id lives under [SESSION_KEY], the one key `BffHttpClient` reads on every request, so there is
+ * id lives under [SESSION_KEY], the one key `GatewayHttpClient` reads on every request, so there is
  * exactly one session store and nothing for a second copy to disagree with.
  */
 interface ConsentSession {

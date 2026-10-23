@@ -133,7 +133,7 @@ class TransactionsRepositoryImplTest {
 
     @Test
     fun firstPageMapsRowsAndSurfacesCursorAndTotalPages() = runTest {
-        val next = "https://bff.example/v1/ais/page?cursor=c-1"
+        val next = "https://gateway.example/v1/ais/page?cursor=c-1"
         val body = """
             {"Data":{"Transaction":[
               {"AccountId":"acc-1","TransactionId":"t1","CreditDebitIndicator":"Debit","Status":"BOOK",
@@ -171,7 +171,8 @@ class TransactionsRepositoryImplTest {
             ]},"Meta":{"TotalPages":3}}
         """.trimIndent()
 
-        val result = repo(FakeFetchedAtRepository(), aisp(body)).nextPage("https://bff.example/v1/ais/page?cursor=c-2")
+        val result = repo(FakeFetchedAtRepository(), aisp(body))
+            .nextPage("https://gateway.example/v1/ais/page?cursor=c-2")
 
         val page = assertIs<NetworkResult.Success<TransactionsPage>>(result).data
         assertEquals("t2", page.items.first().transactionId)
@@ -183,7 +184,7 @@ class TransactionsRepositoryImplTest {
     @Test
     fun cursorPagerFollowsNextLinkAcrossTwoPagesThenStops() = runTest {
         // The Worker has already rewritten the bank link to its own opaque cursor.
-        val page1Url = "https://bff.example/v1/ais/page?cursor=c-1"
+        val page1Url = "https://gateway.example/v1/ais/page?cursor=c-1"
         val page0Body = """
             {"Data":{"Transaction":[
               {"TransactionId":"a","AccountId":"acc-1","CreditDebitIndicator":"Debit","Status":"BOOK",

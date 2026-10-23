@@ -9,16 +9,16 @@
  */
 package org.mifosx.openbanking.core.data.user
 
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpStatusCode
-import org.mifosx.openbanking.core.data.bffClient
-import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.user.impl.AppLogoutImpl
 import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
@@ -68,7 +68,7 @@ class AppLogoutImplTest {
         vrpPaymentDao: FakeVrpPaymentDao = FakeVrpPaymentDao(),
         vrpAuthSession: RecordingVrpAuthSession = RecordingVrpAuthSession(),
     ) = AppLogoutImpl(
-        bffSession = revoke.session,
+        gatewaySession = revoke.session,
         consentSession = session,
         paymentAuthSession = paymentAuth,
         userDataRepository = userData,
@@ -266,7 +266,7 @@ private class RecordingWorker(
 ) {
     val calls = mutableListOf<String>()
     val session = Session(
-        bffClient { req ->
+        gatewayClient { req ->
             val call = req.url.encodedPath + (req.url.encodedQuery.takeIf { it.isNotEmpty() }?.let { "?$it" } ?: "")
             calls += call
             order += call
@@ -446,7 +446,12 @@ private class RecordingVrpAuthSession : VrpAuthSession {
     var cleared = false
         private set
 
-    override fun saveAuthorisationInFlight(consentId: String, state: String, flowId: String, authorizeUrl: String) = Unit
+    override fun saveAuthorisationInFlight(
+        consentId: String,
+        state: String,
+        flowId: String,
+        authorizeUrl: String,
+    ) = Unit
     override fun pendingConsentId(): String? = null
     override fun pendingFlowId(): String? = null
     override fun pendingAuthorizeUrl(): String? = null

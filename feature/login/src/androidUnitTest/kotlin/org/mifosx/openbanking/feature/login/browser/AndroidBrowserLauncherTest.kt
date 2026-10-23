@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
 package org.mifosx.openbanking.feature.login.browser
 
@@ -40,10 +40,20 @@ class AndroidBrowserLauncherTest {
 
         launcher.launch(AUTHORIZE_URL)
 
-        val started = assertNotNull(shadowOf(activity).nextStartedActivity, "launched from the activity, not the app context")
+        val started = assertNotNull(
+            shadowOf(activity).nextStartedActivity,
+            "launched from the activity, not the app context",
+        )
         assertEquals(AUTHORIZE_URL, started.dataString)
-        assertTrue(started.hasExtra(CustomTabsIntent.EXTRA_SESSION), "must be a Custom Tabs intent, not a plain browser intent")
-        assertEquals(0, started.flags and Intent.FLAG_ACTIVITY_NEW_TASK, "NEW_TASK would put the tab in Chrome's own task")
+        assertTrue(
+            started.hasExtra(CustomTabsIntent.EXTRA_SESSION),
+            "must be a Custom Tabs intent, not a plain browser intent",
+        )
+        assertEquals(
+            0,
+            started.flags and Intent.FLAG_ACTIVITY_NEW_TASK,
+            "NEW_TASK would put the tab in Chrome's own task",
+        )
     }
 
     @Test

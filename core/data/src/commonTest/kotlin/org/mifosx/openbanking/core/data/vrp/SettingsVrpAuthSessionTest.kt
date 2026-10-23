@@ -46,7 +46,7 @@ class SettingsVrpAuthSessionTest {
     }
 
     @Test
-    fun clearAlsoPurgesRefreshTokensAPreBffBuildLeftOnTheDevice() {
+    fun clearAlsoPurgesRefreshTokensAPreGatewayBuildLeftOnTheDevice() {
         val (session, settings) = session()
         settings.putString("vrp_refresh_token:45365", "legacy-a")
         settings.putString("vrp_refresh_token:45366", "legacy-b")
@@ -63,7 +63,12 @@ class SettingsVrpAuthSessionTest {
     @Test
     fun matchesOnlyTheStateThatWasSent() {
         val (session, _) = session()
-        session.saveAuthorisationInFlight(consentId = "45365", state = "expected", flowId = "f", authorizeUrl = "https://a")
+        session.saveAuthorisationInFlight(
+            consentId = "45365",
+            state = "expected",
+            flowId = "f",
+            authorizeUrl = "https://a",
+        )
 
         assertTrue(session.matchesPendingState("expected"))
         assertFalse(session.matchesPendingState("other"))

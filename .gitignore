@@ -114,8 +114,8 @@ vendor/
 *.p12
 
 # Former HSBC certificate locations. The app no longer holds any TPP identity — it lives in the
-# Cloudflare Worker (bff/) — so nothing belongs here; kept ignored so a stray copy can never be
-# committed. CI (no-tpp-identity.yml) also fails any build that carries one.
+# Cloudflare Worker (bank-gateway/) — so nothing belongs here; kept ignored so a stray copy can never be
+# committed. CI (bank-gateway.yml) also fails any build that carries one.
 core/network/src/androidMain/assets/certs/
 core/network/src/desktopMain/resources/certs/
 cmp-ios/iosApp/certs/

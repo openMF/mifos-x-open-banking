@@ -21,8 +21,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.data.WORKER_SESSION
 import org.mifosx.openbanking.core.data.authorizeUrl
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
@@ -172,7 +172,7 @@ class VrpConsentRepositoryImplTest {
         resourceBody: String? = null,
     ): Triple<VrpConsentRepositoryImpl, FakeConsentDao, MutableList<Recorded>> {
         val captured = mutableListOf<Recorded>()
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             val path = request.url.encodedPath
             captured += Recorded(
                 path = path,
@@ -181,7 +181,8 @@ class VrpConsentRepositoryImplTest {
             )
             val isStage = request.method.value == "POST" && path == "/v1/consents/vrp"
             respond(
-                resourceBody ?: if (isStage) consentStartJson(CONSENT_ID, state = "vrp-state") else consentJson(consentStatus),
+                resourceBody
+                    ?: if (isStage) consentStartJson(CONSENT_ID, state = "vrp-state") else consentJson(consentStatus),
                 resourceStatus,
                 jsonHeaders,
             )

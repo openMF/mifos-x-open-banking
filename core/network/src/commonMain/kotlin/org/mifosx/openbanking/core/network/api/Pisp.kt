@@ -13,29 +13,29 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DomesticPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DomesticPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.response.DomesticPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.response.DomesticPaymentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.request.DomesticScheduledPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderRequest
+import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.response.DomesticStandingOrderConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.response.DomesticStandingOrderResponse
 import org.mifosx.openbanking.core.network.model.pisp.fundsConfirmation.response.FundsConfirmationResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.response.InternationalPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.response.InternationalPaymentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentRequest
+import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderRequest
-import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.response.InternationalStandingOrderResponse
-import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.response.DomesticPaymentConsentResponse
-import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.response.InternationalPaymentConsentResponse
-import org.mifosx.openbanking.core.network.model.pisp.domesticScheduledPayment.response.DomesticScheduledPaymentConsentResponse
-import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.response.InternationalScheduledPaymentConsentResponse
-import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.response.DomesticStandingOrderConsentResponse
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.response.InternationalStandingOrderConsentResponse
+import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.response.InternationalStandingOrderResponse
 import org.mifosx.openbanking.core.network.pisp.obieBody
 import org.mifosx.openbanking.core.network.postJson
 import org.mifosx.openbanking.core.network.result.toNetworkResult
@@ -43,7 +43,7 @@ import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
 /**
- * The Worker's PIS surface (bff/src/routes.ts) — the app's only payment write path. Every call is
+ * The Worker's PIS surface (bank-gateway/src/routes.ts) — the app's only payment write path. Every call is
  * session-gated except consent creation, which runs before the PSU authorises and returns the
  * Worker-signed authorize URL ([ConsentStart]). The Worker mints both bank credentials, signs the
  * detached JWS over the exact bytes sent here, and refuses a non-compact body.
@@ -91,7 +91,7 @@ class Pisp(
         consentId: String,
     ): NetworkResult<FundsConfirmationResponse, NetworkError> =
         httpClient.get(
-            "/v1/consents/payment/domestic/$consentId/funds-confirmation"
+            "/v1/consents/payment/domestic/$consentId/funds-confirmation",
         ).toNetworkResult()
 
     /**
@@ -142,7 +142,7 @@ class Pisp(
         consentId: String,
     ): NetworkResult<FundsConfirmationResponse, NetworkError> =
         httpClient.get(
-            "/v1/consents/payment/international/$consentId/funds-confirmation"
+            "/v1/consents/payment/international/$consentId/funds-confirmation",
         ).toNetworkResult()
 
     suspend fun createInternationalPayment(
@@ -159,7 +159,7 @@ class Pisp(
         internationalPaymentId: String,
     ): NetworkResult<InternationalPaymentResponse, NetworkError> =
         httpClient.get(
-            "/v1/payments/international/$internationalPaymentId"
+            "/v1/payments/international/$internationalPaymentId",
         ).toNetworkResult()
 
     // region — Scheduled payments
@@ -203,7 +203,7 @@ class Pisp(
         domesticScheduledPaymentId: String,
     ): NetworkResult<DomesticScheduledPaymentResponse, NetworkError> =
         httpClient.get(
-            "/v1/payments/domestic-scheduled/$domesticScheduledPaymentId"
+            "/v1/payments/domestic-scheduled/$domesticScheduledPaymentId",
         ).toNetworkResult()
 
     suspend fun createInternationalScheduledPaymentConsent(
@@ -221,7 +221,7 @@ class Pisp(
         consentId: String,
     ): NetworkResult<InternationalScheduledPaymentConsentResponse, NetworkError> =
         httpClient.get(
-            "/v1/consents/payment/international-scheduled/$consentId"
+            "/v1/consents/payment/international-scheduled/$consentId",
         ).toNetworkResult()
 
     suspend fun createInternationalScheduledPayment(
@@ -238,7 +238,7 @@ class Pisp(
         internationalScheduledPaymentId: String,
     ): NetworkResult<InternationalScheduledPaymentResponse, NetworkError> =
         httpClient.get(
-            "/v1/payments/international-scheduled/$internationalScheduledPaymentId"
+            "/v1/payments/international-scheduled/$internationalScheduledPaymentId",
         ).toNetworkResult()
 
     // endregion
@@ -271,7 +271,7 @@ class Pisp(
         consentId: String,
     ): NetworkResult<DomesticStandingOrderConsentResponse, NetworkError> =
         httpClient.get(
-            "/v1/consents/payment/domestic-standing-order/$consentId"
+            "/v1/consents/payment/domestic-standing-order/$consentId",
         ).toNetworkResult()
 
     suspend fun createDomesticStandingOrder(
@@ -288,7 +288,7 @@ class Pisp(
         domesticStandingOrderId: String,
     ): NetworkResult<DomesticStandingOrderResponse, NetworkError> =
         httpClient.get(
-            "/v1/payments/domestic-standing-order/$domesticStandingOrderId"
+            "/v1/payments/domestic-standing-order/$domesticStandingOrderId",
         ).toNetworkResult()
 
     suspend fun createInternationalStandingOrderConsent(
@@ -306,7 +306,7 @@ class Pisp(
         consentId: String,
     ): NetworkResult<InternationalStandingOrderConsentResponse, NetworkError> =
         httpClient.get(
-            "/v1/consents/payment/international-standing-order/$consentId"
+            "/v1/consents/payment/international-standing-order/$consentId",
         ).toNetworkResult()
 
     suspend fun createInternationalStandingOrder(
@@ -323,7 +323,7 @@ class Pisp(
         internationalStandingOrderId: String,
     ): NetworkResult<InternationalStandingOrderResponse, NetworkError> =
         httpClient.get(
-            "/v1/payments/international-standing-order/$internationalStandingOrderId"
+            "/v1/payments/international-standing-order/$internationalStandingOrderId",
         ).toNetworkResult()
 
     // endregion

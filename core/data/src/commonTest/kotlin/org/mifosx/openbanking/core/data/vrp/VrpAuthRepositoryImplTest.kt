@@ -15,8 +15,8 @@ import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.data.authorizeUrl
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.network.NetworkError
@@ -47,13 +47,13 @@ class VrpAuthRepositoryImplTest {
 
     private fun fixture(status: HttpStatusCode = HttpStatusCode.OK, staged: Boolean = true): Fixture {
         val bodies = mutableListOf<Pair<String, String>>()
-        val client = bffClient { req ->
+        val client = gatewayClient { req ->
             bodies += req.url.encodedPath to req.body.toByteArray().decodeToString()
             respond(completedAuthJson(CONSENT_ID, leg = "vrp"), status, jsonHeaders)
         }
         val session = SettingsVrpAuthSession(MapSettings())
         if (staged) session.saveAuthorisationInFlight(CONSENT_ID, STATE, FLOW_ID, authorizeUrl(STATE))
-        return Fixture(VrpAuthRepositoryImpl(bff = Session(client), session = session), session, bodies)
+        return Fixture(VrpAuthRepositoryImpl(gateway = Session(client), session = session), session, bodies)
     }
 
     private fun redirect(
@@ -72,7 +72,8 @@ class VrpAuthRepositoryImplTest {
     fun returnsTheWorkerSignedUrlRecordedWhenTheConsentWasStaged() = runTest {
         val f = fixture()
 
-        assertEquals(authorizeUrl(STATE), assertIs<NetworkResult.Success<String>>(f.repository.beginAuthorisation(CONSENT_ID)).data)
+        val beginResult = assertIs<NetworkResult.Success<String>>(f.repository.beginAuthorisation(CONSENT_ID))
+        assertEquals(authorizeUrl(STATE), beginResult.data)
         assertIs<NetworkResult.Error<NetworkError>>(f.repository.beginAuthorisation("some-other-consent"))
     }
 
@@ -91,17 +92,23 @@ class VrpAuthRepositoryImplTest {
 
     @Test
     fun reportsNoPendingWhenTheSessionHasBeenCleared() = runTest {
-        assertIs<VrpAuthValidation.NoPending>(fixture(staged = false).repository.validateCallback(redirect(state = STATE)))
+        assertIs<VrpAuthValidation.NoPending>(
+            fixture(staged = false).repository.validateCallback(redirect(state = STATE)),
+        )
     }
 
     @Test
     fun treatsAStateThatDoesNotMatchAsTampering() = runTest {
-        assertIs<VrpAuthValidation.SecurityError>(fixture().repository.validateCallback(redirect(state = "forged-state")))
+        assertIs<VrpAuthValidation.SecurityError>(
+            fixture().repository.validateCallback(redirect(state = "forged-state")),
+        )
     }
 
     @Test
     fun treatsAMissingIdTokenAsTampering() = runTest {
-        assertIs<VrpAuthValidation.SecurityError>(fixture().repository.validateCallback(redirect(state = STATE, idToken = null)))
+        assertIs<VrpAuthValidation.SecurityError>(
+            fixture().repository.validateCallback(redirect(state = STATE, idToken = null)),
+        )
     }
 
     @Test
@@ -139,7 +146,9 @@ class VrpAuthRepositoryImplTest {
     fun refusesAnExchangeWithoutAValidatedRedirect() = runTest {
         val f = fixture()
 
-        assertIs<NetworkResult.Error<NetworkError>>(f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID))
+        assertIs<NetworkResult.Error<NetworkError>>(
+            f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID),
+        )
         assertTrue(f.bodies.isEmpty())
     }
 
@@ -148,7 +157,9 @@ class VrpAuthRepositoryImplTest {
         val f = fixture(status = HttpStatusCode.BadRequest)
         f.repository.validateCallback(redirect(state = STATE))
 
-        assertIs<NetworkResult.Error<NetworkError>>(f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID))
+        assertIs<NetworkResult.Error<NetworkError>>(
+            f.repository.exchangeAndPersistCredential("auth-code-1", CONSENT_ID),
+        )
         assertEquals(CONSENT_ID, f.session.pendingConsentId())
     }
 }

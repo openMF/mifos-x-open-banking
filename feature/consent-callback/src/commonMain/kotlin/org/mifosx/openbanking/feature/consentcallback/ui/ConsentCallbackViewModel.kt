@@ -162,5 +162,4 @@ class ConsentCallbackViewModel(
             sendEvent(ConsentCallbackEvent.NavigateToHome)
         }
     }
-
 }

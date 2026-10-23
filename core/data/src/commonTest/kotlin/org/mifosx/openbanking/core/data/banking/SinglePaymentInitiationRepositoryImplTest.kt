@@ -21,10 +21,10 @@ import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.common.AccountScheme
 import org.mifosx.openbanking.core.data.WORKER_SESSION
 import org.mifosx.openbanking.core.data.banking.impl.SinglePaymentInitiationRepositoryImpl
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.callback.SettingsPaymentAuthSession
 import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
@@ -114,7 +114,7 @@ class SinglePaymentInitiationRepositoryImplTest {
         status: HttpStatusCode = HttpStatusCode.Created,
         storedType: ConsentType? = null,
     ): SinglePaymentInitiationRepositoryImpl {
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             val path = request.url.encodedPath
             captured += Recorded(
                 path = path,
@@ -220,7 +220,9 @@ class SinglePaymentInitiationRepositoryImplTest {
 
         repository(session).confirmFunds(CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/international/$CONSENT_ID/funds-confirmation" })
+        assertNotNull(
+            captured.lastOrNull { it.path == "/v1/consents/payment/international/$CONSENT_ID/funds-confirmation" },
+        )
         assertNull(
             captured.lastOrNull { "/payment/domestic/" in it.path },
             "an international funds check must never go to the domestic path",
@@ -310,7 +312,12 @@ class SinglePaymentInitiationRepositoryImplTest {
     @Test
     fun stagingReplacesTheFlowLeftBehindByAnAbandonedAttempt() = runTest {
         val session = SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = "old", state = "old-state", flowId = "old-flow", type = ConsentType.DomesticSinglePayment)
+            savePending(
+                consentId = "old",
+                state = "old-state",
+                flowId = "old-flow",
+                type = ConsentType.DomesticSinglePayment,
+            )
         }
 
         repository(session).stagePayment(draft())

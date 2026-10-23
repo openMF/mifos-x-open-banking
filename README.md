@@ -32,7 +32,7 @@ From a single codebase it runs on Android, iOS, desktop and web, and currently i
 
 ## 📱 Using the app
 
-The app holds **no** bank credential, certificate or key on any platform. It is a plain HTTPS client of a Cloudflare Worker (`bff/`) that holds the HSBC TPP identity and every HSBC token; the app only carries an opaque session.
+The app holds **no** bank credential, certificate or key on any platform. It is a plain HTTPS client of a Cloudflare Worker (`bank-gateway/`) that holds the HSBC TPP identity and every HSBC token; the app only carries an opaque session.
 
 ### Prerequisites
 
@@ -40,20 +40,20 @@ The app holds **no** bank credential, certificate or key on any platform. It is 
 - Android Studio / IntelliJ IDEA
 - Xcode (for the iOS target)
 
-### 1. Point the app at a BFF
+### 1. Point the app at a bank gateway
 
-The HSBC TPP identity (signing key, transport certificate, client id, kid, software statement, signing issuer) lives in the Cloudflare Worker in [`bff/`](bff/README.md), never in the app. The app only needs to know the Worker's URL:
+The HSBC TPP identity (signing key, transport certificate, client id, kid, software statement, signing issuer) lives in the Cloudflare Worker in [`bank-gateway/`](bank-gateway/README.md), never in the app. The app only needs to know the Worker's URL:
 
-- **Reference Worker (default):** `https://mifos-x-open-banking-bff.mifos-x-open-banking-bff.workers.dev`, connected to the HSBC sandbox. A checkout with no configuration builds against it.
-- **Your own Worker:** deploy `bff/` with your own HSBC sandbox registration and Cloudflare account (see [`bff/README.md`](bff/README.md) and [`bff/docs/RUNBOOK.md`](bff/docs/RUNBOOK.md)), then set its URL in the root `local.properties`:
+- **Reference Worker (default):** `https://mifos-x-open-banking-gateway.mifos-x-open-banking.workers.dev`, connected to the HSBC sandbox. A checkout with no configuration builds against it.
+- **Your own Worker:** deploy `bank-gateway/` with your own HSBC sandbox registration and Cloudflare account (see [`bank-gateway/README.md`](bank-gateway/README.md) and [`bank-gateway/docs/RUNBOOK.md`](bank-gateway/docs/RUNBOOK.md)), then set its URL in the root `local.properties`:
 
 ```properties
-BFF_BASE_URL=https://mifos-x-open-banking-bff.<your-subdomain>.workers.dev
+GATEWAY_BASE_URL=https://mifos-x-open-banking-gateway.<your-subdomain>.workers.dev
 # optional, Android attestation (Play Integrity) — the Google Cloud project number
 PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER=
 ```
 
-Both values are public configuration, not secrets. The `:core:network:generateBffConfig` task reads each key from an environment variable, then `local.properties`, then a Gradle property, and otherwise uses the default.
+Both values are public configuration, not secrets. The `:core:network:generateGatewayConfig` task reads each key from an environment variable, then `local.properties`, then a Gradle property, and otherwise uses the default.
 
 ### 2. Handle the OAuth redirect (consent callback)
 
@@ -73,7 +73,7 @@ After the customer authorises consent, HSBC redirects back to your **registered 
 | iOS / shared | `cmp-shared/src/nativeMain/kotlin/org/mifos/shared/ConsentRedirectBridge.kt` | `CONSENT_REDIRECT_SCHEME` (must match the plist) |
 | Desktop | `cmp-desktop/src/jvmMain/kotlin/ConsentRedirectListener.kt` | `CALLBACK_SCHEME`, and `PORT` (must match `bridge.js` `LOOPBACK_PORT`) |
 
-Android and iOS receive the custom scheme directly (the OS wakes the app and delivers the URL). **Desktop** has no scheme registration, so the relay `fetch`es a small loopback server the app runs at `http://127.0.0.1:8765/callback` — keep that port in sync between `ConsentRedirectListener` and `bridge.js`. **Web** has neither, so the Worker marks a web sign-in's `state` with an index into its `WEB_RETURN_ORIGINS` list and the relay returns to that origin; a new web host must be added to the Worker's list and to `bridge.js` in the same order ([`relay/README.md`](relay/README.md#web-return), [`bff/docs/RUNBOOK.md`](bff/docs/RUNBOOK.md#8-add-a-web-origin)).
+Android and iOS receive the custom scheme directly (the OS wakes the app and delivers the URL). **Desktop** has no scheme registration, so the relay `fetch`es a small loopback server the app runs at `http://127.0.0.1:8765/callback` — keep that port in sync between `ConsentRedirectListener` and `bridge.js`. **Web** has neither, so the Worker marks a web sign-in's `state` with an index into its `WEB_RETURN_ORIGINS` list and the relay returns to that origin; a new web host must be added to the Worker's list and to `bridge.js` in the same order ([`relay/README.md`](relay/README.md#web-return), [`bank-gateway/docs/RUNBOOK.md`](bank-gateway/docs/RUNBOOK.md#8-add-a-web-origin)).
 
 ### 3. Run it
 
@@ -103,7 +103,7 @@ Then tick the accounts to share and tap **Finish**. You come back to the app aut
 
 ### Security
 
-No HSBC private key, transport certificate, PKCS#12 password, software statement, kid or client id is in this repository or in any app build; the Worker holds them, with the framework vault as the source of truth (see [`bff/docs/SECURITY.md`](bff/docs/SECURITY.md)). HSBC access, refresh and id tokens never leave the Worker. The app stores one opaque session id. The `no-tpp-identity` CI workflow fails any change that references the identity in app source or ships a certificate or key file in a built artefact.
+No HSBC private key, transport certificate, PKCS#12 password, software statement, kid or client id is in this repository or in any app build; the Worker holds them, with the framework vault as the source of truth (see [`bank-gateway/docs/SECURITY.md`](bank-gateway/docs/SECURITY.md)). HSBC access, refresh and id tokens never leave the Worker. The app stores one opaque session id. The `Bank gateway` CI workflow fails any change that references the identity in app source or ships a certificate or key file in a built artefact.
 
 Never commit or log the Worker session, an authorisation code or an `id_token`.
 
@@ -114,7 +114,7 @@ Never commit or log the Worker session, an authorisation code or an `id_token`.
 The consent relay is the small web page your bank redirects to after you approve access or a payment. HSBC returns its answer in the URL fragment, which only the browser can read, so the page reads it and hands it to the app: over `127.0.0.1:8765` on desktop, by opening the app on mobile, or by returning to the web app's origin.
 
 - **Stores nothing.** It has no server code, database, cookies, analytics or third-party scripts.
-- **Holds no keys.** It cannot sign in or make payments on its own; the code exchange happens at the Worker (`bff/`).
+- **Holds no keys.** It cannot sign in or make payments on its own; the code exchange happens at the Worker (`bank-gateway/`).
 - **Scrubs the code from browser history** as soon as it has been read.
 - **Locked down by headers** in [`relay/site/_headers`](relay/site/_headers):
   - a strict CSP with no inline code
@@ -130,7 +130,7 @@ It's hosted on Cloudflare Pages and released under MPL-2.0 like the rest of the 
 
 The project follows a modular architecture:
 
-- **Backend for frontend**: `bff/`, the Cloudflare Worker that holds the HSBC identity and tokens (see [`bff/README.md`](bff/README.md))
+- **Bank gateway**: `bank-gateway/`, the Cloudflare Worker that holds the HSBC identity and tokens (see [`bank-gateway/README.md`](bank-gateway/README.md))
 - **Consent relay**: `relay/`, the OAuth redirect page on Cloudflare Pages (see [Consent relay](#-consent-relay))
 - **Platform Modules**: `cmp-android`, `cmp-ios`, `cmp-desktop`, `cmp-web`, `cmp-navigation`
 - **Core Modules**: common, reusable components shared across all features (`core/*`, `core-base/*`)

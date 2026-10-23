@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.mifosx.openbanking.core.data.WORKER_SESSION
-import org.mifosx.openbanking.core.data.bffClient
-import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.banking.impl.PaymentStatusRepositoryImpl
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentHistoryRow
@@ -87,12 +87,13 @@ class PaymentStatusRepositoryImplTest {
     }
 
     private fun repository(storedType: ConsentType?): PaymentStatusRepositoryImpl {
-        val client = bffClient { request: HttpRequestData ->
+        val client = gatewayClient { request: HttpRequestData ->
             captured += Recorded(
                 path = request.url.encodedPath,
                 authorization = request.headers[HttpHeaders.Authorization],
             )
-            val body = if (request.url.encodedPath.startsWith("/v1/payments/international")) INTL_PAYMENT_JSON else PAYMENT_JSON
+            val isIntl = request.url.encodedPath.startsWith("/v1/payments/international")
+            val body = if (isIntl) INTL_PAYMENT_JSON else PAYMENT_JSON
             respond(body, HttpStatusCode.OK, jsonHeaders)
         }
         return PaymentStatusRepositoryImpl(

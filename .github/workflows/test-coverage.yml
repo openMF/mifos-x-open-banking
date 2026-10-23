@@ -37,4 +37,6 @@ jobs:
   coverage:
     uses: openMF/mifos-x-actionhub/.github/workflows/test-coverage.yaml@v1.0.12
     with:
+      # The actionhub default (45) cancelled the run once the gateway cutover grew core:data to ~680 tests.
+      timeout-minutes: 90
       default-floor: 0

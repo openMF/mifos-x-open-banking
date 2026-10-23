@@ -13,9 +13,9 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.callback.impl.ConsentCallbackRepositoryImpl
 import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.network.api.Aisp
@@ -45,7 +45,7 @@ class ConsentCallbackRepositoryImplTest {
         consentHttpStatus: HttpStatusCode = HttpStatusCode.OK,
         consentExpiration: String = "",
     ): ConsentCallbackRepositoryImpl {
-        val client = bffClient { request ->
+        val client = gatewayClient { request ->
             sent += request.url.encodedPath to request.body.toByteArray().decodeToString()
             when {
                 request.url.encodedPath == "/v1/auth/complete" -> respond(completeBody, completeStatus, jsonHeaders)
@@ -233,25 +233,40 @@ class ConsentCallbackRepositoryImplTest {
 
     @Test
     fun `exchangeCode returns Error when the worker refuses the id_token`() = runTest {
-        val repo = buildRepo(completeStatus = HttpStatusCode.BadRequest, completeBody = """{"error":"invalid_id_token"}""")
+        val repo = buildRepo(
+            completeStatus = HttpStatusCode.BadRequest,
+            completeBody = """{"error":"invalid_id_token"}""",
+        )
 
-        val error = assertIs<ScreenState.Error>(repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")))
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
         assertIs<CallbackSecurityRejected>(error.error)
     }
 
     @Test
     fun `exchangeCode treats a state mismatch at the worker as a security rejection`() = runTest {
-        val repo = buildRepo(completeStatus = HttpStatusCode.BadRequest, completeBody = """{"error":"state_mismatch"}""")
+        val repo = buildRepo(
+            completeStatus = HttpStatusCode.BadRequest,
+            completeBody = """{"error":"state_mismatch"}""",
+        )
 
-        val error = assertIs<ScreenState.Error>(repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")))
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
         assertIs<CallbackSecurityRejected>(error.error)
     }
 
     @Test
     fun `a rejected consent never yields a session`() = runTest {
-        val repo = buildRepo(completeStatus = HttpStatusCode.Conflict, completeBody = """{"error":"consent_rejected"}""")
+        val repo = buildRepo(
+            completeStatus = HttpStatusCode.Conflict,
+            completeBody = """{"error":"consent_rejected"}""",
+        )
 
-        val error = assertIs<ScreenState.Error>(repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")))
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
         assertIs<ConsentRejectedAtBank>(error.error)
     }
 
@@ -294,5 +309,4 @@ class ConsentCallbackRepositoryImplTest {
 
         assertIs<ScreenState.Unauthenticated>(repo.pollConsentStatus("cn-1"))
     }
-
 }

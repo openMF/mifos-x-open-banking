@@ -110,7 +110,7 @@ class SettingsPendingAuthStore(
     companion object {
         private const val TAG = "PendingAuthStore"
 
-        /** Matches the Worker's pending-flow TTL (bff `SessionDO`, 600 s). */
+        /** Matches the Worker's pending-flow TTL (gateway `SessionDO`, 600 s). */
         const val TTL_SECONDS = 600L
 
         private const val KEY_STATE = "pending_auth_state"

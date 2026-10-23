@@ -41,7 +41,7 @@ class SettingsVrpAuthSession(
         secureSettings.remove(KEY_AUTHORIZE_URL)
     }
 
-    /** Also purges the per-consent refresh tokens a pre-BFF build stored on the device. */
+    /** Also purges the per-consent refresh tokens a pre-gateway build stored on the device. */
     override fun clear() {
         clearAuthorisationInFlight()
         secureSettings.keys

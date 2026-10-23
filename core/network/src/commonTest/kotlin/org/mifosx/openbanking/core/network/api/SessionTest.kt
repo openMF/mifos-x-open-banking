@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
 package org.mifosx.openbanking.core.network.api
 
@@ -20,7 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.mifosx.openbanking.core.network.FakeAttestation
 import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
 import org.mifosx.openbanking.core.network.Recorder
-import org.mifosx.openbanking.core.network.bffHttpClient
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
@@ -30,16 +30,19 @@ import kotlin.test.assertIs
 private const val START =
     """{"flowId":"f-1","consentId":"c-1","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/authorize?state=s-1"}"""
 private const val COMPLETE =
-    """{"session":"sess","expiresAt":1767225600000,"leg":"ais","consentId":"c-1","consentStatus":"Authorised","consentExpiresAt":"2027-01-01T00:00:00Z"}"""
+    """{"session":"sess","expiresAt":1767225600000,"leg":"ais","consentId":"c-1",""" +
+        """"consentStatus":"Authorised","consentExpiresAt":"2027-01-01T00:00:00Z"}"""
 
 class SessionTest {
 
     private fun session(rec: Recorder, platform: String = "android") =
-        Session(bffHttpClient(MapSettings(), FakeAttestation(platform, answer = "play x.y"), rec.engine))
+        Session(gatewayHttpClient(MapSettings(), FakeAttestation(platform, answer = "play x.y"), rec.engine))
 
     @Test
     fun startsAnAisConsentAndReturnsTheWorkerSignedUrlAsIs() = runTest {
-        val rec = Recorder { path -> if (path == "/v1/consents/ais") HttpStatusCode.OK to START else HttpStatusCode.OK to "{}" }
+        val rec = Recorder { path ->
+            if (path == "/v1/consents/ais") HttpStatusCode.OK to START else HttpStatusCode.OK to "{}"
+        }
 
         val result = session(rec).startAisConsent(AisConsentRequest(permissions = listOf("ReadAccountsDetail")))
 
@@ -55,7 +58,9 @@ class SessionTest {
 
     @Test
     fun completesAuthWithFlowCodeIdTokenAndState() = runTest {
-        val rec = Recorder { path -> if (path == "/v1/auth/complete") HttpStatusCode.OK to COMPLETE else HttpStatusCode.OK to "{}" }
+        val rec = Recorder { path ->
+            if (path == "/v1/auth/complete") HttpStatusCode.OK to COMPLETE else HttpStatusCode.OK to "{}"
+        }
 
         val result = session(rec).completeAuth(CompleteAuthRequest("f-1", "code", "id.tok.en", "s-1"))
 

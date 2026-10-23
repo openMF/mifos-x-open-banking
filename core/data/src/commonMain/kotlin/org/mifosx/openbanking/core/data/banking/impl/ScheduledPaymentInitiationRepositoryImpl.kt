@@ -46,7 +46,10 @@ internal class ScheduledPaymentInitiationRepositoryImpl(
         paymentAuthSession.clear()
 
         val started = if (draft.isInternational()) {
-            pisp.createInternationalScheduledPaymentConsent(draft.toIntlScheduledConsentRequest(), draft.consentIdempotencyKey)
+            pisp.createInternationalScheduledPaymentConsent(
+                draft.toIntlScheduledConsentRequest(),
+                draft.consentIdempotencyKey,
+            )
         } else {
             pisp.createDomesticScheduledPaymentConsent(draft.toScheduledConsentRequest(), draft.consentIdempotencyKey)
         }
@@ -61,7 +64,6 @@ internal class ScheduledPaymentInitiationRepositoryImpl(
         draft: ScheduledPaymentDraft,
         consentId: String,
     ): NetworkResult<PaymentReceipt, NetworkError> {
-
         val submitted: NetworkResult<PaymentReceipt, NetworkError> = if (draft.isInternational()) {
             val request = draft.toIntlScheduledPaymentRequest(consentId)
             when (val r = pisp.createInternationalScheduledPayment(request, draft.paymentIdempotencyKey)) {

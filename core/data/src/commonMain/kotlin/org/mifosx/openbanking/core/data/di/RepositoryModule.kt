@@ -111,7 +111,7 @@ val DataModule = module {
 
     single<VrpAuthRepository> {
         VrpAuthRepositoryImpl(
-            bff = get(),
+            gateway = get(),
             session = get(),
         )
     }
@@ -178,7 +178,7 @@ val DataModule = module {
 
     single<AppLogout> {
         AppLogoutImpl(
-            bffSession = get(),
+            gatewaySession = get(),
             consentSession = get(),
             paymentAuthSession = get(),
             userDataRepository = get(),

@@ -46,7 +46,10 @@ internal class StandingOrderInitiationRepositoryImpl(
         paymentAuthSession.clear()
 
         val started = if (draft.isInternational()) {
-            pisp.createInternationalStandingOrderConsent(draft.toIntlStandingOrderConsentRequest(), draft.consentIdempotencyKey)
+            pisp.createInternationalStandingOrderConsent(
+                draft.toIntlStandingOrderConsentRequest(),
+                draft.consentIdempotencyKey,
+            )
         } else {
             pisp.createDomesticStandingOrderConsent(draft.toStandingOrderConsentRequest(), draft.consentIdempotencyKey)
         }
@@ -61,7 +64,6 @@ internal class StandingOrderInitiationRepositoryImpl(
         draft: StandingOrderDraft,
         consentId: String,
     ): NetworkResult<PaymentReceipt, NetworkError> {
-
         val submitted: NetworkResult<PaymentReceipt, NetworkError> = if (draft.isInternational()) {
             val request = draft.toIntlStandingOrderRequest(consentId)
             when (val r = pisp.createInternationalStandingOrder(request, draft.paymentIdempotencyKey)) {

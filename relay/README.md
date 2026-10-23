@@ -13,7 +13,7 @@ JavaScript can read. This page reads it and hands it to the app:
 It holds **no secrets** and stores nothing.
 
 The relay only carries `code`, `id_token` and `state` back to the app. The app sends them to the
-Mifos X Open Banking Worker at `POST /v1/auth/complete` ([`bff/`](../bff/README.md)), which verifies the
+Mifos X Open Banking Worker at `POST /v1/auth/complete` ([`bank-gateway/`](../bank-gateway/README.md)), which verifies the
 `id_token` and exchanges the code with HSBC's token endpoint over mTLS. The relay never talks to HSBC or
 to the Worker.
 
@@ -83,7 +83,7 @@ A browser tab has no loopback listener and no custom scheme, so the web app is i
 
 1. The web app starts a consent with `X-Client-Platform: web`; the browser adds its `Origin`.
 2. The Worker accepts it only if that origin is in its `WEB_RETURN_ORIGINS` var (ordered, comma-separated,
-   `bff/wrangler.toml`), and prefixes the `state` it signs with `w<index>.` — the origin's position in the
+   `bank-gateway/wrangler.toml`), and prefixes the `state` it signs with `w<index>.` — the origin's position in the
    list. Any other web origin gets `400 {"error":"web_origin_not_allowed"}`. Other platforms are unchanged.
 3. HSBC echoes `state`. The relay scrubs history as usual, then `location.replace(origin + "/#mifos-callback?" + params)`
    with `origin = WEB_RETURN_ORIGINS[index]` from **its own copy** in `bridge.js`. An index outside the list
@@ -93,10 +93,10 @@ A browser tab has no loopback listener and no custom scheme, so the web app is i
    platforms, and clears the hash. The parameters stay in the fragment, so the web server never sees them.
    The app then completes the sign-in at the Worker's `POST /v1/auth/complete`, as on every platform.
 
-The Worker also has to allow the web origin for CORS (`CORS_ORIGINS` in `bff/wrangler.toml`); see
-[`bff/docs/RUNBOOK.md` §8](../bff/docs/RUNBOOK.md#8-add-a-web-origin).
+The Worker also has to allow the web origin for CORS (`CORS_ORIGINS` in `bank-gateway/wrangler.toml`); see
+[`bank-gateway/docs/RUNBOOK.md` §8](../bank-gateway/docs/RUNBOOK.md#8-add-a-web-origin).
 
-The two lists must match entry for entry and in order (the relay test reads `bff/wrangler.toml` and fails
+The two lists must match entry for entry and in order (the relay test reads `bank-gateway/wrangler.toml` and fails
 otherwise). Adding a web host: append it to both, deploy the Worker, deploy the relay. Never reorder or
 remove an entry while a sign-in may be in flight. CSP is unchanged: a top-level navigation is not governed
 by `connect-src`.
@@ -121,5 +121,5 @@ by `connect-src`.
   Android App Links / iOS Universal Links on this domain (plan: FR-052). That needs the release
   signing-certificate fingerprint and the Apple team ID, and the app's intent-filter changes with it.
 - **No secrets here:** the HSBC TPP identity (signing key, transport certificate, identifiers) lives in
-  the Cloudflare Worker `mifos-x-open-banking-bff` (source and docs in [`bff/`](../bff/README.md)). The
+  the Cloudflare Worker `mifos-x-open-banking-gateway` (source and docs in [`bank-gateway/`](../bank-gateway/README.md)). The
   relay has no credentials and no server code, and cannot talk to HSBC.

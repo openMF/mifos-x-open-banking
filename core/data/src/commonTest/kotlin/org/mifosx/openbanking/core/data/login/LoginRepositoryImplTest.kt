@@ -17,8 +17,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
 import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.login.impl.LoginRepositoryImpl
 import org.mifosx.openbanking.core.model.hsbcPermission.PermissionId
@@ -39,7 +39,7 @@ class LoginRepositoryImplTest {
         body: String = consentStartJson("consent-123", flowId = "flow-9", state = "state-9"),
     ) = LoginRepositoryImpl(
         Session(
-            bffClient { request ->
+            gatewayClient { request ->
                 sent += Triple(request.method, request.url.encodedPath, request.body.toByteArray().decodeToString())
                 respond(body, status, jsonHeaders)
             },
@@ -82,7 +82,9 @@ class LoginRepositoryImplTest {
 
     @Test
     fun `an authorize url without a state is an error and never a sign-in that cannot be matched`() = runTest {
-        val repo = buildRepo(body = """{"flowId":"f","consentId":"c","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/a"}""")
+        val repo = buildRepo(
+            body = """{"flowId":"f","consentId":"c","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/a"}""",
+        )
         assertIs<NetworkResult.Error<NetworkError>>(repo.createConsentAndBuildAuthorizationUrl())
     }
 }

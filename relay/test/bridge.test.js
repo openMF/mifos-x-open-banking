@@ -100,9 +100,9 @@ test('the constants match the app, which is what makes the hand-off land', () =>
 /* ── web return (state prefix `w<index>.` set by the Worker) ── */
 
 test('WEB_RETURN_ORIGINS matches the Worker, entry for entry and in order', () => {
-  const toml = fs.readFileSync(path.join(__dirname, '..', '..', 'bff', 'wrangler.toml'), 'utf8');
+  const toml = fs.readFileSync(path.join(__dirname, '..', '..', 'bank-gateway', 'wrangler.toml'), 'utf8');
   const m = toml.match(/^WEB_RETURN_ORIGINS\s*=\s*"([^"]*)"/m);
-  assert.ok(m, 'bff/wrangler.toml must declare WEB_RETURN_ORIGINS');
+  assert.ok(m, 'bank-gateway/wrangler.toml must declare WEB_RETURN_ORIGINS');
   assert.deepEqual(WEB_RETURN_ORIGINS, m[1].split(',').map((o) => o.trim()).filter(Boolean));
 });
 

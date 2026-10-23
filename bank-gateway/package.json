@@ -1,0 +1,26 @@
+{
+  "name": "mifos-x-open-banking-gateway",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that holds the HSBC TPP identity for Mifos X Open Banking. See README.md.",
+  "license": "MPL-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "deploy": "bash scripts/deploy.sh",
+    "smoke": "bash scripts/smoke.sh",
+    "cpu": "bash scripts/cpu-report.sh"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.6",
+    "@cloudflare/workers-types": "^5.20261022.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.3"
+  },
+  "dependencies": {
+    "@peculiar/x509": "^2.2.0",
+    "cbor-x": "^1.6.8",
+    "reflect-metadata": "^0.2.2"
+  }
+}
