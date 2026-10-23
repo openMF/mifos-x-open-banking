@@ -277,7 +277,7 @@
 |    |    |    \--- androidx.print:print:1.0.0
 |    |    |         \--- androidx.annotation:annotation:1.0.0 -> 1.9.1 (*)
 |    |    +--- com.google.android.gms:play-services-ads-identifier:18.0.0
-|    |    |    \--- com.google.android.gms:play-services-basement:18.0.0 -> 18.5.0
+|    |    |    \--- com.google.android.gms:play-services-basement:18.0.0 -> 18.9.0
 |    |    |         +--- androidx.collection:collection:1.0.0 -> 1.5.0 (*)
 |    |    |         +--- androidx.core:core:1.2.0 -> 1.17.0 (*)
 |    |    |         \--- androidx.fragment:fragment:1.1.0 -> 1.8.9
@@ -309,23 +309,23 @@
 |    |    |              |    |         |         +--- androidx.lifecycle:lifecycle-common:2.9.2 -> 2.9.4 (*)
 |    |    |              |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
 |    |    |              |    |         |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1 -> 1.10.2 (*)
-|    |    |              |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0
-|    |    |              |    |         |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.10.0
-|    |    |              |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.10.0
-|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0 (c)
-|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.10.0 (c)
-|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0 (c)
-|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.10.0 (c)
-|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.10.0 (c)
-|    |    |              |    |         |         |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json-io-jvm:1.10.0 (c)
-|    |    |              |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
+|    |    |              |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0
+|    |    |              |    |         |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.9.0
+|    |    |              |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.9.0
+|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.9.0 (c)
+|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (c)
+|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.9.0 (c)
+|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (c)
+|    |    |              |    |         |         |         |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.9.0 (c)
+|    |    |              |    |         |         |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json-io-jvm:1.9.0 (c)
+|    |    |              |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.0 -> 2.3.20 (*)
 |    |    |              |    |         |         +--- androidx.savedstate:savedstate-compose:1.3.3 (c)
 |    |    |              |    |         |         +--- androidx.savedstate:savedstate-ktx:1.3.3 (c)
 |    |    |              |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.0.21 -> 2.3.20 (c)
 |    |    |              |    |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
 |    |    |              |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1 -> 1.10.2 (*)
 |    |    |              |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1 -> 1.10.2 (*)
-|    |    |              |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |              |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |              |    |         +--- androidx.lifecycle:lifecycle-common:2.9.4 (c)
 |    |    |              |    |         +--- androidx.lifecycle:lifecycle-livedata:2.9.4 (c)
 |    |    |              |    |         +--- androidx.lifecycle:lifecycle-livedata-core:2.9.4 (c)
@@ -382,9 +382,9 @@
 |    |    |              |         \--- androidx.collection:collection:1.1.0 -> 1.5.0 (*)
 |    |    |              +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.22 -> 2.3.20 (*)
 |    |    |              \--- androidx.fragment:fragment-ktx:1.8.9 (c)
-|    |    +--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|    |    +--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |    |    +--- com.google.android.gms:play-services-measurement-base:23.0.0
-|    |    |    \--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|    |    |    \--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |    |    +--- com.google.android.gms:play-services-measurement-impl:23.0.0
 |    |    |    +--- androidx.collection:collection:1.0.0 -> 1.5.0 (*)
 |    |    |    +--- androidx.core:core:1.9.0 -> 1.17.0 (*)
@@ -408,14 +408,14 @@
 |    |    |    |    +--- androidx.collection:collection:1.0.0 -> 1.5.0 (*)
 |    |    |    |    +--- androidx.core:core:1.2.0 -> 1.17.0 (*)
 |    |    |    |    +--- androidx.fragment:fragment:1.0.0 -> 1.8.9 (*)
-|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.5.0 (*)
+|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.9.0 (*)
 |    |    |    |    \--- com.google.android.gms:play-services-tasks:18.2.0
-|    |    |    |         \--- com.google.android.gms:play-services-basement:18.4.0 -> 18.5.0 (*)
-|    |    |    +--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|    |    |    |         \--- com.google.android.gms:play-services-basement:18.4.0 -> 18.9.0 (*)
+|    |    |    +--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |    |    |    +--- com.google.android.gms:play-services-measurement-base:23.0.0 (*)
 |    |    |    +--- com.google.android.gms:play-services-stats:17.0.2
 |    |    |    |    +--- androidx.legacy:legacy-support-core-utils:1.0.0 (*)
-|    |    |    |    \--- com.google.android.gms:play-services-basement:18.0.0 -> 18.5.0 (*)
+|    |    |    |    \--- com.google.android.gms:play-services-basement:18.0.0 -> 18.9.0 (*)
 |    |    |    +--- com.google.android.gms:play-services-tasks:18.2.0 (*)
 |    |    |    \--- com.google.guava:guava:31.1-android
 |    |    |         +--- com.google.guava:failureaccess:1.0.1
@@ -425,12 +425,12 @@
 |    |    |         +--- com.google.errorprone:error_prone_annotations:2.11.0 -> 2.26.0
 |    |    |         \--- com.google.j2objc:j2objc-annotations:1.3
 |    |    +--- com.google.android.gms:play-services-measurement-sdk-api:23.0.0
-|    |    |    +--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|    |    |    +--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |    |    |    \--- com.google.android.gms:play-services-measurement-base:23.0.0 (*)
 |    |    \--- com.google.android.gms:play-services-stats:17.0.2 (*)
 |    +--- com.google.android.gms:play-services-measurement-api:23.0.0
 |    |    +--- com.google.android.gms:play-services-ads-identifier:18.0.0 (*)
-|    |    +--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|    |    +--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |    |    +--- com.google.android.gms:play-services-measurement-base:23.0.0 (*)
 |    |    +--- com.google.android.gms:play-services-measurement-sdk-api:23.0.0 (*)
 |    |    +--- com.google.android.gms:play-services-tasks:18.2.0 (*)
@@ -524,7 +524,7 @@
 |    |    |    +--- androidx.annotation:annotation:1.5.0 -> 1.9.1 (*)
 |    |    |    +--- androidx.concurrent:concurrent-futures:1.1.0 (*)
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.0.21 -> 2.3.20 (*)
-|    |    |    +--- com.google.android.gms:play-services-basement:18.3.0 -> 18.5.0 (*)
+|    |    |    +--- com.google.android.gms:play-services-basement:18.3.0 -> 18.9.0 (*)
 |    |    |    \--- com.google.android.gms:play-services-tasks:18.1.0 -> 18.2.0 (*)
 |    |    +--- com.google.firebase:firebase-components:18.0.0 -> 19.0.0 (*)
 |    |    +--- com.google.firebase:firebase-installations:17.0.1 -> 19.0.1
@@ -538,13 +538,13 @@
 |    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:2.0.21 -> 2.3.20 (*)
 |    |    +--- com.google.firebase:firebase-installations-interop:17.0.0 -> 17.2.0 (*)
 |    |    +--- com.google.firebase:firebase-measurement-connector:19.0.0 -> 20.0.1
-|    |    |    +--- com.google.android.gms:play-services-basement:18.0.0 -> 18.5.0 (*)
+|    |    |    +--- com.google.android.gms:play-services-basement:18.0.0 -> 18.9.0 (*)
 |    |    |    \--- com.google.firebase:firebase-annotations:16.0.0 -> 17.0.0 (*)
 |    |    +--- com.google.guava:guava:31.1-android (*)
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:2.0.21 -> 2.3.20 (*)
 |    \--- com.google.android.gms:play-services-measurement-sdk:23.0.0
 |         +--- androidx.collection:collection:1.0.0 -> 1.5.0 (*)
-|         +--- com.google.android.gms:play-services-basement:18.5.0 (*)
+|         +--- com.google.android.gms:play-services-basement:18.5.0 -> 18.9.0 (*)
 |         +--- com.google.android.gms:play-services-measurement-base:23.0.0 (*)
 |         \--- com.google.android.gms:play-services-measurement-impl:23.0.0 (*)
 +--- com.google.firebase:firebase-crashlytics -> 20.0.3
@@ -587,11 +587,11 @@
 |    |    +--- javax.inject:javax.inject:1
 |    |    +--- androidx.annotation:annotation:1.5.0 -> 1.9.1 (*)
 |    |    +--- androidx.datastore:datastore:1.1.7 (*)
-|    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3 -> 1.10.0
-|    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.10.0
-|    |              +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.10.0 (*)
-|    |              +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
-|    |              \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0 (*)
+|    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3 -> 1.9.0
+|    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.9.0
+|    |              +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.9.0 (*)
+|    |              +--- org.jetbrains.kotlin:kotlin-stdlib:2.2.0 -> 2.3.20 (*)
+|    |              \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    +--- com.google.android.gms:play-services-tasks:18.1.0 -> 18.2.0 (*)
 |    +--- com.google.firebase:firebase-annotations:17.0.0 (*)
 |    +--- com.google.firebase:firebase-common:22.0.1 (*)
@@ -1203,7 +1203,7 @@
 |    |    |         |    |         +--- androidx.lifecycle:lifecycle-viewmodel:2.9.4 (*)
 |    |    |         |    |         +--- androidx.lifecycle:lifecycle-viewmodel-savedstate:2.9.4 (*)
 |    |    |         |    |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |         |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |         |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |         |    |         +--- androidx.lifecycle:lifecycle-common:2.9.4 (c)
 |    |    |         |    |         +--- androidx.lifecycle:lifecycle-livedata:2.9.4 (c)
 |    |    |         |    |         +--- androidx.lifecycle:lifecycle-livedata-core:2.9.4 (c)
@@ -1224,7 +1224,7 @@
 |    |    |         |    +--- org.jetbrains.compose.runtime:runtime:1.9.0 -> 1.10.3 (*)
 |    |    |         |    +--- org.jetbrains.compose.ui:ui:1.8.2 -> 1.10.3 (*)
 |    |    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.1.21 -> 2.3.20 (*)
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:2.1.21 -> 2.3.20 (*)
 |    +--- io.insert-koin:koin-androidx-navigation:4.1.1
@@ -1249,7 +1249,7 @@
 |    |    |    |    |         +--- androidx.profileinstaller:profileinstaller:1.4.0 -> 1.4.1 (*)
 |    |    |    |    |         +--- androidx.savedstate:savedstate:1.3.0 -> 1.3.3 (*)
 |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |         +--- androidx.navigation:navigation-compose:2.9.4 (c)
 |    |    |    |    |         +--- androidx.navigation:navigation-fragment:2.9.4 (c)
 |    |    |    |    |         +--- androidx.navigation:navigation-fragment-ktx:2.9.4 (c)
@@ -1269,7 +1269,7 @@
 |    |    |    |    |         +--- androidx.navigation:navigation-common:2.9.4 (*)
 |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
 |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3 -> 1.10.2 (*)
-|    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |         +--- androidx.navigation:navigation-common:2.9.4 (c)
 |    |    |    |    |         +--- androidx.navigation:navigation-compose:2.9.4 (c)
 |    |    |    |    |         +--- androidx.navigation:navigation-fragment:2.9.4 (c)
@@ -1284,7 +1284,7 @@
 |    |    |    |    |    \--- androidx.transition:transition:1.4.1 -> 1.6.0 (*)
 |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
 |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3 -> 1.10.2 (*)
-|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    +--- androidx.navigation:navigation-common:2.9.4 (c)
 |    |    |    |    +--- androidx.navigation:navigation-compose:2.9.4 (c)
 |    |    |    |    +--- androidx.navigation:navigation-fragment-ktx:2.9.4 (c)
@@ -1304,7 +1304,7 @@
 |    |         |    \--- io.insert-koin:koin-core-annotations-jvm:4.1.1
 |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.1.21 -> 2.3.20 (*)
 |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.1.20 -> 2.3.20 (*)
-|    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    +--- project :core:ui
 |    |    +--- androidx.metrics:metrics-performance:1.0.0
 |    |    |    +--- androidx.collection:collection:1.4.2 -> 1.5.0 (*)
@@ -1326,7 +1326,7 @@
 |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    +--- project :core:analytics
 |    |    |    +--- project :core-base:analytics
 |    |    |    |    +--- dev.gitlive:firebase-analytics:2.4.0
@@ -1345,7 +1345,7 @@
 |    |    |    |    |         |         |         +--- com.google.firebase:firebase-common -> 22.0.1 (*)
 |    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2 (*)
 |    |    |    |    |         |         |         +--- com.google.firebase:firebase-bom:33.15.0 -> 34.7.0 (*)
-|    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    |    |    |    |         |         |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.2.20 -> 2.3.20 (*)
 |    |    |    |    |         |         |         \--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |         |         \--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
@@ -1356,7 +1356,7 @@
 |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.10.3 (*)
 |    |    |    |    +--- org.jetbrains.compose.ui:ui:1.10.3 (*)
 |    |    |    |    +--- org.jetbrains.compose.foundation:foundation:1.10.3 (*)
@@ -1383,7 +1383,7 @@
 |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.10.3 (*)
 |    |    |    +--- org.jetbrains.compose.material3:material3:1.9.0
 |    |    |    |    +--- androidx.compose.material3:material3:1.4.0
@@ -1596,7 +1596,7 @@
 |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    +--- org.jetbrains.compose.ui:ui:1.10.3 (*)
 |    |    |    |    +--- org.jetbrains.compose.material3:material3:1.9.0 (*)
 |    |    |    |    +--- org.jetbrains.compose.foundation:foundation:1.10.3 (*)
@@ -1636,7 +1636,7 @@
 |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:store
 |    |    |    |    +--- project :core-base:store
 |    |    |    |    |    +--- org.mobilenativefoundation.store:store5:5.1.0-alpha08
@@ -1650,7 +1650,7 @@
 |    |    |    |    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.0.20 -> 2.3.20 (*)
 |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.0.20 -> 2.3.20 (*)
 |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1 -> 1.10.2 (*)
-|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3 -> 1.10.0 (*)
+|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3 -> 1.9.0 (*)
 |    |    |    |    |    |         +--- co.touchlab:kermit:2.0.5 -> 2.0.8 (*)
 |    |    |    |    |    |         +--- org.mobilenativefoundation.store:multicast5:5.1.0-alpha08
 |    |    |    |    |    |         |    \--- org.mobilenativefoundation.store:multicast5-android:5.1.0-alpha08
@@ -1678,13 +1678,13 @@
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    +--- project :core-base:ui
@@ -1695,7 +1695,7 @@
 |    |    |    |    |    |    \--- io.github.alexzhirkevich:compottie-android:2.0.0-rc04
 |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.0.21 -> 2.3.20 (*)
 |    |    |    |    |    |         +--- org.jetbrains.compose.foundation:foundation:1.7.0 -> 1.10.3 (*)
-|    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3 -> 1.10.0 (*)
+|    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3 -> 1.9.0 (*)
 |    |    |    |    |    +--- io.github.alexzhirkevich:compottie-resources:2.0.0-rc04
 |    |    |    |    |    |    \--- io.github.alexzhirkevich:compottie-resources-android:2.0.0-rc04
 |    |    |    |    |    |         +--- io.github.alexzhirkevich:compottie:2.0.0-rc04 (*)
@@ -1707,7 +1707,7 @@
 |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    +--- project :core-base:store (*)
 |    |    |    |    |    +--- project :core-base:designsystem (*)
 |    |    |    |    |    +--- io.github.mobilebytelabs:cmp-network-monitor-compose:3.2.3
@@ -1768,7 +1768,7 @@
 |    |    |    |    |    |    |         +--- androidx.savedstate:savedstate-compose:1.3.0 -> 1.3.3 (*)
 |    |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
 |    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3 -> 1.10.2 (*)
-|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |    |    |         +--- androidx.navigation:navigation-common:2.9.4 (c)
 |    |    |    |    |    |    |         +--- androidx.navigation:navigation-fragment-ktx:2.9.4 (c)
 |    |    |    |    |    |    |         +--- androidx.navigation:navigation-runtime:2.9.4 (c)
@@ -1789,7 +1789,7 @@
 |    |    |    |    |    |    |    +--- org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate:2.9.5 -> 2.9.6 (*)
 |    |    |    |    |    |    |    +--- org.jetbrains.androidx.savedstate:savedstate:1.3.5 -> 1.3.6 (*)
 |    |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |    |    +--- org.jetbrains.androidx.navigation:navigation-runtime:2.9.1
 |    |    |    |    |    |    |    +--- androidx.annotation:annotation:1.9.1 (*)
 |    |    |    |    |    |    |    +--- androidx.collection:collection:1.5.0 (*)
@@ -1801,7 +1801,7 @@
 |    |    |    |    |    |    |    +--- org.jetbrains.androidx.navigation:navigation-common:2.9.1 (*)
 |    |    |    |    |    |    |    +--- org.jetbrains.androidx.savedstate:savedstate:1.3.5 -> 1.3.6 (*)
 |    |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |    |    +--- org.jetbrains.androidx.savedstate:savedstate:1.3.5 -> 1.3.6 (*)
 |    |    |    |    |    |    +--- org.jetbrains.androidx.savedstate:savedstate-compose:1.3.5 -> 1.3.6 (*)
 |    |    |    |    |    |    +--- org.jetbrains.compose.animation:animation:1.8.2 -> 1.10.3 (*)
@@ -1810,7 +1810,7 @@
 |    |    |    |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.9.1 -> 1.10.3 (*)
 |    |    |    |    |    |    +--- org.jetbrains.compose.runtime:runtime-saveable:1.9.1 -> 1.10.3 (*)
 |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib -> 2.3.20 (*)
-|    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |    |    \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |    +--- org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate:2.9.6 (*)
 |    |    |    |    |    +--- io.coil-kt.coil3:coil:3.3.0
 |    |    |    |    |    |    \--- io.coil-kt.coil3:coil-android:3.3.0
@@ -1844,16 +1844,16 @@
 |    |    |    |    |    |         +--- androidx.documentfile:documentfile:1.1.0 (*)
 |    |    |    |    |    |         +--- androidx.startup:startup-runtime:1.2.0 (*)
 |    |    |    |    |    |         +--- androidx.exifinterface:exifinterface:1.4.1 (*)
-|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.8.0 -> 0.9.0
-|    |    |    |    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.9.0
-|    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-io-bytestring:0.9.0
-|    |    |    |    |    |         |         |    \--- org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.9.0
-|    |    |    |    |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
-|    |    |    |    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
+|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.8.0 -> 0.8.2
+|    |    |    |    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.8.2
+|    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-io-bytestring:0.8.2
+|    |    |    |    |    |         |         |    \--- org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.8.2
+|    |    |    |    |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.0 -> 2.3.20 (*)
+|    |    |    |    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.0 -> 2.3.20 (*)
 |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.2.20 -> 2.3.20 (*)
 |    |    |    |    |    |         +--- androidx.annotation:annotation:1.9.1 (*)
 |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
-|    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    |    |    |    |    +--- io.github.vinceglb:filekit-dialogs-compose:0.12.0
 |    |    |    |    |    |    \--- io.github.vinceglb:filekit-dialogs-compose-android:0.12.0
 |    |    |    |    |    |         +--- androidx.activity:activity-compose:1.11.0 -> 1.12.2 (*)
@@ -1884,7 +1884,7 @@
 |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.10.3 (*)
 |    |    |    |    +--- project :core:database
 |    |    |    |    |    +--- io.insert-koin:koin-android:4.1.1 (*)
@@ -1895,7 +1895,7 @@
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    |    +--- project :core-base:database
@@ -1947,13 +1947,13 @@
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    +--- co.touchlab:kermit:2.0.8 (*)
 |    |    |    |    |    +--- project :core:model
@@ -1962,7 +1962,7 @@
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- project :core:common (*)
 |    |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    |    +--- project :core-base:security
@@ -1976,7 +1976,7 @@
 |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- project :core-base:common (*)
 |    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.10.3 (*)
@@ -2007,11 +2007,11 @@
 |    |    |    |    |    |         |         |         |         |    \--- io.ktor:ktor-io-jvm:3.4.1
 |    |    |    |    |    |         |         |         |         |         +--- org.slf4j:slf4j-api:2.0.17
 |    |    |    |    |    |         |         |         |         |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
-|    |    |    |    |    |         |         |         |         |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.8.2 -> 0.9.0 (*)
+|    |    |    |    |    |         |         |         |         |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.8.2 (*)
 |    |    |    |    |    |         |         |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
-|    |    |    |    |    |         |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |         |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    |    |    |    |    |         |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
-|    |    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    |    |    |    |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
 |    |    |    |    |    |         |         +--- io.ktor:ktor-http-cio:3.4.1
 |    |    |    |    |    |         |         |    \--- io.ktor:ktor-http-cio-jvm:3.4.1
@@ -2071,60 +2071,10 @@
 |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-android:4.1.1 (*)
-|    |    |    |    |    +--- dev.whyoleg.cryptography:cryptography-provider-jdk-bc:0.6.0
-|    |    |    |    |    |    \--- dev.whyoleg.cryptography:cryptography-provider-jdk-bc-jvm:0.6.0
-|    |    |    |    |    |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-bigint:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-random:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-core:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-provider-jdk:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-provider-jdk-bc:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-provider-base:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-serialization-pem:0.6.0 (c)
-|    |    |    |    |    |         |    +--- dev.whyoleg.cryptography:cryptography-serialization-asn1:0.6.0 (c)
-|    |    |    |    |    |         |    \--- dev.whyoleg.cryptography:cryptography-serialization-asn1-modules:0.6.0 (c)
-|    |    |    |    |    |         +--- dev.whyoleg.cryptography:cryptography-provider-jdk:0.6.0
-|    |    |    |    |    |         |    \--- dev.whyoleg.cryptography:cryptography-provider-jdk-jvm:0.6.0
-|    |    |    |    |    |         |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |         +--- dev.whyoleg.cryptography:cryptography-core:0.6.0
-|    |    |    |    |    |         |         |    \--- dev.whyoleg.cryptography:cryptography-core-jvm:0.6.0
-|    |    |    |    |    |         |         |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |         |         +--- dev.whyoleg.cryptography:cryptography-bigint:0.6.0
-|    |    |    |    |    |         |         |         |    \--- dev.whyoleg.cryptography:cryptography-bigint-jvm:0.6.0
-|    |    |    |    |    |         |         |         |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |         |         +--- dev.whyoleg.cryptography:cryptography-random:0.6.0
-|    |    |    |    |    |         |         |         |    \--- dev.whyoleg.cryptography:cryptography-random-jvm:0.6.0
-|    |    |    |    |    |         |         |         |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |         |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.9.0 (*)
-|    |    |    |    |    |         |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |         \--- dev.whyoleg.cryptography:cryptography-provider-base:0.6.0
-|    |    |    |    |    |         |              \--- dev.whyoleg.cryptography:cryptography-provider-base-jvm:0.6.0
-|    |    |    |    |    |         |                   +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |                   +--- dev.whyoleg.cryptography:cryptography-core:0.6.0 (*)
-|    |    |    |    |    |         |                   +--- dev.whyoleg.cryptography:cryptography-serialization-pem:0.6.0
-|    |    |    |    |    |         |                   |    \--- dev.whyoleg.cryptography:cryptography-serialization-pem-jvm:0.6.0
-|    |    |    |    |    |         |                   |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |                   |         +--- org.jetbrains.kotlinx:kotlinx-io-core:0.9.0 (*)
-|    |    |    |    |    |         |                   |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |                   +--- dev.whyoleg.cryptography:cryptography-serialization-asn1:0.6.0
-|    |    |    |    |    |         |                   |    \--- dev.whyoleg.cryptography:cryptography-serialization-asn1-jvm:0.6.0
-|    |    |    |    |    |         |                   |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |                   |         +--- dev.whyoleg.cryptography:cryptography-bigint:0.6.0 (*)
-|    |    |    |    |    |         |                   |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0 (*)
-|    |    |    |    |    |         |                   |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |                   +--- dev.whyoleg.cryptography:cryptography-serialization-asn1-modules:0.6.0
-|    |    |    |    |    |         |                   |    \--- dev.whyoleg.cryptography:cryptography-serialization-asn1-modules-jvm:0.6.0
-|    |    |    |    |    |         |                   |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         |                   |         +--- dev.whyoleg.cryptography:cryptography-serialization-asn1:0.6.0 (*)
-|    |    |    |    |    |         |                   |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |                   +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         |                   \--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0 (*)
-|    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         \--- org.bouncycastle:bcprov-jdk18on:1.83
+|    |    |    |    |    +--- com.google.android.play:integrity:1.6.0
+|    |    |    |    |    |    +--- com.google.android.gms:play-services-basement:18.9.0 (*)
+|    |    |    |    |    |    +--- com.google.android.gms:play-services-tasks:18.2.0 (*)
+|    |    |    |    |    |    \--- com.google.android.play:core-common:2.0.4
 |    |    |    |    |    +--- project :core:common (*)
 |    |    |    |    |    +--- project :core:model (*)
 |    |    |    |    |    +--- project :core-base:network
@@ -2154,16 +2104,16 @@
 |    |    |    |    |    |    |         |         +--- org.slf4j:slf4j-api:2.0.17
 |    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |    |         |         +--- io.ktor:ktor-serialization:3.3.3 -> 3.4.1 (*)
-|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
 |    |    |    |    |    |    |         |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.21 -> 2.3.20 (*)
-|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
-|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.9.0 -> 1.10.0
-|    |    |    |    |    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json-io-jvm:1.10.0
-|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.10.0 (*)
-|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.0 -> 2.3.20 (*)
-|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0 (*)
-|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0 (*)
-|    |    |    |    |    |    |         |         \--- org.jetbrains.kotlinx:kotlinx-io-core:0.6.0 -> 0.9.0 (*)
+|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
+|    |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.9.0
+|    |    |    |    |    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json-io-jvm:1.9.0
+|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-bom:1.9.0 (*)
+|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.2.0 -> 2.3.20 (*)
+|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0 (*)
+|    |    |    |    |    |    |         |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
+|    |    |    |    |    |    |         |         \--- org.jetbrains.kotlinx:kotlinx-io-core:0.6.0 -> 0.8.2 (*)
 |    |    |    |    |    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.21 -> 2.3.20 (*)
 |    |    |    |    |    |    +--- io.ktor:ktor-client-auth:3.3.3
 |    |    |    |    |    |    |    \--- io.ktor:ktor-client-auth-jvm:3.3.3
@@ -2187,7 +2137,7 @@
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- project :core-base:security (*)
 |    |    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    |    |    |    |    +--- co.touchlab:kermit:2.0.8 (*)
@@ -2195,13 +2145,13 @@
 |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    +--- project :core:datastore
 |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    +--- project :core:model (*)
 |    |    |    |    |    |    +--- project :core:common (*)
 |    |    |    |    |    |    +--- project :core-base:common (*)
@@ -2212,7 +2162,7 @@
 |    |    |    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |    |    +--- project :core-base:common (*)
 |    |    |    |    |    |    |    +--- project :core-base:security (*)
 |    |    |    |    |    |    |    +--- com.russhwolf:multiplatform-settings-no-arg:1.3.0
@@ -2226,7 +2176,7 @@
 |    |    |    |    |    |    |    |    \--- com.russhwolf:multiplatform-settings-serialization-android:1.3.0
 |    |    |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.1.0 -> 2.3.20 (*)
 |    |    |    |    |    |    |    |         +--- com.russhwolf:multiplatform-settings:1.3.0 (*)
-|    |    |    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.10.0 (*)
+|    |    |    |    |    |    |    |         \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3 -> 1.9.0 (*)
 |    |    |    |    |    |    |    +--- com.russhwolf:multiplatform-settings-coroutines:1.3.0
 |    |    |    |    |    |    |    |    \--- com.russhwolf:multiplatform-settings-coroutines-android:1.3.0
 |    |    |    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.1.0 -> 2.3.20 (*)
@@ -2251,7 +2201,7 @@
 |    |    |    |    |    |         +--- org.slf4j:slf4j-api:2.0.17
 |    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2 (*)
 |    |    |    |    |    |         +--- io.ktor:ktor-client-core:3.3.3 -> 3.4.1 (*)
-|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    |    |         +--- io.ktor:ktor-client-json:3.3.3 (*)
 |    |    |    |    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:2.2.21 -> 2.3.20 (*)
 |    |    |    |    |    +--- io.ktor:ktor-client-content-negotiation:3.3.3 (*)
@@ -2259,13 +2209,6 @@
 |    |    |    |    |    +--- io.ktor:ktor-serialization-kotlinx-json:3.3.3 (*)
 |    |    |    |    |    +--- de.jensklingenberg.ktorfit:ktorfit-lib:2.7.3 (*)
 |    |    |    |    |    +--- com.squareup.okio:okio:3.16.4 (*)
-|    |    |    |    |    +--- dev.whyoleg.cryptography:cryptography-core:0.6.0 (*)
-|    |    |    |    |    +--- dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0
-|    |    |    |    |    |    \--- dev.whyoleg.cryptography:cryptography-provider-optimal-jvm:0.6.0
-|    |    |    |    |    |         +--- dev.whyoleg.cryptography:cryptography-bom:0.6.0 (*)
-|    |    |    |    |    |         +--- dev.whyoleg.cryptography:cryptography-core:0.6.0 (*)
-|    |    |    |    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
-|    |    |    |    |    |         \--- dev.whyoleg.cryptography:cryptography-provider-jdk:0.6.0 (*)
 |    |    |    |    |    +--- com.russhwolf:multiplatform-settings-no-arg:1.3.0 (*)
 |    |    |    |    |    +--- com.russhwolf:multiplatform-settings-serialization:1.3.0 (*)
 |    |    |    |    |    +--- com.russhwolf:multiplatform-settings-coroutines:1.3.0 (*)
@@ -2319,7 +2262,7 @@
 |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    +--- project :core:common (*)
 |    |    +--- project :core:database (*)
 |    |    +--- project :core:datastore (*)
@@ -2357,7 +2300,7 @@
 |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    +--- project :core:ui (*)
 |    |    +--- project :core-base:ui (*)
 |    |    +--- project :core:designsystem (*)
@@ -2389,13 +2332,13 @@
 |    |    |    +--- androidx.compose.runtime:runtime -> 1.10.5 (*)
 |    |    |    +--- org.jetbrains.compose.material3:material3:1.9.0 (*)
 |    |    |    +--- com.google.android.play:review:2.0.2
-|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.5.0 (*)
+|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.9.0 (*)
 |    |    |    |    +--- com.google.android.gms:play-services-tasks:18.2.0 (*)
 |    |    |    |    \--- com.google.android.play:core-common:2.0.4
 |    |    |    +--- com.google.android.play:review-ktx:2.0.2
 |    |    |    |    +--- androidx.core:core:1.1.0 -> 1.17.0 (*)
 |    |    |    |    +--- androidx.fragment:fragment:1.1.0 -> 1.8.9 (*)
-|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.5.0 (*)
+|    |    |    |    +--- com.google.android.gms:play-services-basement:18.4.0 -> 18.9.0 (*)
 |    |    |    |    +--- com.google.android.gms:play-services-tasks:18.2.0 (*)
 |    |    |    |    +--- com.google.android.play:review:2.0.2 (*)
 |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.72 -> 1.8.22 (*)
@@ -2404,10 +2347,10 @@
 |    |    |    +--- com.google.android.play:app-update-ktx:2.1.0
 |    |    |    |    +--- androidx.core:core:1.1.0 -> 1.17.0 (*)
 |    |    |    |    +--- androidx.fragment:fragment:1.1.0 -> 1.8.9 (*)
-|    |    |    |    +--- com.google.android.gms:play-services-basement:18.1.0 -> 18.5.0 (*)
+|    |    |    |    +--- com.google.android.gms:play-services-basement:18.1.0 -> 18.9.0 (*)
 |    |    |    |    +--- com.google.android.gms:play-services-tasks:18.0.2 -> 18.2.0 (*)
 |    |    |    |    +--- com.google.android.play:app-update:2.1.0
-|    |    |    |    |    +--- com.google.android.gms:play-services-basement:18.1.0 -> 18.5.0 (*)
+|    |    |    |    |    +--- com.google.android.gms:play-services-basement:18.1.0 -> 18.9.0 (*)
 |    |    |    |    |    +--- com.google.android.gms:play-services-tasks:18.0.2 -> 18.2.0 (*)
 |    |    |    |    |    \--- com.google.android.play:core-common:2.0.3 -> 2.0.4
 |    |    |    |    +--- com.google.android.play:core-common:2.0.3 -> 2.0.4
@@ -2419,7 +2362,7 @@
 |    |    |    +--- io.insert-koin:koin-bom:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- org.jetbrains.compose.ui:ui:1.10.3 (*)
 |    |    |    +--- org.jetbrains.compose.runtime:runtime:1.10.3 (*)
 |    |    |    +--- com.mohamedrejeb.calf:calf-permissions:0.8.0
@@ -2440,7 +2383,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2479,7 +2422,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2517,7 +2460,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2557,7 +2500,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2597,7 +2540,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2637,7 +2580,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2677,7 +2620,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2717,7 +2660,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2755,7 +2698,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2795,7 +2738,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2835,7 +2778,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2875,7 +2818,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2915,7 +2858,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -2946,7 +2889,7 @@
 |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    |    +--- project :core:ui (*)
 |    |    |    |    +--- project :core-base:ui (*)
 |    |    |    |    +--- project :core:designsystem (*)
@@ -2996,7 +2939,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3033,7 +2976,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3070,10 +3013,11 @@
 |    |    |    +--- io.insert-koin:koin-androidx-compose:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-androidx-navigation:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-core-viewmodel:4.1.1 (*)
+|    |    |    +--- androidx.browser:browser:1.9.0 (*)
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3111,7 +3055,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3150,7 +3094,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3190,7 +3134,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3230,7 +3174,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3270,7 +3214,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3310,7 +3254,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3350,7 +3294,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3390,7 +3334,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3429,7 +3373,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3468,7 +3412,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3507,7 +3451,7 @@
 |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:2.3.20 (*)
 |    |    |    +--- io.insert-koin:koin-core:4.1.1 (*)
 |    |    |    +--- io.insert-koin:koin-annotations:2.1.0 (*)
-|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 -> 1.10.0 (*)
+|    |    |    +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0 (*)
 |    |    |    +--- project :core:ui (*)
 |    |    |    +--- project :core-base:ui (*)
 |    |    |    +--- project :core:designsystem (*)
@@ -3549,7 +3493,6 @@
 |    |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 |    +--- org.jetbrains.compose.components:components-resources:1.10.3 (*)
 |    +--- project :core-base:platform (*)
-|    +--- project :core:network (*)
 |    +--- io.coil-kt.coil3:coil-compose-core:3.3.0 (*)
 |    \--- org.jetbrains.kotlin:kotlin-parcelize-runtime:2.3.20 (*)
 +--- project :core:ui (*)
