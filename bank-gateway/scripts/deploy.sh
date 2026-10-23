@@ -52,10 +52,12 @@ done
 echo "✓ resolved ${#ALIASES[@]} credentials from the vault"
 
 # Attestation credentials (phase 06) are optional until handed off. A missing one is skipped and named —
+# Both are ORG-level (mifos-x): the Firebase SA of the mifos-mobile-apps Cloud project the app is registered in,
+# and the Mifos Apple team id.
 # never silent: the Worker then fails closed (503 attestation_unconfigured) unless wrangler.toml sets
 # ATTESTATION_MODE = "report-only".
 ATTEST_SKIPPED=""
-for pair in mifos-x-open-banking-play-integrity-sa:PLAY_INTEGRITY_SA_JSON mifos-x-open-banking-apple-team-id:APPLE_TEAM_ID; do
+for pair in mifos-x-firebase-service-account:PLAY_INTEGRITY_SA_JSON mifos-x-apple-team-id:APPLE_TEAM_ID; do
   a="${pair%%:*}"
   if t=$( cd "$FW" && bash core/scripts/secrets-get.sh "$a" --secure-temp 2>/dev/null | tail -n 1 ) && [ -s "$t" ]; then
     mv "$t" "$WORK/$a"
@@ -122,8 +124,8 @@ node -e '
     HSBC_KID: t("mifos-x-open-banking-hsbc-kid"),
     HSBC_SOFTWARE_STATEMENT: t("mifos-x-open-banking-hsbc-software-statement"),
     HSBC_SIGNING_ISSUER: t("mifos-x-open-banking-hsbc-signing-issuer"),
-    PLAY_INTEGRITY_SA_JSON: opt("mifos-x-open-banking-play-integrity-sa", r),
-    APPLE_TEAM_ID: opt("mifos-x-open-banking-apple-team-id", t),
+    PLAY_INTEGRITY_SA_JSON: opt("mifos-x-firebase-service-account", r),
+    APPLE_TEAM_ID: opt("mifos-x-apple-team-id", t),
   }), {mode: 0o600});' "$WORK"
 npx --yes wrangler@4 secret bulk "$WORK/secrets.json" 2>&1 | grep -vE 'Bearer|token' || true
 echo "✓ Worker secrets set"

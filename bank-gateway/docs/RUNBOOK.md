@@ -30,7 +30,7 @@ secret value into a terminal, chat or file.
    | `mifos-x-open-banking-hsbc-transport-p12`, `…-transport-p12-password` | the mTLS certificate |
    | `mifos-x-open-banking-hsbc-client-id`, `…-hsbc-kid`, `…-hsbc-software-statement` | `HSBC_CLIENT_ID`, `HSBC_KID`, `HSBC_SOFTWARE_STATEMENT` |
    | `mifos-x-open-banking-hsbc-signing-issuer` | `HSBC_SIGNING_ISSUER` — the signing certificate's subject DN (RFC 2253) |
-   | `mifos-x-open-banking-play-integrity-sa`, `mifos-x-open-banking-apple-team-id` | optional until hand-off (§7) |
+   | `mifos-x-firebase-service-account`, `mifos-x-apple-team-id` | optional until hand-off (§7) |
 
 5. **Cloudflare token scopes.** The Worker token (`mifos-x-open-banking-cloudflare-gateway-token`) needs, on
    the Mifos account only: **Workers Scripts: Edit**, **SSL and Certificates: Edit** (mTLS certificate
@@ -150,8 +150,8 @@ Its deploy uses `mifos-x-cloudflare-api-token` (Pages: Edit); the Worker token i
 The Worker ships `ATTESTATION_MODE = "report-only"` because two credentials are pending. To enforce:
 
 1. **Hand off** both values through the vault (never chat): `/secrets handoff` for
-   `mifos-x-open-banking-play-integrity-sa` (the Google service account JSON with Play Integrity access)
-   and `mifos-x-open-banking-apple-team-id`.
+   `mifos-x-firebase-service-account` (the Google service account JSON with Play Integrity access)
+   and `mifos-x-apple-team-id`.
 2. **Deploy** with `bash bank-gateway/scripts/deploy.sh`. It must print
    `✓ resolved attestation credentials (PLAY_INTEGRITY_SA_JSON, APPLE_TEAM_ID)`.
 3. **Ship app builds that attest.** Android sends no Play Integrity token until

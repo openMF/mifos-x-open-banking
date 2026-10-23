@@ -50,7 +50,8 @@ val gatewayLocalProperties = Properties().apply {
 
 val gatewayConfigKeys = mapOf(
     "GATEWAY_BASE_URL" to "https://mifos-x-open-banking-gateway.mifos-x-open-banking.workers.dev",
-    "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" to "",
+    // mifos-mobile-apps: the Cloud project this app is registered in (cmp-android/google-services.json project_number).
+    "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" to "728434912738",
 )
 
 fun resolveGatewayValue(key: String, default: String): String =

@@ -60,8 +60,8 @@ in that file; `scripts/deploy.sh` sets them (see [RUNBOOK.md](RUNBOOK.md)).
 | `HSBC_KID` | `mifos-x-open-banking-hsbc-kid` |
 | `HSBC_SOFTWARE_STATEMENT` | `mifos-x-open-banking-hsbc-software-statement` |
 | `HSBC_SIGNING_ISSUER` | `mifos-x-open-banking-hsbc-signing-issuer` |
-| `PLAY_INTEGRITY_SA_JSON` (pending hand-off) | `mifos-x-open-banking-play-integrity-sa` |
-| `APPLE_TEAM_ID` (pending hand-off) | `mifos-x-open-banking-apple-team-id` |
+| `PLAY_INTEGRITY_SA_JSON` (pending hand-off) | `mifos-x-firebase-service-account` |
+| `APPLE_TEAM_ID` (pending hand-off) | `mifos-x-apple-team-id` |
 | mTLS certificate `mifos-x-open-banking-hsbc-transport` (not a secret var; bound as `HSBC_MTLS`) | `mifos-x-open-banking-hsbc-transport-p12` + `…-transport-p12-password` |
 
 ## 2. Data flows
