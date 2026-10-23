@@ -12,10 +12,12 @@ package org.mifosx.openbanking.feature.consentcallback.ui
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.mifosx.openbanking.core.data.callback.CallbackSecurityRejected
 import org.mifosx.openbanking.core.data.callback.ConsentCallbackRepository
+import org.mifosx.openbanking.core.data.callback.ConsentRejectedAtBank
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.ValidationResult
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.api.CompletedAuth
 import template.core.base.common.screen.ScreenState
 import template.core.base.ui.viewmodel.BackgroundEvent
 import template.core.base.ui.viewmodel.BaseViewModel
@@ -39,8 +41,8 @@ sealed interface ConsentCallbackEvent {
 
 sealed interface ConsentCallbackAction {
     /**
-     * The raw redirect URL as the OS handed it to us. Parsing and authentication belong to
-     * [ConsentCallbackRepository], which alone holds the expected `state`/`nonce`.
+     * The raw redirect URL as the OS handed it to us. Parsing and matching belong to
+     * [ConsentCallbackRepository], which alone holds the expected `state` and the Worker's flow.
      */
     data class ProcessCallback(val redirectUrl: String) : ConsentCallbackAction
     data object PollConsentStatus : ConsentCallbackAction
@@ -51,7 +53,6 @@ sealed interface ConsentCallbackAction {
 class ConsentCallbackViewModel(
     private val repository: ConsentCallbackRepository,
     private val consentSession: ConsentSession,
-    private val redirectUri: String,
 ) : BaseViewModel<ConsentCallbackUiState, ConsentCallbackEvent, ConsentCallbackAction>(
     initialState = ConsentCallbackUiState.Loading,
 ) {
@@ -90,18 +91,24 @@ class ConsentCallbackViewModel(
             is ValidationResult.Valid -> {
                 pendingConsentId = v.consentId
                 viewModelScope.launch {
-                    executeExchange(v.code)
+                    executeExchange(v)
                 }
             }
         }
     }
 
-    private suspend fun executeExchange(code: String) {
-        when (val result = repository.exchangeCode(code, redirectUri)) {
+    private suspend fun executeExchange(callback: ValidationResult.Valid) {
+        when (val result = repository.exchangeCode(callback)) {
             is ScreenState.Content -> completeSignIn(result.data)
 
-            is ScreenState.Error ->
-                updateState { ConsentCallbackUiState.Error(result.error.message ?: "Token exchange failed.") }
+            is ScreenState.Error -> when (val error = result.error) {
+                is CallbackSecurityRejected -> updateState { ConsentCallbackUiState.SecurityError }
+                is ConsentRejectedAtBank -> {
+                    consentSession.clear()
+                    updateState { ConsentCallbackUiState.Error(error.message.orEmpty()) }
+                }
+                else -> updateState { ConsentCallbackUiState.Error(error.message ?: "Token exchange failed.") }
+            }
 
             is ScreenState.Unauthenticated ->
                 updateState { ConsentCallbackUiState.Error("Authorisation failed.") }
@@ -114,25 +121,21 @@ class ConsentCallbackViewModel(
     }
 
     /**
-     * Completes the sign-in after a successful token exchange.
+     * Completes the sign-in after the Worker issued a session.
      *
-     * A PSU access token is only ever issued against an *authorised* consent, so a successful
-     * exchange already proves authorisation — the consent status the bank reports a beat later can
-     * still read `AwaitingAuthorisation` while it settles, but that is a propagation lag, not a
-     * pending decision. So the consent id is recorded unconditionally (this is the only writer of
-     * `ConsentSession.consentId()`, which the consent screens read to show the current connection),
-     * and the poll is used only to read the expiry, best-effort. Gating this on the poll returning
-     * `Authorised` is what first left a freshly authorised consent invisible until a second attempt.
+     * The Worker only issues one against a consent that is not `Rejected` (409 otherwise), and the
+     * status it reports a beat after authorisation can still read `AwaitingAuthorisation` while it
+     * settles — a propagation lag, not a pending decision. So the consent id is recorded
+     * unconditionally (this is the only writer of `ConsentSession.consentId()`, which the consent
+     * screens read), with the expiry the Worker read alongside it.
      *
-     * Order is load-bearing: the consent is recorded BEFORE the tokens are persisted. Persisting the
-     * tokens flips [ConsentSession] active, which the root navigator reacts to by routing to the
-     * authenticated graph and tearing this screen (and this coroutine) down — so recording the
-     * consent afterwards could be cancelled mid-write, which is what left it invisible even after the
-     * poll-gating was removed.
+     * Order is load-bearing: the consent is recorded BEFORE the session is persisted. Persisting the
+     * session flips [ConsentSession] active, which the root navigator reacts to by routing to the
+     * authenticated graph and tearing this screen (and this coroutine) down.
      */
-    private suspend fun completeSignIn(tokens: PsuTokenResponse) {
-        recordConsent()
-        persistTokens(tokens)
+    private suspend fun completeSignIn(auth: CompletedAuth) {
+        consentSession.saveConsentMeta(auth.consentId, auth.consentExpiresAt.orEmpty())
+        consentSession.save(auth.session)
         updateState { ConsentCallbackUiState.Content }
         delay(NAVIGATION_DELAY_MS)
         sendEvent(ConsentCallbackEvent.NavigateToHome)
@@ -160,11 +163,4 @@ class ConsentCallbackViewModel(
         }
     }
 
-    /**
-     * Persisting the tokens is what makes the PSU "signed in" — the root navigator derives that from
-     * [ConsentSession], not from a stored flag, so this write is the whole of the transition.
-     */
-    private fun persistTokens(token: PsuTokenResponse) {
-        consentSession.save(token)
-    }
 }

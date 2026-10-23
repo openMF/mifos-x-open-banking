@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.mifosx.openbanking.core.data.banking.ConsentDetailRepository
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.model.banking.ConsentSummary
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 import template.core.base.common.screen.ScreenState
 import template.core.base.store.screen.ScreenDataStream
 import kotlin.time.ExperimentalTime
@@ -67,8 +66,7 @@ class FakeConsentSession(
 ) : ConsentSession {
 
     override fun isActive(): Boolean = currentConsentId != null
-    override fun tokens(): PsuTokenResponse? = null
-    override fun save(tokens: PsuTokenResponse) = Unit
+    override fun save(session: String) = Unit
     override fun saveConsentMeta(consentId: String, expirationDateTime: String) = Unit
     override fun consentId(): String? = currentConsentId
     override fun consentExpiration(): Instant? = null

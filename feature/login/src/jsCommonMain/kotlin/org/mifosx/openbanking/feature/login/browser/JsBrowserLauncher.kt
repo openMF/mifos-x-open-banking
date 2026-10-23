@@ -9,18 +9,19 @@
  */
 package org.mifosx.openbanking.feature.login.browser
 
+import kotlinx.browser.window
+
 /**
- * Web (js / wasmJs) has no consent-redirect receiver wired, so the OAuth round-trip cannot complete
- * on this platform. Reports [isSupported] = `false` so the login screen refuses up front with an
- * explicit message rather than opening HSBC and stranding the PSU on a callback that never arrives.
+ * Web (js / wasmJs): the app is a plain HTTPS client of the Worker BFF (no client certificate), so it
+ * can start the consent journey — the tab navigates to the Worker-signed HSBC authorize URL.
+ *
+ * Known gap: the relay page does not yet hand the result back to a web origin (it knows the mobile
+ * scheme and the desktop loopback only), so a web sign-in stops on the relay page after the bank login.
  */
 class JsBrowserLauncher : BrowserLauncher {
-    override val isSupported: Boolean = false
+    override val isSupported: Boolean = true
 
-    /**
-     * Intentionally does nothing: [isSupported] is `false`, so `LoginViewModel` errors out before
-     * this is ever reached. Kept total rather than throwing so an accidental call cannot crash the
-     * app on a platform the consent journey simply does not serve.
-     */
-    override fun launch(url: String) = Unit
+    override fun launch(url: String) {
+        window.location.assign(url)
+    }
 }

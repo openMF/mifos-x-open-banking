@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
@@ -211,6 +212,11 @@ fun RootNavScreen(
     // avoids a bug that first appeared in Compose Material3 1.2.0-rc01 that causes the initial
     // transition to appear corrupted.
     LaunchedEffect(state) {
+        // A cold start through a bank redirect (every web return; Android / iOS when the process was
+        // dead) routes to a callback screen before the root state has settled. Navigating to the root
+        // graph here would pop it before its ViewModel runs and silently abandon the consent. The
+        // callback screen owns its exit (home / login), so hold the root while it is showing.
+        if (navController.currentDestination.isRedirectDestination()) return@LaunchedEffect
         when (state) {
             RootNavState.Splash -> navController.navigateToSplash(rootNavOptions())
             RootNavState.Auth -> navController.navigateToAuthGraph(rootNavOptions())
@@ -220,6 +226,12 @@ fun RootNavScreen(
         }
     }
 }
+
+private fun NavDestination?.isRedirectDestination(): Boolean = this != null && (
+    hasRoute(ConsentCallbackRoute::class) ||
+        hasRoute(PaymentConsentRoute::class) ||
+        hasRoute(VrpCallbackRoute::class)
+    )
 
 private fun NavDestination?.rootLevelRoute(): String? = when {
     this == null -> null

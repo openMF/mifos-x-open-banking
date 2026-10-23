@@ -59,6 +59,20 @@ class ConsentRedirectIntentTest {
     }
 
     @Test
+    fun `the verified relay app link is accepted with its fragment intact`() {
+        val appLink = "https://$CONSENT_RELAY_HOST/callback/#code=abc&id_token=ey.J.sig&state=st-1"
+
+        assertEquals(appLink, viewIntent(appLink).consumeConsentRedirectUrl())
+    }
+
+    @Test
+    fun `other https urls on the relay host or elsewhere are ignored`() {
+        assertNull(viewIntent("https://$CONSENT_RELAY_HOST/privacy/").consumeConsentRedirectUrl())
+        assertNull(viewIntent("https://evil.example/callback/#code=abc&state=st-1").consumeConsentRedirectUrl())
+        assertNull(viewIntent("http://$CONSENT_RELAY_HOST/callback/#code=abc").consumeConsentRedirectUrl())
+    }
+
+    @Test
     fun `the url is consumed, so an activity recreate cannot replay it`() {
         val intent = viewIntent(REDIRECT_URL)
 

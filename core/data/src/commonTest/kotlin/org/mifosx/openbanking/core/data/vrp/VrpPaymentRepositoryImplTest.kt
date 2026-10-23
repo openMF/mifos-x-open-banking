@@ -9,25 +9,18 @@
  */
 package org.mifosx.openbanking.core.data.vrp
 
-import com.russhwolf.settings.MapSettings
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.engine.mock.toByteArray
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.WORKER_SESSION
+import org.mifosx.openbanking.core.data.bffClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
 import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
@@ -41,7 +34,6 @@ import org.mifosx.openbanking.core.model.vrp.PeriodType
 import org.mifosx.openbanking.core.model.vrp.PeriodicLimit
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpControlParameters
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Vrp
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
@@ -52,15 +44,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-private const val TOKEN_URL = "https://secure.example.test/oauth2/token"
 private const val CONSENT_ID = "45411"
 private const val PAYMENT_ID = "19975"
 
-/** The credential the client-credentials grant returns. Reads a payment resource. */
-private const val TPP_TOKEN = "tpp-client-credentials-token"
-
-/** The credential the refresh-token grant returns. Pays, and confirms funds. */
-private const val PSU_TOKEN = "psu-access-token"
+/** The only credential the app presents; the Worker picks the bank token per route. */
+private const val SESSION_AUTH = "Session $WORKER_SESSION"
 
 private const val FUNDS_JSON =
     """{"Data":{"ConsentId":"$CONSENT_ID","CreationDateTime":"2026-08-15T18:19:00+00:00",""" +
@@ -68,16 +56,11 @@ private const val FUNDS_JSON =
         """"FundsAvailable":"Available"},"InstructedAmount":{"Amount":"5.00","Currency":"GBP"}}}"""
 
 /**
- * Covers [VrpPaymentRepositoryImpl] at the wire, with one recurring question: **which credential
- * does each call present?**
- *
- * The two are not interchangeable. Funds confirmation refuses the TPP token with a `401` carrying
- * no body, and a payment resource is read on the TPP token rather than the customer's. These cases
- * pin the split so it cannot invert.
+ * Covers [VrpPaymentRepositoryImpl] at the wire. Every call goes to the Worker on the app's session;
+ * which bank token each one needs (customer for pay / funds, TPP for reads) is the Worker's job, as is
+ * refreshing the customer token — so the app neither holds a token nor retries.
  */
 class VrpPaymentRepositoryImplTest {
-
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private data class Recorded(
         val path: String,
@@ -148,85 +131,41 @@ class VrpPaymentRepositoryImplTest {
         ),
     )
 
-    /**
-     * @param resourceStatus Applied to the VRP resource calls only; the token endpoint always
-     *   succeeds, so a failure case exercises the refusal path rather than dying at authentication.
-     */
-    private suspend fun repository(
+    /** @param resourceStatus Applied to every Worker call. */
+    private fun repository(
         consentDao: FakeConsentDao = FakeConsentDao(consent().toEntity()),
         paymentDao: FakePaymentDao = FakePaymentDao(),
         paymentStatus: String = "ACSP",
         resourceStatus: HttpStatusCode = HttpStatusCode.Created,
-        refusePsuOnce: Boolean = false,
     ): Triple<VrpPaymentRepositoryImpl, FakePaymentDao, MutableList<Recorded>> {
-        var psuCalls = 0
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                val path = request.url.encodedPath
-                val body = request.body.toByteArray().decodeToString()
-                val isToken = path.contains("oauth2/token")
-                if (!isToken) {
-                    captured += Recorded(
-                        path = path,
-                        method = request.method.value,
-                        authorization = request.headers[HttpHeaders.Authorization],
-                        idempotencyKey = request.headers["x-idempotency-key"],
-                    )
-                }
-
-                when {
-                    isToken -> {
-                        val token = if (body.contains("refresh_token")) PSU_TOKEN else TPP_TOKEN
-                        respond(
-                            """{"access_token":"$token","token_type":"Bearer","expires_in":299,""" +
-                                """"refresh_token":"stored-refresh","scope":"openid payments"}""",
-                            HttpStatusCode.OK,
-                            jsonHeaders,
-                        )
-                    }
-
-                    refusePsuOnce && psuCalls++ == 0 ->
-                        respond("", HttpStatusCode.Unauthorized, jsonHeaders)
-
-                    path.endsWith("funds-confirmation") ->
-                        respond(FUNDS_JSON, resourceStatus, jsonHeaders)
-
-                    else -> respond(paymentJson(paymentStatus), resourceStatus, jsonHeaders)
-                }
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = bffClient { request: HttpRequestData ->
+            val path = request.url.encodedPath
+            captured += Recorded(
+                path = path,
+                method = request.method.value,
+                authorization = request.headers[HttpHeaders.Authorization],
+                idempotencyKey = request.headers["x-idempotency-key"],
+            )
+            if (path.endsWith("funds-confirmation")) {
+                respond(FUNDS_JSON, resourceStatus, jsonHeaders)
+            } else {
+                respond(paymentJson(paymentStatus), resourceStatus, jsonHeaders)
+            }
         }
-
-        val settings = MapSettings()
-        val session = SettingsVrpAuthSession(settings)
-        val oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem())
-        val repository = VrpPaymentRepositoryImpl(
-            vrp = Vrp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = TestSigningKey.pem(),
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
-            oauth = oauth,
-            consentDao = consentDao,
-            paymentDao = paymentDao,
-            tokens = VrpTokenProviderImpl(oauth, session),
-        )
-        session.saveRefreshToken(CONSENT_ID, "stored-refresh")
+        val repository = VrpPaymentRepositoryImpl(vrp = Vrp(client), consentDao = consentDao, paymentDao = paymentDao)
         return Triple(repository, paymentDao, captured)
     }
 
     @Test
-    fun confirmsFundsOnTheCustomerCredentialNotTheTppOne() = runTest {
+    fun confirmsFundsThroughTheWorkerOnTheSession() = runTest {
         val (repository, _, calls) = repository()
 
         val result = repository.checkFunds(CONSENT_ID, Money(500L, "GBP"))
 
         assertIs<NetworkResult.Success<*>>(result)
-        val call = assertNotNull(calls.firstOrNull { it.path.endsWith("funds-confirmation") })
-        assertEquals("Bearer $PSU_TOKEN", call.authorization)
+        val call = calls.single()
+        assertEquals("POST" to "/v1/consents/vrp/$CONSENT_ID/funds-confirmation", call.method to call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
     }
 
     @Test
@@ -241,19 +180,20 @@ class VrpPaymentRepositoryImplTest {
     }
 
     @Test
-    fun paysOnTheCustomerCredential() = runTest {
+    fun paysThroughTheWorkerOnTheSession() = runTest {
         val (repository, _, calls) = repository()
 
         val result = repository.pay(consent(), Money(200L, "GBP"), "INSTR1", "E2E1", "pay-key-1")
 
         assertIs<NetworkResult.Success<*>>(result)
-        val call = assertNotNull(calls.firstOrNull { it.method == "POST" && it.path.endsWith("domestic-vrps") })
-        assertEquals("Bearer $PSU_TOKEN", call.authorization)
+        val call = calls.single()
+        assertEquals("POST" to "/v1/vrp/payments", call.method to call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
         assertEquals("pay-key-1", call.idempotencyKey)
     }
 
     @Test
-    fun readsAPaymentBackOnTheTppCredential() = runTest {
+    fun readsAPaymentBackThroughTheWorker() = runTest {
         val paymentDao = FakePaymentDao()
         val (repository, _, calls) = repository(paymentDao = paymentDao)
         val paid = repository.pay(consent(), Money(200L, "GBP"), "INSTR1", "E2E1", "pay-key-1")
@@ -263,18 +203,20 @@ class VrpPaymentRepositoryImplTest {
         repository.refreshStatus(paymentDao.rows.value.single().toVrpPayment())
 
         val call = assertNotNull(calls.firstOrNull { it.method == "GET" })
-        assertEquals("Bearer $TPP_TOKEN", call.authorization)
-        assertTrue(call.path.endsWith("domestic-vrps/$PAYMENT_ID"), call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
+        assertEquals("/v1/vrp/payments/$PAYMENT_ID", call.path)
     }
 
     @Test
-    fun mintsAFreshCustomerTokenAndRetriesOnceWhenTheHeldOneIsRefused() = runTest {
-        val (repository, _, calls) = repository(refusePsuOnce = true)
+    fun aRefusedPaymentIsReportedNotRetriedBecauseTheWorkerAlreadyRefreshed() = runTest {
+        val paymentDao = FakePaymentDao()
+        val (repository, _, calls) = repository(paymentDao = paymentDao, resourceStatus = HttpStatusCode.Unauthorized)
 
         val result = repository.pay(consent(), Money(200L, "GBP"), "INSTR1", "E2E1", "pay-key-1")
 
-        assertIs<NetworkResult.Success<*>>(result)
-        assertEquals(2, calls.count { it.method == "POST" && it.path.endsWith("domestic-vrps") })
+        assertIs<NetworkResult.Error<*>>(result)
+        assertEquals(1, calls.count { it.method == "POST" })
+        assertTrue(paymentDao.rows.value.isEmpty())
     }
 
     @Test

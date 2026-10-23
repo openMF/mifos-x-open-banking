@@ -9,21 +9,16 @@
  */
 package org.mifosx.openbanking.core.data.banking
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.WORKER_SESSION
+import org.mifosx.openbanking.core.data.bffClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.banking.impl.PaymentStatusRepositoryImpl
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
@@ -41,13 +36,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private const val CLIENT_CREDENTIALS_TOKEN = "tpp-client-credentials-token"
-private const val PSU_TOKEN = "psu-payments-token"
 private const val CONSENT_ID = "812774903"
 private const val PAYMENT_ID = "PMT-1"
 
-private const val TOKEN_JSON =
-    """{"access_token":"$CLIENT_CREDENTIALS_TOKEN","expires_in":300,"scope":"payments","token_type":"Bearer"}"""
 private const val PAYMENT_JSON =
     """{"Data":{"DomesticPaymentId":"$PAYMENT_ID","ConsentId":"$CONSENT_ID","Status":"AcceptedSettlementInProcess"}}"""
 private const val INTL_PAYMENT_JSON =
@@ -59,11 +50,10 @@ private const val INTL_PAYMENT_JSON =
  *
  * These cases moved here when the read was split off the single-payment repository: the id arrives
  * with no memory of which product issued it, so this class answers for every product and belongs to
- * none of them. Two properties are pinned — the credential it presents, and that it refuses to guess.
+ * none of them. Two properties are pinned — it reads through the Worker on the session, and it refuses
+ * to guess.
  */
 class PaymentStatusRepositoryImplTest {
-
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private data class Recorded(val path: String, val authorization: String?)
 
@@ -96,42 +86,17 @@ class PaymentStatusRepositoryImplTest {
         override suspend fun recordStatus(paymentId: String, receipt: PaymentReceipt) = Unit
     }
 
-    private suspend fun repository(storedType: ConsentType?): PaymentStatusRepositoryImpl {
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                captured += Recorded(
-                    path = request.url.encodedPath,
-                    authorization = request.headers[HttpHeaders.Authorization],
-                )
-                val isToken = request.url.encodedPath.contains("oauth2/token")
-                val body = when {
-                    isToken -> TOKEN_JSON
-                    // Longest discriminator first: "domestic-payments" also matches the
-                    // international path's tail if the order is inverted.
-                    request.url.encodedPath.contains("international-payments") -> INTL_PAYMENT_JSON
-                    else -> PAYMENT_JSON
-                }
-                respond(body, HttpStatusCode.OK, jsonHeaders)
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+    private fun repository(storedType: ConsentType?): PaymentStatusRepositoryImpl {
+        val client = bffClient { request: HttpRequestData ->
+            captured += Recorded(
+                path = request.url.encodedPath,
+                authorization = request.headers[HttpHeaders.Authorization],
+            )
+            val body = if (request.url.encodedPath.startsWith("/v1/payments/international")) INTL_PAYMENT_JSON else PAYMENT_JSON
+            respond(body, HttpStatusCode.OK, jsonHeaders)
         }
-        val signingKey = TestSigningKey.pem()
         return PaymentStatusRepositoryImpl(
-            pisp = org.mifosx.openbanking.core.network.api.Pisp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = signingKey,
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
-            oauth = org.mifosx.openbanking.core.network.api.OAuth(
-                client,
-                "https://sandbox.test/oauth2/token",
-                "test-client",
-                "test-kid",
-                signingKey,
-            ),
+            pisp = org.mifosx.openbanking.core.network.api.Pisp(client),
             paymentHistoryRepository = FakePaymentHistoryRepo(storedType),
         )
     }
@@ -140,18 +105,17 @@ class PaymentStatusRepositoryImplTest {
         assertNotNull(captured.lastOrNull { it.path.contains(fragment) }, "no request to $fragment")
 
     /**
-     * Reading the payment back on the PSU token earned a `401` from the live sandbox: a payment
-     * resource is TPP-authenticated, while the PSU token authorises only the payment itself. The
-     * client credential is also what keeps the status readable days later, once the PSU token has
-     * long expired.
+     * The Worker reads a payment back on its client-credentials token (a payment resource is
+     * TPP-authenticated), which keeps the status readable days later; the app presents only its
+     * session, never a bearer token.
      */
     @Test
-    fun readingAPaymentPresentsTheClientCredentialsTokenNotThePsuOne() = runTest {
+    fun readingAPaymentPresentsTheWorkerSessionNotABankToken() = runTest {
         repository(ConsentType.DomesticSinglePayment).paymentStatus(PAYMENT_ID)
 
-        val read = requestTo("domestic-payments/$PAYMENT_ID")
-        assertEquals("Bearer $CLIENT_CREDENTIALS_TOKEN", read.authorization)
-        assertTrue(PSU_TOKEN !in read.authorization.orEmpty())
+        val read = requestTo("/v1/payments/domestic/$PAYMENT_ID")
+        assertEquals("Session $WORKER_SESSION", read.authorization)
+        assertTrue(!read.authorization.orEmpty().startsWith("Bearer"))
     }
 
     /**
@@ -164,18 +128,18 @@ class PaymentStatusRepositoryImplTest {
         repository(ConsentType.InternationalSinglePayment).paymentStatus(PAYMENT_ID)
 
         assertNotNull(
-            captured.lastOrNull { it.path.contains("international-payments/$PAYMENT_ID") },
+            captured.lastOrNull { it.path.contains("/v1/payments/international/$PAYMENT_ID") },
             "expected the international endpoint, saw ${captured.map { it.path }}",
         )
-        assertNull(captured.firstOrNull { it.path.contains("domestic-payments/$PAYMENT_ID") })
+        assertNull(captured.firstOrNull { it.path.contains("/v1/payments/domestic/$PAYMENT_ID") })
     }
 
     @Test
     fun readingADomesticPaymentUsesTheDomesticEndpoint() = runTest {
         repository(ConsentType.DomesticSinglePayment).paymentStatus(PAYMENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path.contains("domestic-payments/$PAYMENT_ID") })
-        assertNull(captured.firstOrNull { it.path.contains("international-payments/$PAYMENT_ID") })
+        assertNotNull(captured.lastOrNull { it.path.contains("/v1/payments/domestic/$PAYMENT_ID") })
+        assertNull(captured.firstOrNull { it.path.contains("/v1/payments/international/$PAYMENT_ID") })
     }
 
     /**
@@ -183,7 +147,7 @@ class PaymentStatusRepositoryImplTest {
      *
      * Defaulting to domestic was defensible while single payments were the only product — every id
      * predating the column really was domestic — but the moment a second product can be stored, the
-     * same default sends another product's id to `domestic-payments/{id}` and reports whatever comes
+     * same default sends another product's id to `/v1/payments/domestic/{id}` and reports whatever comes
      * back as the truth. A guess that is right for legacy rows and silently wrong for new ones is
      * worse than an error.
      */
@@ -192,7 +156,7 @@ class PaymentStatusRepositoryImplTest {
         val result = repository(storedType = null).paymentStatus(PAYMENT_ID)
 
         assertIs<NetworkResult.Error<*>>(result)
-        assertNull(captured.firstOrNull { it.path.contains("domestic-payments/$PAYMENT_ID") })
-        assertNull(captured.firstOrNull { it.path.contains("international-payments/$PAYMENT_ID") })
+        assertNull(captured.firstOrNull { it.path.contains("/v1/payments/domestic/$PAYMENT_ID") })
+        assertNull(captured.firstOrNull { it.path.contains("/v1/payments/international/$PAYMENT_ID") })
     }
 }

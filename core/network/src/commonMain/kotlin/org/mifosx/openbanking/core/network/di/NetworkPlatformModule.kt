@@ -5,20 +5,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * See See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
  */
 package org.mifosx.openbanking.core.network.di
 
 import org.koin.core.module.Module
 
 /**
- * Platform-specific Koin module that loads the HSBC certificate material **synchronously** from the
- * platform's native resource store (Android assets, JVM classpath, iOS bundle) and provides:
- * - `MtlsIdentity` — the mTLS client identity (PKCS#12 bytes).
- * - a `named("hsbcSigningKey")` `String` — the `private_key_jwt` signing key (PEM).
- *
- * Because the certificate is read here (not through the suspend `composeResources` API), the client
- * factory and DI graph stay fully synchronous. Web (js/wasmJs) provides nothing — a browser cannot
- * present a client certificate.
+ * Binds the platform's [org.mifosx.openbanking.core.network.attest.AppAttestation]: Play Integrity on
+ * Android, App Attest on iOS, none on desktop and web. Nothing else is platform-specific — the app
+ * holds no certificate, key or bank credential on any platform.
  */
 expect val networkPlatformModule: Module

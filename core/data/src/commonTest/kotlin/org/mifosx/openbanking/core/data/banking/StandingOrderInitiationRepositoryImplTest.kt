@@ -10,23 +10,19 @@
 package org.mifosx.openbanking.core.data.banking
 
 import com.russhwolf.settings.MapSettings
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.common.AccountScheme
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.WORKER_SESSION
+import org.mifosx.openbanking.core.data.bffClient
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.banking.impl.StandingOrderInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.callback.SettingsPaymentAuthSession
@@ -44,9 +40,7 @@ import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StagedConsent
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderFrequency
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,22 +49,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private const val CLIENT_CREDENTIALS_TOKEN = "tpp-client-credentials-token"
-private const val PSU_TOKEN = "psu-payments-token"
 private const val CONSENT_ID = "45171"
 private const val STANDING_ORDER_ID = "19916"
 
-private const val TOKEN_JSON =
-    """{"access_token":"$CLIENT_CREDENTIALS_TOKEN","expires_in":300,"scope":"payments","token_type":"Bearer"}"""
-private const val CONSENT_JSON =
-    """{"Data":{"ConsentId":"$CONSENT_ID","Status":"AWAU"}}"""
 private const val STANDING_ORDER_JSON =
     """{"Data":{"DomesticStandingOrderId":"$STANDING_ORDER_ID","ConsentId":"$CONSENT_ID","Status":"PDNG"}}"""
 private const val INTL_STANDING_ORDER_JSON =
     """{"Data":{"InternationalStandingOrderId":"19917","ConsentId":"$CONSENT_ID","Status":"INCO"}}"""
 
 /**
- * The standing-order write path at the wire, with one recurring question: **did it reach the
+ * The standing-order write path at the Worker boundary, with one recurring question: **did it reach the
  * standing-order endpoint rather than one of the other four?**
  *
  * Every routing case therefore asserts twice — that the standing-order path was called, and that the
@@ -80,8 +68,6 @@ private const val INTL_STANDING_ORDER_JSON =
  * until the bank executed something other than what the customer approved.
  */
 class StandingOrderInitiationRepositoryImplTest {
-
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private data class Recorded(
         val path: String,
@@ -158,59 +144,39 @@ class StandingOrderInitiationRepositoryImplTest {
 
     private val history = FakePaymentHistoryRepo()
 
-    private suspend fun repository(
+    private fun repository(
         session: PaymentAuthSession = SettingsPaymentAuthSession(MapSettings()),
         errorBody: String? = null,
         status: HttpStatusCode = HttpStatusCode.Created,
     ): StandingOrderInitiationRepositoryImpl {
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                captured += Recorded(
-                    path = request.url.encodedPath,
-                    authorization = request.headers[HttpHeaders.Authorization],
-                    idempotencyKey = request.headers["x-idempotency-key"],
-                    body = request.body.toByteArray().decodeToString(),
-                )
-                val isToken = request.url.encodedPath.contains("oauth2/token")
-                val body = when {
-                    isToken -> TOKEN_JSON
-                    errorBody != null -> errorBody
-                    request.url.encodedPath.contains("standing-order-consents") -> CONSENT_JSON
-                    request.url.encodedPath.contains("international-standing-orders") -> INTL_STANDING_ORDER_JSON
-                    else -> STANDING_ORDER_JSON
-                }
-                respond(body, if (isToken) HttpStatusCode.OK else status, jsonHeaders)
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = bffClient { request: HttpRequestData ->
+            val path = request.url.encodedPath
+            captured += Recorded(
+                path = path,
+                authorization = request.headers[HttpHeaders.Authorization],
+                idempotencyKey = request.headers["X-Idempotency-Key"],
+                body = request.body.toByteArray().decodeToString(),
+            )
+            val body = when {
+                errorBody != null -> errorBody
+                path.startsWith("/v1/consents/payment/") -> consentStartJson(CONSENT_ID)
+                path == "/v1/payments/international-standing-order" -> INTL_STANDING_ORDER_JSON
+                else -> STANDING_ORDER_JSON
+            }
+            respond(body, status, jsonHeaders)
         }
-        val signingKey = TestSigningKey.pem()
         return StandingOrderInitiationRepositoryImpl(
-            pisp = Pisp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = signingKey,
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
-            oauth = OAuth(client, "https://sandbox.test/oauth2/token", "test-client", "test-kid", signingKey),
+            pisp = Pisp(client),
             paymentAuthSession = session,
-            signingKeyPem = signingKey,
-            clientId = "test-client",
-            kid = "test-kid",
-            bankHost = "sandbox.test",
-            authorizeHost = "authorize.sandbox.test",
-            redirectUri = "https://cb/",
             paymentHistoryRepository = history,
         )
     }
 
-    private fun sessionHoldingAPsuToken(
+    private fun authorisedSession(
         type: ConsentType = ConsentType.DomesticStandingOrder,
     ): PaymentAuthSession =
         SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = CONSENT_ID, state = "s", nonce = "n", type = type)
-            savePaymentToken(PsuTokenResponse(accesstoken = PSU_TOKEN, tokentype = "Bearer", expiresin = 300))
+            savePending(consentId = CONSENT_ID, state = "s", flowId = "f", type = type)
         }
 
     private fun requestTo(fragment: String): Recorded =
@@ -222,65 +188,50 @@ class StandingOrderInitiationRepositoryImplTest {
     fun stagingADomesticMandateReachesTheStandingOrderEndpointOnly() = runTest {
         repository().stageStandingOrder(draft())
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/domestic-standing-order-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-payment-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-scheduled-payment-consents") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/domestic-standing-order" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/domestic" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/domestic-scheduled" })
     }
 
     @Test
     fun stagingAnInternationalMandateReachesItsOwnEndpointOnly() = runTest {
         repository().stageStandingOrder(intlDraft())
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/international-standing-order-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-standing-order-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/international-scheduled-payment-consents") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/international-standing-order" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/domestic-standing-order" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/international-scheduled" })
     }
 
     @Test
     fun submittingReachesTheStandingOrderEndpointOnly() = runTest {
-        repository(sessionHoldingAPsuToken()).submitStandingOrder(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitStandingOrder(draft(), CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/domestic-standing-orders") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-payments") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-scheduled-payments") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/payments/domestic-standing-order" })
+        assertNull(captured.firstOrNull { it.path == "/v1/payments/domestic" })
+        assertNull(captured.firstOrNull { it.path == "/v1/payments/domestic-scheduled" })
     }
 
     @Test
     fun submittingAnInternationalMandateUsesItsOwnEndpoint() = runTest {
-        repository(sessionHoldingAPsuToken(ConsentType.InternationalStandingOrder))
+        repository(authorisedSession(ConsentType.InternationalStandingOrder))
             .submitStandingOrder(intlDraft(), CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/international-standing-orders") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-standing-orders") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/payments/international-standing-order" })
+        assertNull(captured.firstOrNull { it.path == "/v1/payments/domestic-standing-order" })
     }
 
     // endregion
 
     // region — credentials
 
+    /** Every call presents the Worker session; the Worker holds every bank token. */
     @Test
-    fun stagingPresentsTheClientCredentialsToken() = runTest {
+    fun everyCallPresentsTheWorkerSession() = runTest {
         repository().stageStandingOrder(draft())
+        repository(authorisedSession()).submitStandingOrder(draft(), CONSENT_ID)
 
-        assertEquals(
-            "Bearer $CLIENT_CREDENTIALS_TOKEN",
-            requestTo("domestic-standing-order-consents").authorization,
-        )
-    }
-
-    @Test
-    fun submittingPresentsThePsuToken() = runTest {
-        repository(sessionHoldingAPsuToken()).submitStandingOrder(draft(), CONSENT_ID)
-
-        assertEquals("Bearer $PSU_TOKEN", requestTo("domestic-standing-orders").authorization)
-    }
-
-    @Test
-    fun submittingWithoutAPsuTokenFailsBeforeReachingTheBank() = runTest {
-        val result = repository().submitStandingOrder(draft(), CONSENT_ID)
-
-        assertIs<NetworkResult.Error<*>>(result)
-        assertNull(captured.firstOrNull { it.path.contains("standing-orders") })
+        assertEquals("Session $WORKER_SESSION", requestTo("/v1/consents/payment/domestic-standing-order").authorization)
+        assertEquals("Session $WORKER_SESSION", requestTo("/v1/payments/domestic-standing-order").authorization)
     }
 
     // endregion
@@ -340,7 +291,8 @@ class StandingOrderInitiationRepositoryImplTest {
 
         val staged = assertIs<NetworkResult.Success<StagedConsent>>(result).data
         assertEquals(CONSENT_ID, staged.consentId)
-        assertTrue(staged.authorizationUrl.startsWith("https://authorize.sandbox.test"))
+        assertTrue(staged.authorizationUrl.startsWith("https://sandbox.ob.hsbc.co.uk/"))
+        assertEquals("flow-1", staged.flowId)
     }
 
     // endregion
@@ -352,15 +304,15 @@ class StandingOrderInitiationRepositoryImplTest {
     fun theConsentBodyCarriesTheCreatePermission() = runTest {
         repository().stageStandingOrder(draft())
 
-        assertTrue(requestTo("domestic-standing-order-consents").body.contains("\"Permission\":\"Create\""))
+        assertTrue(requestTo("/v1/consents/payment/domestic-standing-order").body.contains("\"Permission\":\"Create\""))
     }
 
     /** The submission must not repeat it, or the two bodies diverge and the bank refuses `U008`. */
     @Test
     fun theSubmissionBodyDoesNotRepeatThePermission() = runTest {
-        repository(sessionHoldingAPsuToken()).submitStandingOrder(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitStandingOrder(draft(), CONSENT_ID)
 
-        val body = requestTo("domestic-standing-orders").body
+        val body = requestTo("/v1/payments/domestic-standing-order").body
         assertTrue(!body.contains("\"Permission\""), "Permission must not appear on the submission")
         assertTrue(body.contains("\"ConsentId\":\"$CONSENT_ID\""))
     }
@@ -375,7 +327,7 @@ class StandingOrderInitiationRepositoryImplTest {
     fun theFrequencyIsSentAsAnObjectCarryingItsCode() = runTest {
         repository().stageStandingOrder(draft())
 
-        val body = requestTo("domestic-standing-order-consents").body
+        val body = requestTo("/v1/consents/payment/domestic-standing-order").body
         assertTrue(body.contains("\"Frequency\":{\"Type\":\"MNTH\"}"), "actual body: $body")
     }
 
@@ -384,8 +336,8 @@ class StandingOrderInitiationRepositoryImplTest {
     // region — failures
 
     @Test
-    fun aConsentWithNoIdIsAnError() = runTest {
-        val result = repository(errorBody = """{"Data":{"Status":"AWAU"}}""").stageStandingOrder(draft())
+    fun aWorkerAnswerWithNoConsentIdIsAnError() = runTest {
+        val result = repository(errorBody = """{"flowId":"f","authorizeUrl":"https://x/?state=s"}""").stageStandingOrder(draft())
 
         assertIs<NetworkResult.Error<*>>(result)
     }
@@ -402,7 +354,7 @@ class StandingOrderInitiationRepositoryImplTest {
      */
     @Test
     fun aSubmittedMandateIsRecordedWithItsScheduleIntact() = runTest {
-        repository(sessionHoldingAPsuToken()).submitStandingOrder(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitStandingOrder(draft(), CONSENT_ID)
 
         val (receipt, saved) = history.submitted.single()
         assertEquals(STANDING_ORDER_ID, receipt.domesticPaymentId)
@@ -416,18 +368,16 @@ class StandingOrderInitiationRepositoryImplTest {
      * The consent and the resource send different bodies — only the submission carries `ConsentId` —
      * and the Read/Write profile answers a repeated key over a changed body with `400 U029`.
      *
-     * Staged and submitted through separate sessions on purpose: `stageStandingOrder` clears the
-     * session as its first act, which would discard the very PSU token the submission then needs.
-     * That is correct behaviour, not a test workaround — the real journey acquires that token at the
-     * bank, after staging.
+     * Staged and submitted through separate sessions, as in the real journey: the authorisation at
+     * the bank happens between the two.
      */
     @Test
     fun theConsentAndResourcePostsCarryDifferentIdempotencyKeys() = runTest {
         repository().stageStandingOrder(draft())
-        repository(sessionHoldingAPsuToken()).submitStandingOrder(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitStandingOrder(draft(), CONSENT_ID)
 
-        assertEquals("so-consent-key-1", requestTo("domestic-standing-order-consents").idempotencyKey)
-        assertEquals("so-payment-key-1", requestTo("domestic-standing-orders").idempotencyKey)
+        assertEquals("so-consent-key-1", requestTo("/v1/consents/payment/domestic-standing-order").idempotencyKey)
+        assertEquals("so-payment-key-1", requestTo("/v1/payments/domestic-standing-order").idempotencyKey)
     }
 
     // endregion

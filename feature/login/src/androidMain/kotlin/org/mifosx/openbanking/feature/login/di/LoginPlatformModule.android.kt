@@ -15,5 +15,7 @@ import org.mifosx.openbanking.feature.login.browser.AndroidBrowserLauncher
 import org.mifosx.openbanking.feature.login.browser.BrowserLauncher
 
 actual val loginPlatformModule = module {
-    single<BrowserLauncher> { AndroidBrowserLauncher(androidContext()) }
+    // createdAtStart: the launcher must observe the first Activity resume to open Custom Tabs
+    // inside the app task (see AndroidBrowserLauncher).
+    single<BrowserLauncher>(createdAtStart = true) { AndroidBrowserLauncher(androidContext()) }
 }

@@ -13,7 +13,9 @@
  * the page can run under `script-src 'self'`, and takes its browser objects as arguments so every branch
  * is testable under `node --test` with a fake window.
  *
- * Two delivery paths exist, because the page cannot tell up front which platform opened it:
+ * A web sign-in is told apart by its state (`w<index>.`, set by the Worker) and goes straight back to that
+ * allowlisted web origin. Otherwise two delivery paths exist, because the page cannot tell up front which
+ * platform opened it:
  *   - loopback      -> desktop HttpServer on 127.0.0.1:8765
  *   - custom scheme -> Android intent-filter / iOS CFBundleURLSchemes
  *
@@ -23,12 +25,12 @@
  * application found" on a consent journey that had already succeeded.
  */
 
-/* global readParams, appUrl, loopbackUrl */
+/* global readParams, appUrl, loopbackUrl, webReturnUrl */
 
 function run(env) {
   var bridge = typeof module !== 'undefined' && module.exports && typeof readParams === 'undefined'
     ? require('./bridge.js')
-    : { readParams: readParams, appUrl: appUrl, loopbackUrl: loopbackUrl };
+    : { readParams: readParams, appUrl: appUrl, loopbackUrl: loopbackUrl, webReturnUrl: webReturnUrl };
 
   var doc = env.document;
   var loc = env.location;
@@ -50,6 +52,13 @@ function run(env) {
   try {
     env.history.replaceState(null, '', loc.pathname);
   } catch (e) { /* very old browsers — the relay still works, the code just stays in history */ }
+
+  /* Web: same tab, replace (not push) so Back does not land on the relay again. Origin is from the allowlist only. */
+  var web = bridge.webReturnUrl(raw);
+  if (web) {
+    loc.replace(web);
+    return;
+  }
 
   var target = bridge.appUrl(raw);
   doc.getElementById('retry').onclick = function () { loc.href = target; };

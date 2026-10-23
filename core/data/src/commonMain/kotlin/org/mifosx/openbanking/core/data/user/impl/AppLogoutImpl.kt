@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.core.data.user.impl
 
-import org.mifosx.openbanking.core.data.banking.ConsentRevokeRepository
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.user.AppLogout
@@ -19,17 +18,20 @@ import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.database.banking.dao.PaymentHistoryDao
 import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.database.vrp.dao.VrpPaymentDao
+import org.mifosx.openbanking.core.network.api.Session
 import org.mifosx.openbanking.core.store.infra.StoreCacheManager
 
 /**
  * The one logout sequence, in an order that matters.
  *
+ * Every bank-side step runs through the Worker on the current session, so they all happen BEFORE the
+ * session is wiped: a revoke sent after logout would carry no session and be refused.
+ *
  * Not routed through [org.mifosx.openbanking.core.data.user.UserLogoutManager]: that takes a `Long`
- * user id this AISP app does not have (the active user id is a `String`) and emits a logout event
- * nothing consumes. Its actual work is exactly the two clears below, so they are called directly.
+ * user id this AISP app does not have and emits a logout event nothing consumes.
  */
 internal class AppLogoutImpl(
-    private val consentRevokeRepository: ConsentRevokeRepository,
+    private val bffSession: Session,
     private val consentSession: ConsentSession,
     private val paymentAuthSession: PaymentAuthSession,
     private val userDataRepository: UserDataRepository,
@@ -42,33 +44,28 @@ internal class AppLogoutImpl(
 ) : AppLogout {
 
     override suspend fun logOut() {
-        // 1. Best-effort revoke. The result is deliberately ignored: an expired, revoked (404),
-        //    forbidden, or unreachable consent must not stop the user signing out. No id → nothing
-        //    to revoke.
-        consentSession.consentId()?.let { consentId ->
-            runCatching { consentRevokeRepository.revokeConsent(consentId) }
+        // 1. End every VRP consent at the bank (best effort, on the still-live session).
+        endStandingAuthorities()
+
+        // 2. End the Worker session, revoking the sign-in consent at the bank on the way (best effort:
+        //    an expired, revoked or unreachable consent must not stop the user signing out).
+        if (consentSession.isActive()) {
+            runCatching { bffSession.logout(revoke = consentSession.consentId() != null) }
         }
 
-        // 2. Forget the session. This removes the PSU tokens from secure storage, which is what
-        //    actually makes ConsentSession.isActive() false — clearing UserData below cannot, the
-        //    tokens do not live there.
+        // 3. Forget the session locally. This is what makes ConsentSession.isActive() false.
         consentSession.forgetAll()
 
-        // 2b. Drop any payment authorisation too. It keeps its own keys so that clearing one leg
-        //     never disturbs the other, which means signing out has to clear both explicitly — a
-        //     surviving payments token would outlive the session that authorised it.
+        // 3b. Drop any payment authorisation in flight too — it keeps its own keys.
         paymentAuthSession.clear()
 
-        // 3. Clear local data. clearUserData() writes the DataStore-backed UserData StateFlow the
-        //    root navigator observes; that emission makes it re-read isActive() (now false) and route
-        //    to the auth graph. Must run after step 2 so it reads the already-cleared token state.
+        // 4. Clear local data. clearUserData() writes the UserData StateFlow the root navigator
+        //    observes; it must run after step 3 so the navigator reads the cleared session.
         userDataRepository.clearUserData()
         storeCacheManager.clearAll()
 
-        // 4. Drop payment history snapshots — the next session's hub should start empty.
+        // 5. Drop payment history snapshots — the next session's hub should start empty.
         paymentHistoryDao.clear()
-
-        endStandingAuthorities()
     }
 
     /** Ends every VRP consent at the bank and clears what this app held for it. */

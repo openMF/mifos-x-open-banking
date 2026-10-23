@@ -113,19 +113,12 @@ vendor/
 *.pem
 *.p12
 
-# HSBC sandbox certificate material — supplied locally per developer, never committed.
-#
-# The iOS directory itself has to exist in a fresh clone: iosApp's Copy Bundle Resources holds a
-# folder reference to certs/, and Xcode fails the build outright when that path is missing — unlike
-# the Gradle resource directories below, which are simply absent and ignored. So the directory is
-# tracked through its README and everything else inside it stays ignored.
+# Former HSBC certificate locations. The app no longer holds any TPP identity — it lives in the
+# Cloudflare Worker (bff/) — so nothing belongs here; kept ignored so a stray copy can never be
+# committed. CI (no-tpp-identity.yml) also fails any build that carries one.
 core/network/src/androidMain/assets/certs/
 core/network/src/desktopMain/resources/certs/
-cmp-ios/iosApp/certs/*
-!cmp-ios/iosApp/certs/README.md
-
-# No exceptions to the rules above. Tests generate their own key material at runtime
-# (TestSigningKey, generateTestPkcs12), so nothing needs to be committed to make CI pass.
+cmp-ios/iosApp/certs/
 
 .mifos-secure/
 

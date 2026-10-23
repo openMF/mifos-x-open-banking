@@ -22,7 +22,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const SITE = path.join(__dirname, '..', 'site');
-const { readParams, appUrl, loopbackUrl } = require(path.join(SITE, 'callback', 'bridge.js'));
+const { readParams, appUrl, loopbackUrl, webReturnUrl, WEB_RETURN_ORIGINS } = require(path.join(SITE, 'callback', 'bridge.js'));
 
 const HYBRID_FRAGMENT = '#code=abc123&id_token=ey.J.sig&state=st-1';
 
@@ -97,6 +97,27 @@ test('the constants match the app, which is what makes the hand-off land', () =>
   assert.equal(LOOPBACK_PORT, 8765); // cmp-desktop ConsentRedirectListener.PORT
 });
 
+/* ── web return (state prefix `w<index>.` set by the Worker) ── */
+
+test('WEB_RETURN_ORIGINS matches the Worker, entry for entry and in order', () => {
+  const toml = fs.readFileSync(path.join(__dirname, '..', '..', 'bff', 'wrangler.toml'), 'utf8');
+  const m = toml.match(/^WEB_RETURN_ORIGINS\s*=\s*"([^"]*)"/m);
+  assert.ok(m, 'bff/wrangler.toml must declare WEB_RETURN_ORIGINS');
+  assert.deepEqual(WEB_RETURN_ORIGINS, m[1].split(',').map((o) => o.trim()).filter(Boolean));
+});
+
+test('a w<i>. state returns to that allowlisted origin, fragment-only', () => {
+  assert.equal(
+    webReturnUrl('code=abc&id_token=ey.J.sig&state=w0.st-1'),
+    'http://localhost:8080/#mifos-callback?code=abc&id_token=ey.J.sig&state=w0.st-1',
+  );
+});
+
+test('an out-of-range, malformed or absent web index never returns to the web', () => {
+  for (const raw of ['code=a&state=w9.st', 'code=a&state=w-1.st', 'code=a&state=wx.st', 'code=a&state=w0', 'code=a&state=st-1', 'code=a', 'code=a&state=w01.st'])
+    assert.equal(webReturnUrl(raw), null, raw);
+});
+
 /* ── relay flow (relay.js) — driven with a fake window so every branch is exercised ── */
 
 const { run } = require(path.join(SITE, 'callback', 'relay.js'));
@@ -105,7 +126,8 @@ function fakeEnv({ hash = '', search = '', loopback = 'refused' } = {}) {
   const el = () => ({ textContent: '', style: {}, onclick: null });
   const nodes = { heading: el(), detail: el(), manual: el(), retry: el() };
   const env = {
-    location: { hash, search, pathname: '/callback/', href: '' },
+    location: { hash, search, pathname: '/callback/', href: '', replace: (url) => env.navigated.push(url) },
+    navigated: [],
     replaced: [],
     fetched: [],
     timers: [],
@@ -157,6 +179,34 @@ test('nothing to relay → says so, probes nothing, scrubs nothing', async () =>
   assert.equal(env.nodes.heading.textContent, 'Nothing to return');
   assert.equal(env.fetched.length, 0);
   assert.equal(env.replaced.length, 0);
+});
+
+test('web state → scrubs, then replaces to the web origin; no loopback probe, no custom scheme', async () => {
+  const env = fakeEnv({ hash: '#code=abc&id_token=ey.J.sig&state=w0.st-1', loopback: 'answers' });
+  run(env);
+  await settle();
+  assert.deepEqual(env.replaced, ['/callback/']);
+  assert.deepEqual(env.navigated, ['http://localhost:8080/#mifos-callback?code=abc&id_token=ey.J.sig&state=w0.st-1']);
+  assert.equal(env.fetched.length, 0);
+  assert.equal(env.location.href, '');
+});
+
+test('out-of-range web index → ignored, existing desktop/mobile behaviour', async () => {
+  const env = fakeEnv({ hash: '#code=abc&state=w7.st-1', loopback: 'refused' });
+  run(env);
+  await settle();
+  assert.deepEqual(env.navigated, []);
+  assert.equal(env.fetched.length, 1);
+  assert.equal(env.location.href, 'org.mifosx.openbanking://callback?code=abc&state=w7.st-1');
+});
+
+test('desktop and mobile flows never navigate to a web origin', async () => {
+  for (const loopback of ['answers', 'refused']) {
+    const env = fakeEnv({ hash: HYBRID_FRAGMENT, loopback });
+    run(env);
+    await settle();
+    assert.deepEqual(env.navigated, []);
+  }
 });
 
 /* ── public root page (what a customer or reviewer sees at the bare domain) ── */
@@ -238,5 +288,21 @@ test('brand assets referenced by the pages exist and nothing loads cross-origin'
     const html = fs.readFileSync(path.join(SITE, file), 'utf8');
     const loads = html.match(/<(?:img|script|link)\b[^>]*(?:src|href)="https?:\/\/[^"]*"/g) || [];
     assert.deepEqual(loads, [], `${file} loads a cross-origin resource`);
+  }
+});
+
+/* ── Android App Links (FR-052): the bank's redirect opens the app directly ── */
+
+test('assetlinks.json verifies the app for the callback App Link', () => {
+  const links = JSON.parse(fs.readFileSync(path.join(SITE, '.well-known', 'assetlinks.json'), 'utf8'));
+  const manifest = fs.readFileSync(path.join(SITE, '..', '..', 'cmp-android', 'src', 'main', 'AndroidManifest.xml'), 'utf8');
+  assert.match(manifest, /android:autoVerify="true"/, 'manifest must declare the verified App Link filter');
+  assert.match(manifest, /android:host="mifos-x-open-banking-relay\.pages\.dev" android:pathPrefix="\/callback"/);
+  const packages = links.map((l) => l.target.package_name);
+  assert.ok(packages.includes('org.mifosx.openbanking'), 'production package must be listed');
+  for (const l of links) {
+    assert.deepEqual(l.relation, ['delegate_permission/common.handle_all_urls']);
+    assert.equal(l.target.namespace, 'android_app');
+    for (const fp of l.target.sha256_cert_fingerprints) assert.match(fp, /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/, 'colon-separated upper-case SHA-256');
   }
 });

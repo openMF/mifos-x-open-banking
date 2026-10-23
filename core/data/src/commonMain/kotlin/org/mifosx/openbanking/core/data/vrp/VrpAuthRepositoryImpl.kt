@@ -9,50 +9,27 @@
  */
 package org.mifosx.openbanking.core.data.vrp
 
-import org.mifosx.openbanking.core.data.callback.impl.idTokenNonceMismatch
+import org.mifosx.openbanking.core.data.callback.impl.CallbackUrlParams
 import org.mifosx.openbanking.core.data.callback.impl.parseCallbackUrl
-import org.mifosx.openbanking.core.network.api.ConsentCreationScope
-import org.mifosx.openbanking.core.network.api.OAuth
-import org.mifosx.openbanking.core.network.authorize.generateConsentAuthorizationUrl
+import org.mifosx.openbanking.core.network.api.CompleteAuthRequest
+import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
-import kotlin.time.Clock
 
-private const val AUTHORIZE_PATH = "/obie/open-banking/v1.1/oauth2/authorize"
-private const val RESPONSE_TYPE = "code id_token"
 private const val ERROR_ACCESS_DENIED = "access_denied"
 
 internal class VrpAuthRepositoryImpl(
-    private val oauth: OAuth,
+    private val bff: Session,
     private val session: VrpAuthSession,
-    private val signingKeyPem: String,
-    private val clientId: String,
-    private val kid: String,
-    private val bankHost: String,
-    private val authorizeHost: String,
-    private val redirectUri: String,
 ) : VrpAuthRepository {
 
-    override suspend fun beginAuthorisation(consentId: String): NetworkResult<String, NetworkError> {
-        val auth = generateConsentAuthorizationUrl(
-            audience = "https://$bankHost",
-            authorizeUrl = "https://$authorizeHost$AUTHORIZE_PATH",
-            clientId = clientId,
-            kid = kid,
-            scope = ConsentCreationScope.PAYMENTS,
-            responseType = RESPONSE_TYPE,
-            redirectUri = redirectUri,
-            consentId = consentId,
-            signingKeyPem = signingKeyPem,
-            nowEpochSeconds = Clock.System.now().epochSeconds,
-        )
+    /** The redirect [validateCallback] last accepted; in memory so the `id_token` is never stored. */
+    private var validated: CallbackUrlParams? = null
 
-        session.saveAuthorisationInFlight(
-            consentId = consentId,
-            state = auth.state,
-            nonce = auth.nonce,
-        )
-        return NetworkResult.Success(auth.authorizationUrl)
+    override suspend fun beginAuthorisation(consentId: String): NetworkResult<String, NetworkError> {
+        val url = session.pendingAuthorizeUrl()?.takeIf { session.pendingConsentId() == consentId }
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("Consent $consentId was not staged"))
+        return NetworkResult.Success(url)
     }
 
     override fun isVrpRedirect(redirectUrl: String): Boolean {
@@ -65,8 +42,8 @@ internal class VrpAuthRepositoryImpl(
      * Order matters:
      *  - whether anything is in flight is asked first, and answered as [VrpAuthValidation.NoPending].
      *  - `state` is checked next. Present and wrong is the tampering signal.
-     *  - the bank's own error is classified before the nonce, because a declined authorisation
-     *    carries no `id_token` and checking the nonce first would report a refusal as tampering.
+     *  - the bank's own error is classified before the `id_token`, because a declined authorisation
+     *    carries none; the Worker verifies the `id_token` itself in full.
      */
     @Suppress("ReturnCount")
     override fun validateCallback(redirectUrl: String): VrpAuthValidation {
@@ -86,11 +63,9 @@ internal class VrpAuthRepositoryImpl(
             }
         }
 
-        if (idTokenNonceMismatch(params.idToken, session.pendingNonce().orEmpty())) {
-            return VrpAuthValidation.SecurityError
-        }
-
+        if (params.idToken == null) return VrpAuthValidation.SecurityError
         val code = params.code ?: return VrpAuthValidation.MissingCode
+        validated = params
         return VrpAuthValidation.Valid(code = code, consentId = consentId)
     }
 
@@ -99,20 +74,20 @@ internal class VrpAuthRepositoryImpl(
         code: String,
         consentId: String,
     ): NetworkResult<Unit, NetworkError> {
-        val tokens = when (val result = oauth.exchangeAuthorizationCode(code, redirectUri)) {
-            is NetworkResult.Success -> result.data
-            is NetworkResult.Error -> return result
+        val callback = validated?.takeIf { it.code == code }
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("No validated redirect for this code"))
+        val flowId = session.pendingFlowId()?.takeIf { session.pendingConsentId() == consentId }
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("No VRP authorisation in flight"))
+        validated = null
+
+        val request = CompleteAuthRequest(flowId, code, callback.idToken.orEmpty(), callback.state.orEmpty())
+        return when (val result = bff.completeAuth(request)) {
+            is NetworkResult.Error -> result
+            is NetworkResult.Success -> {
+                session.clearAuthorisationInFlight()
+                NetworkResult.Success(Unit)
+            }
         }
-
-        val refreshToken = tokens.refreshtoken?.takeIf { it.isNotBlank() }
-            ?: return NetworkResult.Error(
-                NetworkError.Client.BadRequest("Authorisation returned no refresh token"),
-            )
-
-        session.saveRefreshToken(consentId, refreshToken)
-        session.clearAuthorisationInFlight()
-
-        return NetworkResult.Success(Unit)
     }
 
     override fun pendingConsentId(): String? = session.pendingConsentId()

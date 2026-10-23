@@ -9,25 +9,20 @@
  */
 package org.mifosx.openbanking.core.data.login
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.HttpRequestData
-import io.ktor.client.request.HttpResponseData
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
+import io.ktor.client.engine.mock.toByteArray
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import org.mifosx.openbanking.core.data.bffClient
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.login.impl.LoginRepositoryImpl
 import org.mifosx.openbanking.core.model.hsbcPermission.PermissionId
-import org.mifosx.openbanking.core.network.api.Aisp
-import org.mifosx.openbanking.core.network.api.OAuth
+import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
@@ -37,47 +32,19 @@ import kotlin.test.assertTrue
 
 class LoginRepositoryImplTest {
 
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private val sent = mutableListOf<Triple<HttpMethod, String, String>>()
 
-    private fun mockClient(
-        handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
-    ) = HttpClient(MockEngine(handler)) {
-        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-    }
-
-    /**
-     * `suspend` because the signing key is generated per run. That also lets this file stay in
-     * `commonTest` honestly: it previously read the key via `::class.java.getResourceAsStream`, a
-     * JVM-only API sitting in a source set this module compiles for every target.
-     */
-    private suspend fun buildRepo(
-        tokenJson: String = TOKEN_JSON,
-        consentJson: String = consentJson(),
-    ): LoginRepositoryImpl {
-        val client = mockClient { request ->
-            when {
-                request.url.encodedPath.contains("oauth2/token") ->
-                    respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
-
-                request.url.encodedPath.contains("account-access-consents") ->
-                    respond(consentJson, HttpStatusCode.Created, jsonHeaders)
-
-                else -> respond("{}", HttpStatusCode.OK, jsonHeaders)
-            }
-        }
-        val signingKey = TestSigningKey.pem()
-        val oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", signingKey)
-        return LoginRepositoryImpl(
-            oauth = oauth,
-            aisp = Aisp(client),
-            signingKeyPem = signingKey,
-            clientId = "test-client",
-            kid = "test-kid",
-            bankHost = "sandbox.test",
-            authorizeHost = "authorize.sandbox.test",
-            redirectUri = "https://cb/",
-        )
-    }
+    private fun buildRepo(
+        status: HttpStatusCode = HttpStatusCode.OK,
+        body: String = consentStartJson("consent-123", flowId = "flow-9", state = "state-9"),
+    ) = LoginRepositoryImpl(
+        Session(
+            bffClient { request ->
+                sent += Triple(request.method, request.url.encodedPath, request.body.toByteArray().decodeToString())
+                respond(body, status, jsonHeaders)
+            },
+        ),
+    )
 
     @Test
     fun `getPermissions returns the 20 HSBC UK Personal supported permissions`() = runTest {
@@ -90,36 +57,32 @@ class LoginRepositoryImplTest {
     }
 
     @Test
-    fun `createConsentAndBuildAuthorizationUrl returns Success`() = runTest {
+    fun `starts the sign-in at the worker and returns its authorize url flow and state`() = runTest {
         val result = buildRepo().createConsentAndBuildAuthorizationUrl()
-        assertIs<NetworkResult.Success<ConsentResult>>(result)
-        assertEquals("consent-123", result.data.consentId)
-        assertTrue(result.data.authorizationUrl.contains("authorize"))
+
+        val consent = assertIs<NetworkResult.Success<ConsentResult>>(result).data
+        assertEquals("consent-123", consent.consentId)
+        assertEquals("flow-9", consent.flowId)
+        assertEquals("state-9", consent.state)
+        assertTrue(consent.authorizationUrl.startsWith("https://sandbox.ob.hsbc.co.uk/"))
+
+        val (method, path, body) = sent.single()
+        assertEquals(HttpMethod.Post, method)
+        assertEquals("/v1/consents/ais", path)
+        val permissions = Json.parseToJsonElement(body).jsonObject.getValue("permissions").jsonArray
+        assertEquals(20, permissions.size)
     }
 
     @Test
-    fun `createConsentAndBuildAuthorizationUrl returns Error on token failure`() = runTest {
-        val repo = buildRepo(tokenJson = """{"error":"invalid_client"}""")
-        assertIs<NetworkResult.Error<NetworkError>>(repo.createConsentAndBuildAuthorizationUrl())
+    fun `a worker refusal is an error`() = runTest {
+        val repo = buildRepo(HttpStatusCode.TooManyRequests, """{"error":"rate_limited","retryAfter":60}""")
+        val result = repo.createConsentAndBuildAuthorizationUrl()
+        assertIs<NetworkError.Client.RateLimited>(assertIs<NetworkResult.Error<NetworkError>>(result).error)
     }
 
     @Test
-    fun `createConsentAndBuildAuthorizationUrl returns Error on consent failure`() = runTest {
-        val repo = buildRepo(consentJson = """{"Code":"400"}""")
+    fun `an authorize url without a state is an error and never a sign-in that cannot be matched`() = runTest {
+        val repo = buildRepo(body = """{"flowId":"f","consentId":"c","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/a"}""")
         assertIs<NetworkResult.Error<NetworkError>>(repo.createConsentAndBuildAuthorizationUrl())
-    }
-
-    private companion object {
-        const val TOKEN_URL = "https://sandbox.test/obie/open-banking/v1.1/oauth2/token"
-
-        const val TOKEN_JSON =
-            """{"access_token":"tok","expires_in":300,"scope":"accounts","token_type":"Bearer"}"""
-
-        /** Assembled from parts so no single line exceeds the 120-char limit. */
-        fun consentJson(consentId: String = "consent-123", status: String = "AWAU"): String =
-            """{"Data":{"ConsentId":"$consentId","Status":"$status",""" +
-                """"CreationDateTime":"","ExpirationDateTime":"","Permissions":[],""" +
-                """"StatusUpdateDateTime":"","TransactionFromDateTime":"","TransactionToDateTime":""},""" +
-                """"Links":{"Self":""},"Meta":{"TotalPages":1},"Risk":{}}"""
     }
 }

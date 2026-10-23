@@ -11,64 +11,57 @@ package org.mifosx.openbanking.core.data.callback
 
 import com.russhwolf.settings.MapSettings
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.bffClient
 import org.mifosx.openbanking.core.data.callback.impl.ConsentCallbackRepositoryImpl
+import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.login.ConsentResult
 import org.mifosx.openbanking.core.data.login.impl.LoginRepositoryImpl
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.network.api.Aisp
-import org.mifosx.openbanking.core.network.api.OAuth
+import org.mifosx.openbanking.core.network.api.CompletedAuth
+import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.common.screen.ScreenState
 import template.core.base.network.NetworkResult
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
- * Drives the whole consent journey across the real seam, with only the network faked.
+ * Drives the whole consent journey across the real seam, with only the Worker faked.
  *
- * The unit tests each pin one component against a fake neighbour. This one wires the real
- * [LoginRepositoryImpl], real [SettingsPendingAuthStore] and real [ConsentCallbackRepositoryImpl]
- * together and feeds the callback the `state`/`nonce` that login actually minted — the join no unit
- * test can check: whether the values one side produces are the values the other side accepts.
+ * Wires the real [LoginRepositoryImpl], real [SettingsPendingAuthStore], real
+ * [ConsentCallbackRepositoryImpl] and real [SettingsConsentSession] together and feeds the callback
+ * the `state` the Worker's authorize URL carried — the join no unit test can check: whether the values
+ * one side produces are the values the other side accepts, and whether the session lands where the
+ * BFF client reads it.
  */
-@OptIn(ExperimentalEncodingApi::class)
 class ConsentJourneyIntegrationTest {
-
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private val settings = MapSettings()
     private var now = 10_000L
     private val pendingAuthStore = SettingsPendingAuthStore(settings) { now }
+    private var minted = 0
 
-    private fun client(consentStatus: String = "AUTH") = HttpClient(
-        MockEngine { request ->
-            when {
-                request.url.encodedPath.contains("oauth2/token") ->
-                    respond(TOKEN_JSON, HttpStatusCode.OK, jsonHeaders)
-
-                request.url.encodedPath.contains("account-access-consents") ->
-                    respond(consentJson(consentStatus), HttpStatusCode.Created, jsonHeaders)
-
-                else -> respond("{}", HttpStatusCode.OK, jsonHeaders)
+    private fun client(consentStatus: String = "AUTH") = bffClient(settings) { request ->
+        when {
+            request.url.encodedPath == "/v1/consents/ais" -> {
+                minted++
+                respond(consentStartJson(CONSENT_ID, flowId = "flow-$minted", state = "state-$minted"), HttpStatusCode.OK, jsonHeaders)
             }
-        },
-    ) {
-        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            request.url.encodedPath == "/v1/auth/complete" ->
+                respond(completedAuthJson(CONSENT_ID), HttpStatusCode.OK, jsonHeaders)
+            request.url.encodedPath.startsWith("/v1/consents/ais/") ->
+                respond(consentJson(consentStatus), HttpStatusCode.OK, jsonHeaders)
+            else -> respond("{}", HttpStatusCode.OK, jsonHeaders)
+        }
     }
 
     /** Assembled from parts so no single line exceeds the 120-char limit. */
@@ -78,56 +71,43 @@ class ConsentJourneyIntegrationTest {
             """"StatusUpdateDateTime":"","TransactionFromDateTime":"","TransactionToDateTime":""},""" +
             """"Links":{"Self":""},"Meta":{"TotalPages":1},"Risk":{}}"""
 
-    private suspend fun loginRepository(client: HttpClient) = LoginRepositoryImpl(
-        oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem()),
-        aisp = Aisp(client),
-        signingKeyPem = TestSigningKey.pem(),
-        clientId = "test-client",
-        kid = "test-kid",
-        bankHost = "sandbox.test",
-        authorizeHost = "authorize.sandbox.test",
-        redirectUri = REDIRECT_URI,
-    )
-
-    private suspend fun callbackRepository(client: HttpClient) = ConsentCallbackRepositoryImpl(
-        oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem()),
+    private fun callbackRepository(client: HttpClient) = ConsentCallbackRepositoryImpl(
+        session = Session(client),
         aisp = Aisp(client),
         pendingAuthStore = pendingAuthStore,
     )
 
     private suspend fun mintConsent(client: HttpClient): ConsentResult {
-        val result = loginRepository(client).createConsentAndBuildAuthorizationUrl()
+        val result = LoginRepositoryImpl(Session(client)).createConsentAndBuildAuthorizationUrl()
         return assertIs<NetworkResult.Success<ConsentResult>>(result).data
     }
 
-    /** Models what HSBC sends back: an unpadded base64url JWT carrying the nonce it was given. */
-    private fun idTokenFor(nonce: String): String {
-        val payload = Base64.UrlSafe.encode("""{"nonce":"$nonce"}""".encodeToByteArray()).trimEnd('=')
-        return "header.$payload.signature"
-    }
-
-    /** The redirect the bridge page relays into the app, rewritten fragment → query. */
-    private fun redirectFor(state: String, nonce: String) =
-        "org.mifosx.openbanking://callback?code=$AUTH_CODE&id_token=${idTokenFor(nonce)}&state=$state"
+    /** The redirect the relay hands the app: code, id_token and the authorize URL's state. */
+    private fun redirectFor(state: String) =
+        "org.mifosx.openbanking://callback?code=$AUTH_CODE&id_token=header.payload.signature&state=$state"
 
     @Test
     fun `login through callback completes end to end`() = runTest {
         val client = client(consentStatus = "AUTH")
-        val minted = mintConsent(client)
+        val consent = mintConsent(client)
 
-        pendingAuthStore.save(minted.state, minted.nonce, minted.consentId)
+        pendingAuthStore.save(consent.state, consent.flowId, consent.consentId)
 
         val callback = callbackRepository(client)
-        val validation = callback.validateCallback(redirectFor(minted.state, minted.nonce))
+        val validation = callback.validateCallback(redirectFor(consent.state))
 
         val valid = assertIs<ValidationResult.Valid>(
             validation,
-            "the state/nonce login minted must be exactly what the callback accepts",
+            "the state the Worker's authorize URL carried must be exactly what the callback accepts",
         )
         assertEquals(AUTH_CODE, valid.code)
         assertEquals(CONSENT_ID, valid.consentId)
+        assertEquals("flow-1", valid.flowId)
 
-        assertIs<ScreenState.Content<*>>(callback.exchangeCode(valid.code, REDIRECT_URI))
+        val done = assertIs<ScreenState.Content<CompletedAuth>>(callback.exchangeCode(valid)).data
+        val consentSession = SettingsConsentSession(settings)
+        consentSession.save(done.session)
+        assertTrue(consentSession.isActive())
 
         val polled = assertIs<ScreenState.Content<ConsentStatusResult>>(callback.pollConsentStatus(valid.consentId))
         assertEquals(ConsentStatus.Authorised, polled.data.status)
@@ -136,10 +116,10 @@ class ConsentJourneyIntegrationTest {
     @Test
     fun `a redirect replayed after a completed journey is refused`() = runTest {
         val client = client()
-        val minted = mintConsent(client)
-        pendingAuthStore.save(minted.state, minted.nonce, minted.consentId)
+        val consent = mintConsent(client)
+        pendingAuthStore.save(consent.state, consent.flowId, consent.consentId)
         val callback = callbackRepository(client)
-        val redirect = redirectFor(minted.state, minted.nonce)
+        val redirect = redirectFor(consent.state)
 
         assertIs<ValidationResult.Valid>(callback.validateCallback(redirect))
 
@@ -152,48 +132,48 @@ class ConsentJourneyIntegrationTest {
     @Test
     fun `a redirect carrying another session's state is refused`() = runTest {
         val client = client()
-        val minted = mintConsent(client)
-        pendingAuthStore.save(minted.state, minted.nonce, minted.consentId)
+        val consent = mintConsent(client)
+        pendingAuthStore.save(consent.state, consent.flowId, consent.consentId)
 
         val validation = callbackRepository(client)
-            .validateCallback(redirectFor("attacker-state", minted.nonce))
+            .validateCallback(redirectFor("attacker-state"))
 
         assertIs<ValidationResult.SecurityError>(validation)
     }
 
     @Test
-    fun `a redirect arriving after the request object expired is refused`() = runTest {
+    fun `a redirect arriving after the worker's pending flow expired is refused`() = runTest {
         val client = client()
-        val minted = mintConsent(client)
-        pendingAuthStore.save(minted.state, minted.nonce, minted.consentId)
+        val consent = mintConsent(client)
+        pendingAuthStore.save(consent.state, consent.flowId, consent.consentId)
 
         now += SettingsPendingAuthStore.TTL_SECONDS + 1
         val validation = callbackRepository(client)
-            .validateCallback(redirectFor(minted.state, minted.nonce))
+            .validateCallback(redirectFor(consent.state))
 
         assertIs<ValidationResult.SecurityError>(validation)
         assertNull(pendingAuthStore.consume())
     }
 
     @Test
-    fun `each login mints a fresh state and nonce`() = runTest {
+    fun `each login gets a fresh state and flow`() = runTest {
         val client = client()
 
         val first = mintConsent(client)
         val second = mintConsent(client)
 
         assertNotEquals(first.state, second.state, "a reused state would defeat CSRF protection")
-        assertNotEquals(first.nonce, second.nonce, "a reused nonce would defeat replay protection")
+        assertNotEquals(first.flowId, second.flowId, "a reused flow would defeat replay protection")
     }
 
     @Test
     fun `an awaiting consent surfaces as AwaitingAuthorisation rather than completing`() = runTest {
         val client = client(consentStatus = "AWAU")
-        val minted = mintConsent(client)
-        pendingAuthStore.save(minted.state, minted.nonce, minted.consentId)
+        val consent = mintConsent(client)
+        pendingAuthStore.save(consent.state, consent.flowId, consent.consentId)
         val callback = callbackRepository(client)
         val valid = assertIs<ValidationResult.Valid>(
-            callback.validateCallback(redirectFor(minted.state, minted.nonce)),
+            callback.validateCallback(redirectFor(consent.state)),
         )
 
         val polled = assertIs<ScreenState.Content<ConsentStatusResult>>(callback.pollConsentStatus(valid.consentId))
@@ -202,11 +182,7 @@ class ConsentJourneyIntegrationTest {
     }
 
     private companion object {
-        const val TOKEN_URL = "https://sandbox.test/obie/open-banking/v1.1/oauth2/token"
-        const val REDIRECT_URI = "https://thekalpeshpawar.github.io/obp-callback/callback/"
         const val CONSENT_ID = "consent-123"
         const val AUTH_CODE = "auth-code-xyz"
-        const val TOKEN_JSON =
-            """{"access_token":"tok","expires_in":300,"scope":"accounts","token_type":"Bearer"}"""
     }
 }

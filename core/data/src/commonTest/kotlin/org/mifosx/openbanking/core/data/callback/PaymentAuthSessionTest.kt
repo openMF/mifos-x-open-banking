@@ -16,7 +16,6 @@ import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,7 +24,7 @@ import kotlin.test.assertTrue
 
 private const val CONSENT_ID = "812774903"
 private const val PAYMENT_STATE = "payment-state-1"
-private const val PAYMENT_NONCE = "payment-nonce-1"
+private const val PAYMENT_FLOW = "payment-flow-1"
 
 private fun aDraft() = PaymentDraft(
     debtorAccount = BankAccount(
@@ -54,7 +53,7 @@ private fun aDraft() = PaymentDraft(
  * Covers [SettingsPaymentAuthSession] — the second consent slot.
  *
  * The property under test throughout is isolation: the payment leg must be able to store and clear
- * its own credentials without the AIS session in [SettingsConsentSession] noticing, because the two
+ * its own flow without the AIS session in [SettingsConsentSession] noticing, because the two
  * share the same secure store and an overwrite would sign the user out of their accounts.
  */
 class PaymentAuthSessionTest {
@@ -69,12 +68,12 @@ class PaymentAuthSessionTest {
         session.savePending(
             consentId = CONSENT_ID,
             state = PAYMENT_STATE,
-            nonce = PAYMENT_NONCE,
+            flowId = PAYMENT_FLOW,
             type = ConsentType.DomesticSinglePayment,
         )
 
         assertEquals(CONSENT_ID, session.pendingConsentId())
-        assertEquals(PAYMENT_NONCE, session.pendingNonce())
+        assertEquals(PAYMENT_FLOW, session.pendingFlowId())
         assertTrue(session.matchesPendingState(PAYMENT_STATE))
     }
 
@@ -101,13 +100,13 @@ class PaymentAuthSessionTest {
     }
 
     /**
-     * The draft is as much a part of the authorisation as the tokens are, so it goes when they go.
+     * The draft is as much a part of the authorisation as the flow is, so it goes when it goes.
      * Leaving it behind would let an abandoned payment's instruction outlive its consent.
      */
     @Test
     fun forgetsTheDraftWhenTheSessionIsCleared() {
         val (session, _) = session()
-        session.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_NONCE, type = ConsentType.DomesticSinglePayment)
+        session.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_FLOW, type = ConsentType.DomesticSinglePayment)
         session.saveDraft(aDraft())
 
         session.clear()
@@ -119,7 +118,7 @@ class PaymentAuthSessionTest {
     @Test
     fun refusesAStateItDidNotIssue() {
         val (session, _) = session()
-        session.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_NONCE, type = ConsentType.DomesticSinglePayment)
+        session.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_FLOW, type = ConsentType.DomesticSinglePayment)
 
         assertFalse(session.matchesPendingState("someone-elses-state"))
         assertFalse(session.matchesPendingState(null))
@@ -134,31 +133,21 @@ class PaymentAuthSessionTest {
         assertNull(session.pendingConsentId())
     }
 
-    @Test
-    fun roundTripsThePaymentsScopedToken() {
-        val (session, _) = session()
-
-        session.savePaymentToken(PsuTokenResponse(accesstoken = "payments-access", scope = "payments"))
-
-        assertEquals("payments-access", session.paymentToken()?.accesstoken)
-    }
-
     /**
      * The isolation invariant, asserted against the AIS session's real storage keys rather than a
-     * fake: writing a payment authorisation must leave `hsbc_tokens` and `hsbc_consent_id` untouched.
+     * fake: writing a payment authorisation must leave the Worker session and `hsbc_consent_id` untouched.
      */
     @Test
     fun leavesTheAccountSessionUntouched() {
         val settings = MapSettings()
         val consentSession = SettingsConsentSession(secureSettings = settings)
-        consentSession.save(PsuTokenResponse(accesstoken = "ais-access"))
+        consentSession.save("ais-session")
         consentSession.saveConsentMeta(consentId = "ais-consent", expirationDateTime = "2026-12-01T00:00:00Z")
 
         val paymentSession = SettingsPaymentAuthSession(secureSettings = settings)
-        paymentSession.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_NONCE, type = ConsentType.DomesticSinglePayment)
-        paymentSession.savePaymentToken(PsuTokenResponse(accesstoken = "payments-access"))
+        paymentSession.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_FLOW, type = ConsentType.DomesticSinglePayment)
 
-        assertEquals("ais-access", consentSession.tokens()?.accesstoken)
+        assertEquals("ais-session", settings.getStringOrNull(org.mifosx.openbanking.core.network.SESSION_KEY))
         assertEquals("ais-consent", consentSession.consentId())
         assertTrue(consentSession.isActive())
     }
@@ -168,17 +157,16 @@ class PaymentAuthSessionTest {
     fun clearingThePaymentLegLeavesTheUserSignedIn() {
         val settings = MapSettings()
         val consentSession = SettingsConsentSession(secureSettings = settings)
-        consentSession.save(PsuTokenResponse(accesstoken = "ais-access"))
+        consentSession.save("ais-session")
         consentSession.saveConsentMeta("ais-consent", "2026-12-01T00:00:00Z")
 
         val paymentSession = SettingsPaymentAuthSession(secureSettings = settings)
-        paymentSession.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_NONCE, type = ConsentType.DomesticSinglePayment)
-        paymentSession.savePaymentToken(PsuTokenResponse(accesstoken = "payments-access"))
+        paymentSession.savePending(CONSENT_ID, PAYMENT_STATE, PAYMENT_FLOW, type = ConsentType.DomesticSinglePayment)
         paymentSession.clear()
 
         assertTrue(consentSession.isActive())
         assertEquals("ais-consent", consentSession.consentId())
-        assertNull(paymentSession.paymentToken())
+        assertNull(paymentSession.pendingFlowId())
         assertNull(paymentSession.pendingConsentId())
     }
 
@@ -197,7 +185,7 @@ class PaymentAuthSessionTest {
         session.savePending(
             consentId = "45300",
             state = "s",
-            nonce = "n",
+            flowId = "f",
             type = ConsentType.DomesticSinglePayment,
         )
         settings.putString("payment_auth_consent_type", "domestic_vrp")

@@ -10,13 +10,11 @@
 package org.mifosx.openbanking.core.network.api
 import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
-import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import io.ktor.http.Url
 import org.mifosx.openbanking.core.network.model.ais.accountDetails.AccountDetailsResponse
 import org.mifosx.openbanking.core.network.model.ais.accounts.AccountsResponse
 import org.mifosx.openbanking.core.network.model.ais.balances.BalancesResponse
@@ -31,52 +29,31 @@ import org.mifosx.openbanking.core.network.model.ais.statementDetails.StatementD
 import org.mifosx.openbanking.core.network.model.ais.statementTransactions.StatementTransactionsResponse
 import org.mifosx.openbanking.core.network.model.ais.statements.StatementsResponse
 import org.mifosx.openbanking.core.network.model.ais.transactions.TransactionsResponse
-import org.mifosx.openbanking.core.network.model.hsbcPermission.request.HSBCCreateConsentRequest
 import org.mifosx.openbanking.core.network.model.hsbcPermission.response.HSBCCreateConsentResponse
 import org.mifosx.openbanking.core.network.result.toNetworkResult
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
-private const val AIS = "v4.0/aisp"
+private const val AIS = "/v1/ais"
+private const val CONSENTS = "/v1/consents/ais"
 
 /**
- * HSBC OBIE AIS endpoints. Paths are relative and resolve against the client's `defaultRequest`
- * base URL. Every call returns a [NetworkResult].
- *
- * The `account-access-consents` calls take the **temporary** client-credentials token explicitly
- * (their own `Bearer` header — it is not the stored PSU token and is not persisted). The account
- * data reads carry no token here: the PSU bearer token is added automatically by the client's `Auth`
- * plugin.
+ * The Worker's AIS surface (bff/src/routes.ts). One call per HSBC read; every call is session-gated
+ * (`Authorization: Session`, attached by the client) and returns a [NetworkResult]. The Worker holds
+ * the PSU token, refreshes it, and rewrites every `Links` URL to its own `/v1/ais/page?cursor=` form.
+ * AIS consent creation lives in [Session.startAisConsent], because it runs before a session exists.
  */
+@Suppress("TooManyFunctions")
 class Aisp(
     private val httpClient: HttpClient,
 ) {
 
-    suspend fun createConsent(
-        consentCreationAccessToken: String,
-        request: HSBCCreateConsentRequest,
-    ): NetworkResult<HSBCCreateConsentResponse, NetworkError> =
-        httpClient.post("$AIS/account-access-consents") {
-            bearerAuth(consentCreationAccessToken)
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }.toNetworkResult()
+    /** The sign-in consent, read on the Worker's client-credentials token (own consent only). */
+    suspend fun getConsent(consentId: String): NetworkResult<HSBCCreateConsentResponse, NetworkError> =
+        httpClient.get("$CONSENTS/$consentId").toNetworkResult()
 
-    suspend fun getConsent(
-        consentCreationAccessToken: String,
-        consentId: String,
-    ): NetworkResult<HSBCCreateConsentResponse, NetworkError> =
-        httpClient.get("$AIS/account-access-consents/$consentId") {
-            bearerAuth(consentCreationAccessToken)
-        }.toNetworkResult()
-
-    suspend fun deleteConsent(
-        consentCreationAccessToken: String,
-        consentId: String,
-    ): NetworkResult<Unit, NetworkError> =
-        httpClient.delete("$AIS/account-access-consents/$consentId") {
-            bearerAuth(consentCreationAccessToken)
-        }.toNetworkResult()
+    suspend fun deleteConsent(consentId: String): NetworkResult<Unit, NetworkError> =
+        httpClient.delete("$CONSENTS/$consentId").toNetworkResult()
 
     suspend fun getAccounts(): NetworkResult<AccountsResponse, NetworkError> =
         httpClient.get("$AIS/accounts").toNetworkResult()
@@ -106,15 +83,15 @@ class Aisp(
         httpClient.get("$AIS/accounts/$accountId/transactions").toNetworkResult()
 
     /**
-     * Follows an OBIE `Links.Next` cursor to fetch the next transactions page.
-     *
-     * [nextUrl] is the server-generated **absolute** URL from a prior response's `Links.Next`
-     * (HSBC returns e.g. `https://.../accounts/{id}/transactions?page=1`). An absolute URL
-     * overrides the client's `defaultRequest` base; the `Auth` + mTLS plugins still attach the
-     * PSU bearer and transport cert automatically. Do not build page/offset params by hand.
+     * Follows a `Links.Next` from a prior response. The Worker has already rewritten it to
+     * `…/v1/ais/page?cursor=<opaque>`; only the cursor is taken from it and the request always goes to
+     * the configured Worker, so a link can never carry the session to another host.
      */
-    suspend fun getTransactionsPage(nextUrl: String): NetworkResult<TransactionsResponse, NetworkError> =
-        httpClient.get(nextUrl).toNetworkResult()
+    suspend fun getTransactionsPage(nextLink: String): NetworkResult<TransactionsResponse, NetworkError> {
+        val cursor = runCatching { Url(nextLink).parameters["cursor"] }.getOrNull()
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("Next link carries no cursor"))
+        return httpClient.get("$AIS/page") { parameter("cursor", cursor) }.toNetworkResult()
+    }
 
     suspend fun getStandingOrders(accountId: String): NetworkResult<StandingOrdersResponse, NetworkError> =
         httpClient.get("$AIS/accounts/$accountId/standing-orders").toNetworkResult()
@@ -138,11 +115,8 @@ class Aisp(
         httpClient.get("$AIS/accounts/$accountId/statements/$statementId/transactions").toNetworkResult()
 
     /**
-     * Fetches the rendered statement file (PDF or CSV) for one statement as raw bytes.
-     *
-     * The `Accept` headers ask the bank for a PDF, then CSV as a fallback; the body is read as a
-     * [ByteArray] via Ktor's built-in byte transformer, so it bypasses JSON content negotiation and
-     * the raw file is returned untouched.
+     * The rendered statement file as raw bytes. The Worker accepts only `application/pdf` or
+     * `text/csv` (406 otherwise) and pipes the bank's bytes through untouched.
      */
     suspend fun getStatementFile(
         accountId: String,

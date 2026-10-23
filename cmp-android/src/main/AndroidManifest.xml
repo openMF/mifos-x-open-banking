@@ -73,6 +73,23 @@
                 <data android:scheme="org.mifosx.openbanking" android:host="callback" />
                 <data android:scheme="org.mifosx.openbanking" android:host="oauth" />
             </intent-filter>
+
+            <!--
+                Verified App Link for the consent relay (FR-052). The bank redirects to
+                https://mifos-x-open-banking-relay.pages.dev/callback/ as the end of the customer's
+                "Finish" tap, so Android opens this activity straight away with the full URL (fragment
+                included) and the relay page never needs its "Reopen the app" button. Verification
+                reads relay/site/.well-known/assetlinks.json; if it fails (e.g. a fork's signing key is
+                not listed there) the relay page and the custom scheme above still work.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" android:host="mifos-x-open-banking-relay.pages.dev" android:pathPrefix="/callback" />
+            </intent-filter>
         </activity>
 
         <meta-data

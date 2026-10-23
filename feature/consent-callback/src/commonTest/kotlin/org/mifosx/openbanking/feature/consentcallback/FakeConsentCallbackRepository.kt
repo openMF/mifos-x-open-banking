@@ -13,16 +13,16 @@ import org.mifosx.openbanking.core.data.callback.ConsentCallbackRepository
 import org.mifosx.openbanking.core.data.callback.ConsentStatusResult
 import org.mifosx.openbanking.core.data.callback.ValidationResult
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.api.CompletedAuth
 import template.core.base.common.screen.DataFreshness
 import template.core.base.common.screen.ScreenState
 
 class FakeConsentCallbackRepository : ConsentCallbackRepository {
 
-    var validateResult: ValidationResult = ValidationResult.Valid(code = "auth-code", consentId = "cn-1")
+    var validateResult: ValidationResult = VALID
 
-    var exchangeResult: ScreenState<PsuTokenResponse> = ScreenState.Content(
-        PSU_TOKEN,
+    var exchangeResult: ScreenState<CompletedAuth> = ScreenState.Content(
+        COMPLETED_AUTH,
         DataFreshness.FRESH,
     )
 
@@ -45,8 +45,8 @@ class FakeConsentCallbackRepository : ConsentCallbackRepository {
         return validateResult
     }
 
-    override suspend fun exchangeCode(code: String, redirectUri: String): ScreenState<PsuTokenResponse> {
-        exchangedCodes += code
+    override suspend fun exchangeCode(callback: ValidationResult.Valid): ScreenState<CompletedAuth> {
+        exchangedCodes += callback.code
         return exchangeResult
     }
 
@@ -56,11 +56,21 @@ class FakeConsentCallbackRepository : ConsentCallbackRepository {
     }
 
     companion object {
-        val PSU_TOKEN = PsuTokenResponse(
-            accesstoken = "psu-access-token",
-            tokentype = "Bearer",
-            expiresin = 300,
-            scope = "openid accounts",
+        val VALID = ValidationResult.Valid(
+            code = "auth-code",
+            consentId = "cn-1",
+            idToken = "id.token.jwt",
+            state = "st-1",
+            flowId = "flow-1",
+        )
+
+        val COMPLETED_AUTH = CompletedAuth(
+            session = "worker-session",
+            expiresAt = 1_800_000_000_000,
+            leg = "ais",
+            consentId = "cn-1",
+            consentStatus = "Authorised",
+            consentExpiresAt = "2026-07-01T00:00:00Z",
         )
 
         /** [ScreenState.Error] carries a raw [Throwable]; its message is what the VM surfaces. */

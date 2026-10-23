@@ -19,10 +19,18 @@
  * Keep in lock-step with:
  *   - CONSENT_REDIRECT_SCHEME  (cmp-android ConsentRedirectIntent.kt, cmp-shared ConsentRedirectBridge.kt)
  *   - ConsentRedirectListener.PORT  (cmp-desktop)
+ *   - WEB_RETURN_ORIGINS  (bff/wrangler.toml — same entries, same order; the relay test pins it)
  */
 
 var SCHEME = 'org.mifosx.openbanking';
 var LOOPBACK_PORT = 8765;
+
+/*
+ * Web origins a web sign-in may return to. The Worker prefixes `state` with `w<index>.` into this list;
+ * the relay only ever navigates to an entry here, never to an origin carried in the URL. Append, never
+ * reorder — an index already in flight would point somewhere else.
+ */
+var WEB_RETURN_ORIGINS = ['http://localhost:8080'];
 
 /**
  * Returns the raw parameter string the bank sent back, or '' when there is nothing to relay.
@@ -49,6 +57,19 @@ function loopbackUrl(raw) {
   return 'http://127.0.0.1:' + LOOPBACK_PORT + '/callback?' + raw;
 }
 
+/**
+ * The web hand-off, or null. Returns only for a state of the form `w<index>.…` whose index is on
+ * WEB_RETURN_ORIGINS. The parameters stay in the fragment, so the web origin's server never sees them.
+ */
+function webReturnUrl(raw) {
+  var m = /^w(0|[1-9][0-9]*)\./.exec(new URLSearchParams(raw).get('state') || '');
+  var origin = m && WEB_RETURN_ORIGINS[Number(m[1])];
+  return origin ? origin + '/#mifos-callback?' + raw : null;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { readParams: readParams, appUrl: appUrl, loopbackUrl: loopbackUrl, SCHEME: SCHEME, LOOPBACK_PORT: LOOPBACK_PORT };
+  module.exports = {
+    readParams: readParams, appUrl: appUrl, loopbackUrl: loopbackUrl, webReturnUrl: webReturnUrl,
+    SCHEME: SCHEME, LOOPBACK_PORT: LOOPBACK_PORT, WEB_RETURN_ORIGINS: WEB_RETURN_ORIGINS,
+  };
 }

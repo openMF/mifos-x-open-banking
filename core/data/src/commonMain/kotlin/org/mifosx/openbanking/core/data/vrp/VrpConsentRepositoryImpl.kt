@@ -16,8 +16,8 @@ import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpConsentDraft
-import org.mifosx.openbanking.core.network.api.ConsentCreationScope
-import org.mifosx.openbanking.core.network.api.OAuth
+import kotlin.time.Instant
+import org.mifosx.openbanking.core.data.callback.impl.authorizeState
 import org.mifosx.openbanking.core.network.api.Vrp
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -28,10 +28,8 @@ private const val RESOURCE_NOT_FOUND = "U011"
 
 class VrpConsentRepositoryImpl(
     private val vrp: Vrp,
-    private val oauth: OAuth,
     private val dao: VrpConsentDao,
     private val session: VrpAuthSession,
-    private val tokens: VrpTokenProvider,
 ) : VrpConsentRepository {
 
     override fun observeActive(): Flow<List<VrpConsent>> =
@@ -40,40 +38,26 @@ class VrpConsentRepositoryImpl(
     override fun observeById(consentId: String): Flow<VrpConsent?> =
         dao.observeById(consentId).map { it?.toVrpConsent() }
 
+    /**
+     * Stages the consent through the Worker and records the authorisation in flight. The Worker
+     * returns only the consent id and its signed authorize URL, so the consent is described from the
+     * draft the customer configured — exactly what was sent.
+     */
     @Suppress("ReturnCount")
     override suspend fun stageConsent(draft: VrpConsentDraft): NetworkResult<VrpConsent, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
+        val start = when (val result = vrp.createConsent(draft.toCreateConsent(), draft.idempotencyKey)) {
+            is NetworkResult.Success -> result.data
             is NetworkResult.Error -> return result
         }
-
-        return when (
-            val result = vrp.createConsent(
-                paymentsScopeToken = token,
-                request = draft.toCreateConsent(),
-                idempotencyKey = draft.idempotencyKey,
-            )
-        ) {
-            is NetworkResult.Error -> result
-
-            is NetworkResult.Success -> {
-                val consent = result.data.toVrpConsent(Clock.System.now())
-                    ?: return NetworkResult.Error(
-                        NetworkError.Serialization(IllegalStateException("Consent response was unusable")),
-                    )
-                NetworkResult.Success(consent)
-            }
-        }
+        val state = start.authorizeState()
+            ?: return NetworkResult.Error(NetworkError.Client.BadRequest("authorizeUrl carries no state"))
+        session.saveAuthorisationInFlight(start.consentId, state, start.flowId, start.authorizeUrl)
+        return NetworkResult.Success(draft.toStagedConsent(start.consentId, Clock.System.now()))
     }
 
     @Suppress("ReturnCount")
     override suspend fun refreshStatus(consentId: String): NetworkResult<VrpConsent, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> return result
-        }
-
-        return when (val result = vrp.getConsent(token, consentId)) {
+        return when (val result = vrp.getConsent(consentId)) {
             is NetworkResult.Error -> {
                 if (result.error.obieErrorCode() == RESOURCE_NOT_FOUND) {
                     forget(consentId)
@@ -93,15 +77,7 @@ class VrpConsentRepositoryImpl(
     }
 
     override suspend fun revoke(consentId: String): NetworkResult<Unit, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> {
-                forget(consentId)
-                return result
-            }
-        }
-
-        val result = vrp.deleteConsent(token, consentId)
+        val result = vrp.deleteConsent(consentId)
         forget(consentId)
         return result
     }
@@ -116,10 +92,21 @@ class VrpConsentRepositoryImpl(
         }
     }
 
-    /** Drops the credential and marks the consent revoked. */
+    /** Marks the consent revoked (the Worker holds, and drops, its credential). */
     private suspend fun forget(consentId: String) {
-        session.removeRefreshToken(consentId)
-        tokens.invalidateAccessToken(consentId)
         dao.markRevoked(consentId, revokedAt = Clock.System.now().toString())
     }
 }
+
+/** The consent as staged — awaiting approval — described from the draft that was sent. */
+private fun VrpConsentDraft.toStagedConsent(consentId: String, now: Instant): VrpConsent = VrpConsent(
+    consentId = consentId,
+    status = ConsentStatus.AwaitingAuthorisation,
+    createdAt = now,
+    controlParameters = controlParameters,
+    payee = payee,
+    payer = payer,
+    validity = validity,
+    reference = reference,
+    syncedAt = now,
+)

@@ -28,12 +28,23 @@ internal const val CONSENT_REDIRECT_SCHEME = "org.mifosx.openbanking"
  * Deliberately a free function rather than a private method on the Activity: this is the whole of the
  * redirect-handling logic, and it needs no Activity, no Koin graph and no device to verify.
  */
+/**
+ * The consent relay's host. Its `/callback/` path is a verified Android App Link (see the
+ * `autoVerify` filter in the manifest and `relay/site/.well-known/assetlinks.json`), so the bank's
+ * redirect — the tail of the customer's "Finish" tap — opens the app directly, fragment included,
+ * without the relay page's "Reopen the app" button. Must match the manifest `android:host`.
+ */
+internal const val CONSENT_RELAY_HOST = "mifos-x-open-banking-relay.pages.dev"
+
 internal fun Intent.consumeConsentRedirectUrl(): String? {
     val url = data
-        ?.takeIf { action == Intent.ACTION_VIEW && it.scheme == CONSENT_REDIRECT_SCHEME }
+        ?.takeIf { action == Intent.ACTION_VIEW && (it.scheme == CONSENT_REDIRECT_SCHEME || it.isRelayAppLink()) }
         ?.toString()
         ?: return null
 
     data = null
     return url
 }
+
+private fun android.net.Uri.isRelayAppLink(): Boolean =
+    scheme == "https" && host == CONSENT_RELAY_HOST && path.orEmpty().startsWith("/callback")

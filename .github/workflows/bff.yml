@@ -1,0 +1,31 @@
+# Copyright 2026 Mifos Initiative — MPL-2.0. See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+#
+# BFF Worker (bff/) — typecheck + tests on every PR that touches it. Tests run inside workerd via
+# @cloudflare/vitest-plugin with the HSBC mTLS binding stubbed; no secret or Cloudflare token is used.
+name: bff — typecheck + test
+
+on:
+  pull_request:
+    paths:
+      - "bff/**"
+      - ".github/workflows/bff.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  bff:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24" # vitest 5 needs ^22.12, wrangler/miniflare >= 22
+          cache: npm
+          cache-dependency-path: bff/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run

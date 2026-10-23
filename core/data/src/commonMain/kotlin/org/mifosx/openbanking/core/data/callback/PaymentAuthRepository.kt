@@ -18,7 +18,7 @@ sealed interface PaymentAuthValidation {
     /** Authentic. [code] is the authorization code to exchange, against consent [consentId]. */
     data class Valid(val code: String, val consentId: String) : PaymentAuthValidation
 
-    /** `state` or `nonce` did not match what was issued — treat as hostile, never as a retry. */
+    /** `state` did not match, or no `id_token` came back — treat as hostile, never as a retry. */
     data object SecurityError : PaymentAuthValidation
 
     /**
@@ -52,10 +52,10 @@ sealed interface PaymentAuthValidation {
  * The payment authorisation leg — the app-to-app hop that turns a staged consent into one the PSU
  * has approved.
  *
- * Structurally the sign-in leg's twin, and deliberately not the same object: this exchanges on
- * `scope=payments` and stores the result in [PaymentAuthSession], leaving the AIS session alone.
- * Routing a payment authorisation through [ConsentCallbackRepository] would overwrite the account
- * bearer with a payments-scoped one and break every read in the app.
+ * Structurally the sign-in leg's twin, and deliberately not the same object: its `/v1/auth/complete`
+ * attaches a payment leg to the app's existing Worker session and its state lives in
+ * [PaymentAuthSession]. Routing it through [ConsentCallbackRepository] would replace the signed-in
+ * session with a new one and break every account read in the app.
  */
 interface PaymentAuthRepository {
 
@@ -76,15 +76,14 @@ interface PaymentAuthRepository {
     /**
      * Whether [redirectUrl] is the authentic return leg of the authorisation in flight.
      *
-     * Checked against the `state` and `nonce` held in [PaymentAuthSession]; the caller never has to
-     * parse the URL or reach into storage itself.
+     * Checked against the `state` held in [PaymentAuthSession]; the caller never has to parse the URL
+     * or reach into storage itself. The `id_token` is verified in full by the Worker.
      */
     fun validateCallback(redirectUrl: String): PaymentAuthValidation
 
     /**
-     * Exchanges [code] for the payments-scoped PSU token and stores it in [PaymentAuthSession].
-     *
-     * A successful exchange is what makes funds confirmation and submission possible.
+     * Redeems [code] at the Worker, which attaches the payments-scoped PSU token to this app's
+     * session. A successful exchange is what makes funds confirmation and submission possible.
      */
     suspend fun exchangeCode(code: String): NetworkResult<Unit, NetworkError>
 

@@ -1,0 +1,75 @@
+# Cloudflare Worker that holds the HSBC TPP identity (goal hsbc-identity-cloudflare-bff, idea-plan TD-008).
+# No secret, key, token or account ID lives in this file:
+#   - secrets are set from the vault by scripts/deploy.sh (`wrangler secret put`, stdin only)
+#   - the account comes from CLOUDFLARE_ACCOUNT_ID at deploy time
+#   - certificate_id below is the public ID of the uploaded mTLS certificate (written by deploy.sh)
+name = "mifos-x-open-banking-bff"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[observability]
+enabled = true
+
+[[mtls_certificates]]
+binding = "HSBC_MTLS"
+certificate_id = "f4a18e0b-6627-4497-8c7e-9658cfde504f"
+
+[vars]
+HSBC_BANK_HOST = "secure.sandbox.ob.hsbc.co.uk"
+HSBC_AUTHORIZE_HOST = "sandbox.ob.hsbc.co.uk"
+HSBC_REDIRECT_URI = "https://mifos-x-open-banking-relay.pages.dev/callback/"
+HSBC_ISSUER = "https://secure.sandbox.ob.hsbc.co.uk"
+# Attestation on attest rows from X-Client-Platform android|ios (src/attest/gate.ts). "report-only" lets a
+# missing / failed / unconfigured attestation through, marked `x-attestation: unverified`; any other value
+# enforces (401 missing, 403 invalid, 503 attestation_unconfigured). It is report-only ONLY because the two
+# credentials (PLAY_INTEGRITY_SA_JSON, APPLE_TEAM_ID) are still pending handoff on this sandbox Worker —
+# switch it to "enforce" as soon as both are in the vault and deploy.sh has pushed them.
+ATTESTATION_MODE = "report-only"
+# Web client origins (cmp-web) allowed to call the Worker cross-origin. Localhost is the dev / Playwright
+# server; add the production web host when it is deployed.
+CORS_ORIGINS = "http://localhost:8080"
+# Ordered web origins a web sign-in may return to. The Worker prefixes `state` with `w<index>.` into this
+# list and the relay (relay/site/callback/bridge.js WEB_RETURN_ORIGINS) navigates back only to an entry on
+# its copy — the two lists must match entry for entry and in order (relay test pins it). Append, never reorder.
+WEB_RETURN_ORIGINS = "http://localhost:8080"
+
+
+# Durable Objects (SQLite-backed — available on Workers Free). SessionDO custodies PSU tokens and
+# pending consent flows per session; TokenCacheDO caches client-credentials tokens and the HSBC JWKS.
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "SessionDO"
+
+[[durable_objects.bindings]]
+name = "TOKEN_CACHE"
+class_name = "TokenCacheDO"
+
+# Fallback counter for the consent / auth-complete rate limits when CONSENT_LIMIT is unavailable.
+[[durable_objects.bindings]]
+name = "RATE_LIMIT_COUNTER"
+class_name = "RateLimitCounterDO"
+
+# Single-use attestation challenges, App Attest keys + sign counters, Play Integrity verdict cache (attest/AttestationDO.ts).
+[[durable_objects.bindings]]
+name = "ATTESTATION"
+class_name = "AttestationDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SessionDO", "TokenCacheDO"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["RateLimitCounterDO"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["AttestationDO"]
+
+# 20 requests / 60 s per install + IP on /v1/consents/ais and /v1/auth/complete (limits.ts).
+[[ratelimits]]
+name = "CONSENT_LIMIT"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }

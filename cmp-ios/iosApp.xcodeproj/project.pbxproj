@@ -12,8 +12,6 @@
 		2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2152FB032600AC8F00CF470E /* iOSApp.swift */; };
 		73867D86E599B875F7561EBD /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8B63CDEE6A83A279F370FDF /* Pods_iosApp.framework */; };
 		7555FF83242A565900829871 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7555FF82242A565900829871 /* ContentView.swift */; };
-		AAAAAAA10000000000000001 /* MtlsCredential.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAA10000000000000002 /* MtlsCredential.swift */; };
-		AAAAAAA20000000000000001 /* certs in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAA20000000000000002 /* certs */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,8 +25,6 @@
 		B5AB1CF32380D00920DC66AD /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
 		F8B63CDEE6A83A279F370FDF /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCFBF765CF1AE0CE66538ADF /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
-		AAAAAAA10000000000000002 /* MtlsCredential.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MtlsCredential.swift; sourceTree = "<group>"; };
-		AAAAAAA20000000000000002 /* certs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = certs; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,8 +81,6 @@
 				7555FF82242A565900829871 /* ContentView.swift */,
 				7555FF8C242A565B00829871 /* Info.plist */,
 				2152FB032600AC8F00CF470E /* iOSApp.swift */,
-				AAAAAAA10000000000000002 /* MtlsCredential.swift */,
-				AAAAAAA20000000000000002 /* certs */,
 				058557D7273AAEEB004C7B11 /* Preview Content */,
 			);
 			path = iosApp;
@@ -173,7 +167,6 @@
 			files = (
 				058557D9273AAEEB004C7B11 /* Preview Assets.xcassets in Resources */,
 				058557BB273AAA24004C7B11 /* Assets.xcassets in Resources */,
-				AAAAAAA20000000000000001 /* certs in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,7 +238,6 @@
 			files = (
 				2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */,
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
-				AAAAAAA10000000000000001 /* MtlsCredential.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

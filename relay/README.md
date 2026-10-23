@@ -7,8 +7,15 @@ JavaScript can read. This page reads it and hands it to the app:
 - **Desktop** — `http://127.0.0.1:8765/callback?…` (the desktop app's `ConsentRedirectListener`)
 - **Mobile** — `org.mifosx.openbanking://callback?…` (Android intent-filter / iOS URL scheme), used only
   when no desktop listener answers
+- **Web** — `<origin>/#mifos-callback?…` (cmp-web), used only when `state` starts with `w<index>.` and
+  `<index>` is an entry of `WEB_RETURN_ORIGINS` (see below). No loopback probe, no custom scheme.
 
 It holds **no secrets** and stores nothing.
+
+The relay only carries `code`, `id_token` and `state` back to the app. The app sends them to the
+Mifos X Open Banking Worker at `POST /v1/auth/complete` ([`bff/`](../bff/README.md)), which verifies the
+`id_token` and exchanges the code with HSBC's token endpoint over mTLS. The relay never talks to HSBC or
+to the Worker.
 
 | | |
 |---|---|
@@ -31,8 +38,8 @@ relay/
 │   ├── _headers              ← security headers for every response
 │   └── callback/
 │       ├── index.html        ← the redirect target — no inline script
-│       ├── bridge.js         ← pure helpers: readParams / appUrl / loopbackUrl + constants
-│       ├── relay.js          ← the flow: history scrub → loopback probe → mobile hand-off
+│       ├── bridge.js         ← pure helpers: readParams / appUrl / loopbackUrl / webReturnUrl + constants
+│       ├── relay.js          ← the flow: history scrub → web return | loopback probe → mobile hand-off
 │       └── relay.css
 ├── test/bridge.test.js       ← node:test, no dependencies
 └── wrangler.toml             ← Pages project name + output dir (no account ID, no token)
@@ -68,12 +75,36 @@ rm -f "$TF"
   `wrangler pages deployment rollback <id> --project-name mifos-x-open-banking-relay`.
 
 Forking this project? Create your own Pages project, deploy `site/`, and register **your** URL with HSBC
-(`HSBC_REDIRECT_URI` in `local.properties` must match it byte-for-byte).
+(the Worker's `HSBC_REDIRECT_URI` must match it byte-for-byte).
+
+## Web return
+
+A browser tab has no loopback listener and no custom scheme, so the web app is identified by `state`:
+
+1. The web app starts a consent with `X-Client-Platform: web`; the browser adds its `Origin`.
+2. The Worker accepts it only if that origin is in its `WEB_RETURN_ORIGINS` var (ordered, comma-separated,
+   `bff/wrangler.toml`), and prefixes the `state` it signs with `w<index>.` — the origin's position in the
+   list. Any other web origin gets `400 {"error":"web_origin_not_allowed"}`. Other platforms are unchanged.
+3. HSBC echoes `state`. The relay scrubs history as usual, then `location.replace(origin + "/#mifos-callback?" + params)`
+   with `origin = WEB_RETURN_ORIGINS[index]` from **its own copy** in `bridge.js`. An index outside the list
+   is ignored and the desktop/mobile flow runs. The URL never names the origin, so the relay can never be
+   pointed at a host that is not listed.
+4. The web app reads `#mifos-callback?…` on load, hands it to the same `ConsentRedirectBus` as the other
+   platforms, and clears the hash. The parameters stay in the fragment, so the web server never sees them.
+   The app then completes the sign-in at the Worker's `POST /v1/auth/complete`, as on every platform.
+
+The Worker also has to allow the web origin for CORS (`CORS_ORIGINS` in `bff/wrangler.toml`); see
+[`bff/docs/RUNBOOK.md` §8](../bff/docs/RUNBOOK.md#8-add-a-web-origin).
+
+The two lists must match entry for entry and in order (the relay test reads `bff/wrangler.toml` and fails
+otherwise). Adding a web host: append it to both, deploy the Worker, deploy the relay. Never reorder or
+remove an entry while a sign-in may be in flight. CSP is unchanged: a top-level navigation is not governed
+by `connect-src`.
 
 ## Changing the scheme or loopback port
 
 `bridge.js` `SCHEME` and `LOOPBACK_PORT` must match the app exactly. See the table in the root
-[README](../README.md#5-handle-the-oauth-redirect-consent-callback). The test pins both values.
+[README](../README.md#2-handle-the-oauth-redirect-consent-callback). The test pins both values.
 
 ## Security
 
@@ -89,5 +120,6 @@ Forking this project? Create your own Pages project, deploy `site/`, and registe
 - **Custom-scheme hijacking:** any installed app can claim `org.mifosx.openbanking://`. The planned fix is
   Android App Links / iOS Universal Links on this domain (plan: FR-052). That needs the release
   signing-certificate fingerprint and the Apple team ID, and the app's intent-filter changes with it.
-- **No secrets here:** the TPP private keys must eventually move into a Cloudflare Worker on this same
-  domain (plan: task `cloudflare-worker-bff`), not into this site.
+- **No secrets here:** the HSBC TPP identity (signing key, transport certificate, identifiers) lives in
+  the Cloudflare Worker `mifos-x-open-banking-bff` (source and docs in [`bff/`](../bff/README.md)). The
+  relay has no credentials and no server code, and cannot talk to HSBC.

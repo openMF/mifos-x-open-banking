@@ -14,10 +14,11 @@ import kotlinx.serialization.Serializable
 /**
  * A payment consent the bank has accepted but the PSU has not yet authorised.
  *
- * Nothing has moved at this point. [authorizationUrl] is where the PSU goes to approve it; [state]
- * and [nonce] are the single-use values the returning redirect is validated against.
+ * Nothing has moved at this point. [authorizationUrl] is where the PSU goes to approve it (signed by
+ * the Worker); [state] is what the returning redirect must echo, and [flowId] is the Worker's pending
+ * flow the redirect is redeemed against.
  *
- * @property status The bank's `Status` — `AWAU` while awaiting authorisation, `AUTH` once granted.
+ * @property status `AWAU` — awaiting authorisation; the bank reports `AUTH` once granted.
  */
 @Serializable
 data class StagedConsent(
@@ -25,5 +26,5 @@ data class StagedConsent(
     val status: String,
     val authorizationUrl: String,
     val state: String,
-    val nonce: String,
+    val flowId: String,
 )

@@ -18,7 +18,7 @@ sealed interface VrpAuthValidation {
     /** Authentic. [code] is the authorization code to exchange, against consent [consentId]. */
     data class Valid(val code: String, val consentId: String) : VrpAuthValidation
 
-    /** `state` or `nonce` did not match what was issued. Treat as hostile, never as a retry. */
+    /** `state` did not match, or no `id_token` came back. Treat as hostile, never as a retry. */
     data object SecurityError : VrpAuthValidation
 
     /** No VRP authorisation was in flight. Terminal: there is nothing to carry on with. */
@@ -37,15 +37,15 @@ sealed interface VrpAuthValidation {
 /**
  * The VRP authorisation leg — the hop that turns a staged consent into one the customer approved.
  *
- * Kept apart from the payment and sign-in legs because it ends differently: this exchange yields a
- * refresh token belonging to one consent, stored under that consent's id, which is what lets the
- * app pay later without sending the customer back to the bank.
+ * Kept apart from the payment and sign-in legs because it ends differently: the Worker keeps this
+ * consent's refresh token on the app's session, which is what lets the app pay later without sending
+ * the customer back to the bank.
  */
 interface VrpAuthRepository {
 
     /**
-     * Builds the URL the customer opens to approve [consentId], and records the round trip so the
-     * redirect can be checked against it.
+     * The Worker-signed URL the customer opens to approve [consentId], recorded when the consent was
+     * staged so the redirect can be checked against it.
      */
     suspend fun beginAuthorisation(consentId: String): NetworkResult<String, NetworkError>
 
@@ -62,7 +62,7 @@ interface VrpAuthRepository {
     fun validateCallback(redirectUrl: String): VrpAuthValidation
 
     /**
-     * Exchanges [code] for the consent's credentials and stores them against [consentId].
+     * Redeems [code] at the Worker, which stores the consent's credentials on the app's session.
      *
      * Separate from reading the consent back so a caller can tell the two apart: a failure here
      * means the customer approved at the bank and this app holds nothing, which is unrecoverable,
@@ -76,6 +76,6 @@ interface VrpAuthRepository {
     /** The consent currently being authorised, or null when none is. */
     fun pendingConsentId(): String?
 
-    /** Drops the authorisation in flight, leaving stored refresh tokens alone. */
+    /** Drops the authorisation in flight. */
     fun discardAuthorisation()
 }
