@@ -161,6 +161,9 @@ fun RootNavScreen(
         ConsentRedirectBus.redirects.collect { redirectUrl ->
             if (redirectUrl == lastRoutedRedirect) return@collect
             lastRoutedRedirect = redirectUrl
+            // The saved-state guard above covers a recreate only; a relaunch after Back starts with
+            // none, so the bus must also forget the redirect or it is replayed into a spent PendingAuth.
+            ConsentRedirectBus.markRouted(redirectUrl)
 
             // All three legs return through the same bus on the same registered redirect URI, so
             // they must be told apart before any of them is processed: the leg decides which session
