@@ -1,0 +1,6 @@
+.wrangler/
+node_modules/
+.dev.vars
+.dev.vars.*
+*.pem
+*.p12

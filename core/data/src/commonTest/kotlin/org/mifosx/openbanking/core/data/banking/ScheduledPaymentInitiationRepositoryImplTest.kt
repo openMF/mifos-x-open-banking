@@ -10,26 +10,22 @@
 package org.mifosx.openbanking.core.data.banking
 
 import com.russhwolf.settings.MapSettings
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import org.mifosx.openbanking.core.common.AccountScheme
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.WORKER_SESSION
 import org.mifosx.openbanking.core.data.banking.impl.ScheduledPaymentInitiationRepositoryImpl
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
 import org.mifosx.openbanking.core.data.callback.SettingsPaymentAuthSession
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.BankAccount
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ChargeBearer
@@ -42,9 +38,7 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStageTimestamps
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,22 +47,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private const val CLIENT_CREDENTIALS_TOKEN = "tpp-client-credentials-token"
-private const val PSU_TOKEN = "psu-payments-token"
 private const val CONSENT_ID = "45149"
 private const val PAYMENT_ID = "19919"
 
-private const val TOKEN_JSON =
-    """{"access_token":"$CLIENT_CREDENTIALS_TOKEN","expires_in":300,"scope":"payments","token_type":"Bearer"}"""
-private const val CONSENT_JSON =
-    """{"Data":{"ConsentId":"$CONSENT_ID","Status":"AWAU"}}"""
 private const val PAYMENT_JSON =
     """{"Data":{"DomesticScheduledPaymentId":"$PAYMENT_ID","ConsentId":"$CONSENT_ID","Status":"INCO"}}"""
 private const val INTL_PAYMENT_JSON =
     """{"Data":{"InternationalScheduledPaymentId":"19921","ConsentId":"$CONSENT_ID","Status":"INCO"}}"""
 
 /**
- * The scheduled write path at the wire, with one recurring question: **did it reach the scheduled
+ * The scheduled write path at the Worker boundary, with one recurring question: **did it reach the scheduled
  * endpoint rather than the immediate one?**
  *
  * Every routing case therefore asserts twice — that the scheduled path was called, and that the
@@ -76,8 +64,6 @@ private const val INTL_PAYMENT_JSON =
  * both, or called the wrong one and happened to get a parseable answer.
  */
 class ScheduledPaymentInitiationRepositoryImplTest {
-
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
     private data class Recorded(
         val path: String,
@@ -154,59 +140,39 @@ class ScheduledPaymentInitiationRepositoryImplTest {
 
     private val history = FakePaymentHistoryRepo()
 
-    private suspend fun repository(
+    private fun repository(
         session: PaymentAuthSession = SettingsPaymentAuthSession(MapSettings()),
         errorBody: String? = null,
         status: HttpStatusCode = HttpStatusCode.Created,
     ): ScheduledPaymentInitiationRepositoryImpl {
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                captured += Recorded(
-                    path = request.url.encodedPath,
-                    authorization = request.headers[HttpHeaders.Authorization],
-                    idempotencyKey = request.headers["x-idempotency-key"],
-                    body = request.body.toByteArray().decodeToString(),
-                )
-                val isToken = request.url.encodedPath.contains("oauth2/token")
-                val body = when {
-                    isToken -> TOKEN_JSON
-                    errorBody != null -> errorBody
-                    request.url.encodedPath.contains("scheduled-payment-consents") -> CONSENT_JSON
-                    request.url.encodedPath.contains("international-scheduled-payments") -> INTL_PAYMENT_JSON
-                    else -> PAYMENT_JSON
-                }
-                respond(body, if (isToken) HttpStatusCode.OK else status, jsonHeaders)
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = gatewayClient { request: HttpRequestData ->
+            val path = request.url.encodedPath
+            captured += Recorded(
+                path = path,
+                authorization = request.headers[HttpHeaders.Authorization],
+                idempotencyKey = request.headers["X-Idempotency-Key"],
+                body = request.body.toByteArray().decodeToString(),
+            )
+            val body = when {
+                errorBody != null -> errorBody
+                path.startsWith("/v1/consents/payment/") -> consentStartJson(CONSENT_ID)
+                path == "/v1/payments/international-scheduled" -> INTL_PAYMENT_JSON
+                else -> PAYMENT_JSON
+            }
+            respond(body, status, jsonHeaders)
         }
-        val signingKey = TestSigningKey.pem()
         return ScheduledPaymentInitiationRepositoryImpl(
-            pisp = Pisp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = signingKey,
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
-            oauth = OAuth(client, "https://sandbox.test/oauth2/token", "test-client", "test-kid", signingKey),
+            pisp = Pisp(client),
             paymentAuthSession = session,
-            signingKeyPem = signingKey,
-            clientId = "test-client",
-            kid = "test-kid",
-            bankHost = "sandbox.test",
-            authorizeHost = "authorize.sandbox.test",
-            redirectUri = "https://cb/",
             paymentHistoryRepository = history,
         )
     }
 
-    private fun sessionHoldingAPsuToken(
+    private fun authorisedSession(
         type: ConsentType = ConsentType.DomesticScheduledPayment,
     ): PaymentAuthSession =
         SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = CONSENT_ID, state = "s", nonce = "n", type = type)
-            savePaymentToken(PsuTokenResponse(accesstoken = PSU_TOKEN, tokentype = "Bearer", expiresin = 300))
+            savePending(consentId = CONSENT_ID, state = "s", flowId = "f", type = type)
         }
 
     private fun requestTo(fragment: String): Recorded =
@@ -219,63 +185,48 @@ class ScheduledPaymentInitiationRepositoryImplTest {
     fun stagingADomesticScheduledConsentReachesTheScheduledEndpointOnly() = runTest {
         repository().stagePayment(draft())
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/domestic-scheduled-payment-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-payment-consents") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/domestic-scheduled" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/domestic" })
     }
 
     @Test
     fun stagingAnInternationalScheduledConsentReachesTheScheduledEndpointOnly() = runTest {
         repository().stagePayment(intlDraft())
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/international-scheduled-payment-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/international-payment-consents") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-scheduled-payment-consents") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/international-scheduled" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/international" })
+        assertNull(captured.firstOrNull { it.path == "/v1/consents/payment/domestic-scheduled" })
     }
 
     @Test
     fun submittingReachesTheScheduledPaymentEndpointOnly() = runTest {
-        repository(sessionHoldingAPsuToken()).submitPayment(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitPayment(draft(), CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/domestic-scheduled-payments") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-payments") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/payments/domestic-scheduled" })
+        assertNull(captured.firstOrNull { it.path == "/v1/payments/domestic" })
     }
 
     @Test
     fun submittingAnInternationalScheduledPaymentUsesItsOwnEndpoint() = runTest {
-        repository(sessionHoldingAPsuToken(ConsentType.InternationalScheduledPayment))
+        repository(authorisedSession(ConsentType.InternationalScheduledPayment))
             .submitPayment(intlDraft(), CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { it.path.endsWith("/international-scheduled-payments") })
-        assertNull(captured.firstOrNull { it.path.endsWith("/domestic-scheduled-payments") })
+        assertNotNull(captured.lastOrNull { it.path == "/v1/payments/international-scheduled" })
+        assertNull(captured.firstOrNull { it.path == "/v1/payments/domestic-scheduled" })
     }
 
     // endregion
 
     // region — credentials
 
+    /** Every call presents the Worker session; the Worker holds every bank token. */
     @Test
-    fun stagingPresentsTheClientCredentialsToken() = runTest {
+    fun everyCallPresentsTheWorkerSession() = runTest {
         repository().stagePayment(draft())
+        repository(authorisedSession()).submitPayment(draft(), CONSENT_ID)
 
-        assertEquals(
-            "Bearer $CLIENT_CREDENTIALS_TOKEN",
-            requestTo("domestic-scheduled-payment-consents").authorization,
-        )
-    }
-
-    @Test
-    fun submittingPresentsThePsuToken() = runTest {
-        repository(sessionHoldingAPsuToken()).submitPayment(draft(), CONSENT_ID)
-
-        assertEquals("Bearer $PSU_TOKEN", requestTo("domestic-scheduled-payments").authorization)
-    }
-
-    @Test
-    fun submittingWithoutAPsuTokenFailsBeforeReachingTheBank() = runTest {
-        val result = repository().submitPayment(draft(), CONSENT_ID)
-
-        assertIs<NetworkResult.Error<*>>(result)
-        assertNull(captured.firstOrNull { it.path.contains("scheduled-payments") })
+        assertEquals("Session $WORKER_SESSION", requestTo("/v1/consents/payment/domestic-scheduled").authorization)
+        assertEquals("Session $WORKER_SESSION", requestTo("/v1/payments/domestic-scheduled").authorization)
     }
 
     // endregion
@@ -332,7 +283,8 @@ class ScheduledPaymentInitiationRepositoryImplTest {
 
         val staged = assertIs<NetworkResult.Success<*>>(result).data
         assertEquals(CONSENT_ID, (staged as org.mifosx.openbanking.core.model.banking.payment.StagedConsent).consentId)
-        assertTrue(staged.authorizationUrl.startsWith("https://authorize.sandbox.test"))
+        assertTrue(staged.authorizationUrl.startsWith("https://sandbox.ob.hsbc.co.uk/"))
+        assertEquals("flow-1", staged.flowId)
     }
 
     // endregion
@@ -340,8 +292,9 @@ class ScheduledPaymentInitiationRepositoryImplTest {
     // region — failures
 
     @Test
-    fun aConsentWithNoIdIsAnError() = runTest {
-        val result = repository(errorBody = """{"Data":{"Status":"AWAU"}}""").stagePayment(draft())
+    fun aWorkerAnswerWithNoConsentIdIsAnError() = runTest {
+        val result = repository(errorBody = """{"flowId":"f","authorizeUrl":"https://x/?state=s"}""")
+            .stagePayment(draft())
 
         assertIs<NetworkResult.Error<*>>(result)
     }
@@ -352,7 +305,7 @@ class ScheduledPaymentInitiationRepositoryImplTest {
 
     @Test
     fun aSubmittedPaymentIsRecordedInHistoryWithItsDate() = runTest {
-        repository(sessionHoldingAPsuToken()).submitPayment(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitPayment(draft(), CONSENT_ID)
 
         val (receipt, saved) = history.submitted.single()
         assertEquals(PAYMENT_ID, receipt.domesticPaymentId)
@@ -365,18 +318,16 @@ class ScheduledPaymentInitiationRepositoryImplTest {
      * The consent and the payment send different bodies — only the submission carries `ConsentId` —
      * and the Read/Write profile answers a repeated key over a changed body with `400 U029`.
      *
-     * Staged and submitted through separate sessions on purpose: `stagePayment` clears the session as
-     * its first act, which would discard the very PSU token the submission then needs. That is
-     * correct behaviour, not a test workaround — the real journey acquires that token at the bank,
-     * after staging.
+     * Staged and submitted through separate sessions, as in the real journey: the authorisation at
+     * the bank happens between the two.
      */
     @Test
     fun theConsentAndPaymentPostsCarryDifferentIdempotencyKeys() = runTest {
         repository().stagePayment(draft())
-        repository(sessionHoldingAPsuToken()).submitPayment(draft(), CONSENT_ID)
+        repository(authorisedSession()).submitPayment(draft(), CONSENT_ID)
 
-        assertEquals("consent-key-1", requestTo("domestic-scheduled-payment-consents").idempotencyKey)
-        assertEquals("payment-key-1", requestTo("domestic-scheduled-payments").idempotencyKey)
+        assertEquals("consent-key-1", requestTo("/v1/consents/payment/domestic-scheduled").idempotencyKey)
+        assertEquals("payment-key-1", requestTo("/v1/payments/domestic-scheduled").idempotencyKey)
     }
 
     // endregion

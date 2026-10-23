@@ -14,6 +14,8 @@ import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import org.jetbrains.compose.resources.configureWebResources
 import org.jetbrains.skiko.wasm.onWasmReady
+import org.mifosx.openbanking.core.data.callback.ConsentRedirectBus
+import org.mifosx.openbanking.core.data.callback.impl.WEB_CALLBACK_MARKER
 
 /**
  * Main function.
@@ -34,6 +36,14 @@ fun main() {
      * This function sets up the necessary dependencies for the application to function correctly.
      */
     initKoin()
+
+    // Web return leg of a bank sign-in: the relay lands here as `/#mifos-callback?code=…&state=w<i>.…`.
+    // Hand it to the same bus as Android / iOS / desktop (replay = 1 covers the navigator subscribing
+    // later), then drop the code from the address bar and history.
+    if (window.location.hash.startsWith("#$WEB_CALLBACK_MARKER")) {
+        ConsentRedirectBus.publish(window.location.href)
+        window.history.replaceState(null, "", window.location.pathname + window.location.search)
+    }
 
     // Apply stored language preference on startup
     val storedLanguage = localStorage.getItem("app_language")

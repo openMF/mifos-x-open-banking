@@ -71,9 +71,10 @@ internal fun ScheduledPaymentDraft.toScheduledInitiation(): Initiation = Initiat
     // route to paying from a card or a Global Money wallet, both of which are refused when named.
     debtorAccount = debtorAccount?.toScheduledObieDebtor(),
     creditorAccount = creditor.toScheduledObieCreditor(),
-    remittanceInformation = reference
-        ?.takeIf { it.isNotBlank() }
-        ?.let { RemittanceInformation(unstructured = listOf(it)) },
+    remittanceInformation = RemittanceInformation(
+        unstructured = reference?.takeIf { it.isNotBlank() }?.let { listOf(it) },
+        structured = listOf(creditorReference(reference, endToEndIdentification)),
+    ),
 )
 
 /** Payment context and nothing else, exactly as on the immediate domestic rail. */

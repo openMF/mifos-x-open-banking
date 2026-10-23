@@ -22,69 +22,53 @@ class SettingsVrpAuthSessionTest {
         SettingsVrpAuthSession(secureSettings = settings) to settings
 
     @Test
-    fun keepsTheFirstRefreshTokenStoredForAConsent() {
+    fun recordsTheAuthorisationInFlight() {
         val (session, _) = session()
 
-        session.saveRefreshToken("45365", "first")
-        session.saveRefreshToken("45365", "second")
+        session.saveAuthorisationInFlight(consentId = "45365", state = "s", flowId = "f", authorizeUrl = "https://a")
 
-        assertEquals("first", session.refreshToken("45365"))
+        assertEquals("45365", session.pendingConsentId())
+        assertEquals("f", session.pendingFlowId())
+        assertEquals("https://a", session.pendingAuthorizeUrl())
     }
 
     @Test
-    fun storesARefreshTokenPerConsent() {
+    fun clearingTheAuthorisationInFlightForgetsEveryPart() {
         val (session, _) = session()
-
-        session.saveRefreshToken("45365", "token-a")
-        session.saveRefreshToken("45366", "token-b")
-
-        assertEquals("token-a", session.refreshToken("45365"))
-        assertEquals("token-b", session.refreshToken("45366"))
-    }
-
-    @Test
-    fun removesOneConsentsRefreshTokenWithoutTouchingTheOthers() {
-        val (session, _) = session()
-        session.saveRefreshToken("45365", "token-a")
-        session.saveRefreshToken("45366", "token-b")
-
-        session.removeRefreshToken("45365")
-
-        assertNull(session.refreshToken("45365"))
-        assertEquals("token-b", session.refreshToken("45366"))
-    }
-
-    @Test
-    fun clearRemovesEveryRefreshTokenAndTheAuthorisationInFlight() {
-        val (session, _) = session()
-        session.saveAuthorisationInFlight(consentId = "45365", state = "s", nonce = "n")
-        session.saveRefreshToken("45365", "token-a")
-        session.saveRefreshToken("45366", "token-b")
-
-        session.clear()
-
-        assertNull(session.pendingConsentId())
-        assertNull(session.pendingNonce())
-        assertNull(session.refreshToken("45365"))
-        assertNull(session.refreshToken("45366"))
-    }
-
-    @Test
-    fun clearingTheAuthorisationInFlightKeepsRefreshTokens() {
-        val (session, _) = session()
-        session.saveAuthorisationInFlight(consentId = "45365", state = "s", nonce = "n")
-        session.saveRefreshToken("45365", "token-a")
+        session.saveAuthorisationInFlight(consentId = "45365", state = "s", flowId = "f", authorizeUrl = "https://a")
 
         session.clearAuthorisationInFlight()
 
         assertNull(session.pendingConsentId())
-        assertEquals("token-a", session.refreshToken("45365"))
+        assertNull(session.pendingFlowId())
+        assertNull(session.pendingAuthorizeUrl())
+        assertFalse(session.matchesPendingState("s"))
+    }
+
+    @Test
+    fun clearAlsoPurgesRefreshTokensAPreGatewayBuildLeftOnTheDevice() {
+        val (session, settings) = session()
+        settings.putString("vrp_refresh_token:45365", "legacy-a")
+        settings.putString("vrp_refresh_token:45366", "legacy-b")
+        settings.putString("unrelated", "kept")
+        session.saveAuthorisationInFlight(consentId = "45365", state = "s", flowId = "f", authorizeUrl = "https://a")
+
+        session.clear()
+
+        assertNull(session.pendingConsentId())
+        assertTrue(settings.keys.none { it.startsWith("vrp_refresh_token:") })
+        assertEquals("kept", settings.getStringOrNull("unrelated"))
     }
 
     @Test
     fun matchesOnlyTheStateThatWasSent() {
         val (session, _) = session()
-        session.saveAuthorisationInFlight(consentId = "45365", state = "expected", nonce = "n")
+        session.saveAuthorisationInFlight(
+            consentId = "45365",
+            state = "expected",
+            flowId = "f",
+            authorizeUrl = "https://a",
+        )
 
         assertTrue(session.matchesPendingState("expected"))
         assertFalse(session.matchesPendingState("other"))

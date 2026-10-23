@@ -62,8 +62,6 @@ import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepositoryImpl
 import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepository
 import org.mifosx.openbanking.core.data.vrp.VrpPaymentRepositoryImpl
-import org.mifosx.openbanking.core.data.vrp.VrpTokenProvider
-import org.mifosx.openbanking.core.data.vrp.VrpTokenProviderImpl
 import org.mifosx.openbanking.core.database.AppDatabase
 import org.mifosx.openbanking.core.database.di.DatabaseModule
 import org.mifosx.openbanking.core.datastore.di.DatastoreModule
@@ -80,18 +78,7 @@ val DataModule = module {
     single<NetworkMonitor> { DebouncedNetworkMonitor(NetworkMonitorProvider.install(), get()) }
     singleOf(::UserDataRepositoryImpl) bind UserDataRepository::class
 
-    single<LoginRepository> {
-        LoginRepositoryImpl(
-            oauth = get(),
-            aisp = get(),
-            signingKeyPem = get(named("hsbcSigningKey")),
-            clientId = get(named("hsbcClientId")),
-            kid = get(named("hsbcKid")),
-            bankHost = get(named("hsbcBankHost")),
-            authorizeHost = get(named("hsbcAuthorizeHost")),
-            redirectUri = get(named("hsbcRedirectUri")),
-        )
-    }
+    single<LoginRepository> { LoginRepositoryImpl(session = get()) }
 
     single<ConsentSession> { SettingsConsentSession(secureSettings = get<Settings>(named("secure"))) }
 
@@ -104,7 +91,7 @@ val DataModule = module {
 
     single<ConsentCallbackRepository> {
         ConsentCallbackRepositoryImpl(
-            oauth = get(),
+            session = get(),
             aisp = get(),
             pendingAuthStore = get(),
         )
@@ -114,66 +101,41 @@ val DataModule = module {
 
     single<VrpAuthSession> { SettingsVrpAuthSession(secureSettings = get<Settings>(named("secure"))) }
 
-    single<VrpTokenProvider> {
-        VrpTokenProviderImpl(
-            oauth = get(),
-            session = get(),
-        )
-    }
-
     single<VrpConsentRepository> {
         VrpConsentRepositoryImpl(
             vrp = get(),
-            oauth = get(),
             dao = get(),
             session = get(),
-            tokens = get(),
         )
     }
 
     single<VrpAuthRepository> {
         VrpAuthRepositoryImpl(
-            oauth = get(),
+            gateway = get(),
             session = get(),
-            signingKeyPem = get(named("hsbcSigningKey")),
-            clientId = get(named("hsbcClientId")),
-            kid = get(named("hsbcKid")),
-            bankHost = get(named("hsbcBankHost")),
-            authorizeHost = get(named("hsbcAuthorizeHost")),
-            redirectUri = get(named("hsbcRedirectUri")),
         )
     }
 
     single<VrpPaymentRepository> {
         VrpPaymentRepositoryImpl(
             vrp = get(),
-            oauth = get(),
             consentDao = get(),
             paymentDao = get(),
-            tokens = get(),
         )
     }
 
     single<PaymentAuthRepository> {
         PaymentAuthRepositoryImpl(
-            oauth = get(),
+            session = get(),
             pisp = get(),
             paymentAuthSession = get(),
-            redirectUri = get(named("hsbcRedirectUri")),
         )
     }
 
     single<SinglePaymentInitiationRepository> {
         SinglePaymentInitiationRepositoryImpl(
             pisp = get(),
-            oauth = get(),
             paymentAuthSession = get(),
-            signingKeyPem = get(named("hsbcSigningKey")),
-            clientId = get(named("hsbcClientId")),
-            kid = get(named("hsbcKid")),
-            bankHost = get(named("hsbcBankHost")),
-            authorizeHost = get(named("hsbcAuthorizeHost")),
-            redirectUri = get(named("hsbcRedirectUri")),
             paymentHistoryRepository = get(),
         )
     }
@@ -181,14 +143,7 @@ val DataModule = module {
     single<ScheduledPaymentInitiationRepository> {
         ScheduledPaymentInitiationRepositoryImpl(
             pisp = get(),
-            oauth = get(),
             paymentAuthSession = get(),
-            signingKeyPem = get(named("hsbcSigningKey")),
-            clientId = get(named("hsbcClientId")),
-            kid = get(named("hsbcKid")),
-            bankHost = get(named("hsbcBankHost")),
-            authorizeHost = get(named("hsbcAuthorizeHost")),
-            redirectUri = get(named("hsbcRedirectUri")),
             paymentHistoryRepository = get(),
         )
     }
@@ -196,14 +151,7 @@ val DataModule = module {
     single<StandingOrderInitiationRepository> {
         StandingOrderInitiationRepositoryImpl(
             pisp = get(),
-            oauth = get(),
             paymentAuthSession = get(),
-            signingKeyPem = get(named("hsbcSigningKey")),
-            clientId = get(named("hsbcClientId")),
-            kid = get(named("hsbcKid")),
-            bankHost = get(named("hsbcBankHost")),
-            authorizeHost = get(named("hsbcAuthorizeHost")),
-            redirectUri = get(named("hsbcRedirectUri")),
             paymentHistoryRepository = get(),
         )
     }
@@ -211,7 +159,6 @@ val DataModule = module {
     single<PaymentStatusRepository> {
         PaymentStatusRepositoryImpl(
             pisp = get(),
-            oauth = get(),
             paymentHistoryRepository = get(),
         )
     }
@@ -231,7 +178,7 @@ val DataModule = module {
 
     single<AppLogout> {
         AppLogoutImpl(
-            consentRevokeRepository = get(),
+            gatewaySession = get(),
             consentSession = get(),
             paymentAuthSession = get(),
             userDataRepository = get(),

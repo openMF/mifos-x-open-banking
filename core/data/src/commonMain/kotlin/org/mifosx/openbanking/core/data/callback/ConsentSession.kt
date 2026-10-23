@@ -10,38 +10,32 @@
 package org.mifosx.openbanking.core.data.callback
 
 import com.russhwolf.settings.Settings
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.SESSION_KEY
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 /**
- * Whether the PSU has a usable HSBC session, and the tokens behind it.
+ * Whether the PSU has a usable Worker session — the opaque id `/v1/auth/complete` returned — and the
+ * consent behind it.
  *
- * In an AISP app "signed in" is not a flag someone sets — it is whether an authorised consent
- * produced PSU tokens. Deriving it from the tokens keeps the two from drifting: a stored boolean can
- * claim the user is authenticated when no consent exists, which is exactly what shipped
- * (`UserData.DEFAULT.isAuthenticated = true`, only ever written `false` again by `clearUserData()`).
+ * In an AISP app "signed in" is not a flag someone sets: it is whether an authorised consent produced
+ * a session. Deriving it from the stored session keeps the two from drifting.
  *
- * Also owns the storage key, so the callback and the navigator cannot disagree about where the
- * session lives.
+ * The app holds no bank token at all: the Worker keeps the PSU tokens and refreshes them. The session
+ * id lives under [SESSION_KEY], the one key `GatewayHttpClient` reads on every request, so there is
+ * exactly one session store and nothing for a second copy to disagree with.
  */
 interface ConsentSession {
     /**
-     * True when a completed consent has left PSU tokens behind.
-     *
-     * Read synchronously — the app-open route is derived from it, and an expired consent surfaces
-     * server-side (a 401/403 on the next data call drives the feature's own error state). There is no
-     * reactive variant on purpose: sign-in and sign-out both navigate explicitly (the consent callback
-     * to Home, logout to onboarding), so nothing needs to observe the session as it changes.
+     * True when a completed sign-in left a session behind. Read synchronously — the app-open route is
+     * derived from it; an expired session surfaces as a 401 on the next data call.
      */
     fun isActive(): Boolean
 
-    fun tokens(): PsuTokenResponse?
+    /** Persists the opaque Worker session — this write is what signs the PSU in. */
+    fun save(session: String)
 
-    fun save(tokens: PsuTokenResponse)
-
-    /** Persists the consent's id and its ISO-8601 expiry alongside the tokens. */
+    /** Persists the consent's id and its ISO-8601 expiry alongside the session. */
     fun saveConsentMeta(consentId: String, expirationDateTime: String)
 
     /** The stored consent id, or null when none was saved. */
@@ -51,11 +45,7 @@ interface ConsentSession {
     @OptIn(ExperimentalTime::class)
     fun consentExpiration(): Instant?
 
-    /**
-     * Drops the credentials — tokens, current consent id, expiry.
-     *
-     * This is the revoke and start-over path: the session must go inactive.
-     */
+    /** Drops the session, current consent id and expiry — the revoke and start-over path. */
     fun clear()
 
     /** An explicit sign-out that should leave nothing behind. */
@@ -66,17 +56,10 @@ class SettingsConsentSession(
     private val secureSettings: Settings,
 ) : ConsentSession {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    override fun isActive(): Boolean = !secureSettings.getStringOrNull(SESSION_KEY).isNullOrBlank()
 
-    override fun isActive(): Boolean = tokens()?.accesstoken?.isNotBlank() == true
-
-    override fun tokens(): PsuTokenResponse? {
-        val raw = secureSettings.getStringOrNull(KEY_TOKENS) ?: return null
-        return runCatching { json.decodeFromString(PsuTokenResponse.serializer(), raw) }.getOrNull()
-    }
-
-    override fun save(tokens: PsuTokenResponse) {
-        secureSettings.putString(KEY_TOKENS, json.encodeToString(PsuTokenResponse.serializer(), tokens))
+    override fun save(session: String) {
+        secureSettings.putString(SESSION_KEY, session)
     }
 
     override fun saveConsentMeta(consentId: String, expirationDateTime: String) {
@@ -92,7 +75,7 @@ class SettingsConsentSession(
             ?.let { runCatching { Instant.parse(it) }.getOrNull() }
 
     override fun clear() {
-        secureSettings.remove(KEY_TOKENS)
+        secureSettings.remove(SESSION_KEY)
         secureSettings.remove(KEY_CONSENT_ID)
         secureSettings.remove(KEY_CONSENT_EXPIRATION)
     }
@@ -102,7 +85,6 @@ class SettingsConsentSession(
     }
 
     private companion object {
-        const val KEY_TOKENS = "hsbc_tokens"
         const val KEY_CONSENT_ID = "hsbc_consent_id"
         const val KEY_CONSENT_EXPIRATION = "hsbc_consent_expiration"
     }

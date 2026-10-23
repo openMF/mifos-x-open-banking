@@ -29,20 +29,20 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `save then consume round trips all three values`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
 
         val pending = store.consume()
 
         assertNotNull(pending)
         assertEquals("st-1", pending.state)
-        assertEquals("no-1", pending.nonce)
+        assertEquals("fl-1", pending.flowId)
         assertEquals("cn-1", pending.consentId)
     }
 
     @Test
     fun `consume is single use so a redirect cannot be replayed`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
 
         assertNotNull(store.consume())
         assertNull(store.consume())
@@ -56,7 +56,7 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `consume deletes every key including the timestamp`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
 
         store.consume()
 
@@ -66,7 +66,7 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `entry is accepted at the ttl boundary`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
         now += SettingsPendingAuthStore.TTL_SECONDS
 
         assertNotNull(store.consume())
@@ -75,7 +75,7 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `entry is refused one second past the ttl`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
         now += SettingsPendingAuthStore.TTL_SECONDS + 1
 
         assertNull(store.consume())
@@ -84,7 +84,7 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `an expired entry is still purged rather than left behind`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
         now += SettingsPendingAuthStore.TTL_SECONDS + 1
 
         store.consume()
@@ -95,7 +95,7 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `clear removes a pending auth without consuming it`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
 
         store.clear()
 
@@ -113,22 +113,22 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `save overwrites a previous pending auth`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
-        store.save(state = "st-2", nonce = "no-2", consentId = "cn-2")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
+        store.save(state = "st-2", flowId = "fl-2", consentId = "cn-2")
 
         val pending = store.consume()
 
         assertNotNull(pending)
         assertEquals("st-2", pending.state)
-        assertEquals("no-2", pending.nonce)
+        assertEquals("fl-2", pending.flowId)
         assertEquals("cn-2", pending.consentId)
     }
 
     @Test
     fun `a partially written entry is refused rather than half honoured`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
-        settings.remove("pending_auth_nonce")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
+        settings.remove("pending_auth_flow_id")
 
         assertNull(store.consume())
     }
@@ -136,14 +136,14 @@ class SettingsPendingAuthStoreTest {
     @Test
     fun `an entry with no timestamp is refused because its age cannot be established`() {
         val store = store()
-        store.save(state = "st-1", nonce = "no-1", consentId = "cn-1")
+        store.save(state = "st-1", flowId = "fl-1", consentId = "cn-1")
         settings.remove("pending_auth_created_at")
 
         assertNull(store.consume())
     }
 
     @Test
-    fun `ttl matches the hsbc request object lifetime`() {
-        assertEquals(1200L, SettingsPendingAuthStore.TTL_SECONDS)
+    fun `ttl matches the worker pending flow lifetime`() {
+        assertEquals(600L, SettingsPendingAuthStore.TTL_SECONDS)
     }
 }

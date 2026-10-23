@@ -9,13 +9,16 @@
  */
 package org.mifosx.openbanking.core.data.user
 
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
-import org.mifosx.openbanking.core.data.banking.ConsentRevokeRepository
 import org.mifosx.openbanking.core.data.callback.ConsentSession
 import org.mifosx.openbanking.core.data.callback.PaymentAuthSession
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.data.user.impl.AppLogoutImpl
 import org.mifosx.openbanking.core.data.vrp.VrpAuthSession
 import org.mifosx.openbanking.core.data.vrp.VrpConsentRepository
@@ -35,7 +38,7 @@ import org.mifosx.openbanking.core.model.user.ThemeBrand
 import org.mifosx.openbanking.core.model.user.UserData
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpConsentDraft
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.api.Session
 import org.mifosx.openbanking.core.store.infra.StoreCacheManager
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -48,13 +51,14 @@ import kotlin.time.Instant
 
 /**
  * Pins [AppLogoutImpl]'s contract: the sequence always completes and always ends signed-out, whether
- * or not there is a consent to revoke and whether or not the revoke succeeds.
+ * or not there is a consent to revoke and whether or not the Worker answers. Every bank-side step
+ * runs on the still-live session, so all of them happen before `/v1/session/logout`.
  */
 @OptIn(ExperimentalTime::class)
 class AppLogoutImplTest {
 
     private fun logout(
-        revoke: RecordingConsentRevokeRepository = RecordingConsentRevokeRepository(),
+        revoke: RecordingWorker = RecordingWorker(),
         session: RecordingConsentSession = RecordingConsentSession(consentId = "cn-1"),
         userData: RecordingUserDataRepository = RecordingUserDataRepository(),
         cache: RecordingStoreCacheManager = RecordingStoreCacheManager(),
@@ -64,7 +68,7 @@ class AppLogoutImplTest {
         vrpPaymentDao: FakeVrpPaymentDao = FakeVrpPaymentDao(),
         vrpAuthSession: RecordingVrpAuthSession = RecordingVrpAuthSession(),
     ) = AppLogoutImpl(
-        consentRevokeRepository = revoke,
+        gatewaySession = revoke.session,
         consentSession = session,
         paymentAuthSession = paymentAuth,
         userDataRepository = userData,
@@ -148,39 +152,37 @@ class AppLogoutImplTest {
 
     @Test
     fun theHappyPathRevokesForgetsAndClearsEverything() = runTest {
-        val revoke = RecordingConsentRevokeRepository()
+        val revoke = RecordingWorker()
         val session = RecordingConsentSession(consentId = "cn-1")
         val userData = RecordingUserDataRepository()
         val cache = RecordingStoreCacheManager()
 
         logout(revoke, session, userData, cache).logOut()
 
-        assertEquals("cn-1", revoke.revokedConsentId)
+        assertEquals(listOf("/v1/session/logout?revoke=true"), revoke.calls)
         assertTrue(session.forgotAll)
         assertTrue(userData.cleared)
         assertTrue(cache.clearedAll)
     }
 
     @Test
-    fun noConsentIdSkipsTheRevokeButStillClears() = runTest {
-        val revoke = RecordingConsentRevokeRepository()
+    fun noConsentIdEndsTheSessionWithoutRevokingAndStillClears() = runTest {
+        val revoke = RecordingWorker()
         val session = RecordingConsentSession(consentId = null)
         val userData = RecordingUserDataRepository()
         val cache = RecordingStoreCacheManager()
 
         logout(revoke, session, userData, cache).logOut()
 
-        assertEquals(0, revoke.callCount)
+        assertEquals(listOf("/v1/session/logout"), revoke.calls)
         assertTrue(session.forgotAll)
         assertTrue(userData.cleared)
         assertTrue(cache.clearedAll)
     }
 
     @Test
-    fun aFailedRevokeDoesNotStopTheLocalTeardown() = runTest {
-        val revoke = RecordingConsentRevokeRepository(
-            result = NetworkResult.Error(NetworkError.Network(IllegalStateException("offline"))),
-        )
+    fun aFailedLogoutDoesNotStopTheLocalTeardown() = runTest {
+        val revoke = RecordingWorker(status = HttpStatusCode.BadGateway)
         val session = RecordingConsentSession(consentId = "cn-1")
         val userData = RecordingUserDataRepository()
         val cache = RecordingStoreCacheManager()
@@ -193,8 +195,8 @@ class AppLogoutImplTest {
     }
 
     @Test
-    fun aThrowingRevokeIsSwallowedAndTeardownStillRuns() = runTest {
-        val revoke = RecordingConsentRevokeRepository(throwable = IllegalStateException("boom"))
+    fun anUnreachableWorkerIsSwallowedAndTeardownStillRuns() = runTest {
+        val revoke = RecordingWorker(throwable = IllegalStateException("offline"))
         val session = RecordingConsentSession(consentId = "cn-1")
         val userData = RecordingUserDataRepository()
         val cache = RecordingStoreCacheManager()
@@ -204,6 +206,31 @@ class AppLogoutImplTest {
         assertTrue(session.forgotAll)
         assertTrue(userData.cleared)
         assertTrue(cache.clearedAll)
+    }
+
+    @Test
+    fun aSignedOutDeviceSendsNoLogout() = runTest {
+        val revoke = RecordingWorker()
+
+        logout(revoke = revoke, session = RecordingConsentSession(consentId = "cn-1", tokenPresent = false)).logOut()
+
+        assertTrue(revoke.calls.isEmpty())
+    }
+
+    /** A revoke sent after the Worker session is wiped would carry no session and be refused. */
+    @Test
+    fun standingAuthoritiesAreRevokedBeforeTheWorkerSessionEnds() = runTest {
+        val order = mutableListOf<String>()
+        val revoke = RecordingWorker(order = order)
+        val consents = RecordingVrpConsentRepository(order)
+
+        logout(
+            revoke = revoke,
+            vrpConsents = consents,
+            vrpConsentDao = FakeVrpConsentDao(listOf(vrpConsentRow("45411"))),
+        ).logOut()
+
+        assertEquals(listOf("vrp:45411", "/v1/session/logout?revoke=true"), order)
     }
 
     @Test
@@ -214,7 +241,7 @@ class AppLogoutImplTest {
 
         logout(session = session, userData = userData).logOut()
 
-        // The root navigator reads isActive() when userData emits, so the tokens must be gone first.
+        // The root navigator reads isActive() when userData emits, so the session must be gone first.
         assertEquals(listOf("forget", "clear"), order)
     }
 
@@ -231,21 +258,22 @@ class AppLogoutImplTest {
 
 // ── Recording doubles (test source sets do not cross Gradle modules) ─────────────────────────────
 
-private class RecordingConsentRevokeRepository(
-    private val result: NetworkResult<Unit, NetworkError> = NetworkResult.Success(Unit),
-    private val throwable: Throwable? = null,
-) : ConsentRevokeRepository {
-    var revokedConsentId: String? = null
-        private set
-    var callCount: Int = 0
-        private set
-
-    override suspend fun revokeConsent(consentId: String): NetworkResult<Unit, NetworkError> {
-        callCount++
-        revokedConsentId = consentId
-        throwable?.let { throw it }
-        return result
-    }
+/** The Worker over a mock engine; records each logout call (path + query) in order. */
+private class RecordingWorker(
+    status: HttpStatusCode = HttpStatusCode.NoContent,
+    throwable: Throwable? = null,
+    val order: MutableList<String> = mutableListOf(),
+) {
+    val calls = mutableListOf<String>()
+    val session = Session(
+        gatewayClient { req ->
+            val call = req.url.encodedPath + (req.url.encodedQuery.takeIf { it.isNotEmpty() }?.let { "?$it" } ?: "")
+            calls += call
+            order += call
+            throwable?.let { throw it }
+            respond("", status, jsonHeaders)
+        },
+    )
 }
 
 @OptIn(ExperimentalTime::class)
@@ -258,8 +286,7 @@ private class RecordingConsentSession(
         private set
 
     override fun isActive(): Boolean = tokenPresent
-    override fun tokens(): PsuTokenResponse? = null
-    override fun save(tokens: PsuTokenResponse) = Unit
+    override fun save(session: String) = Unit
     override fun saveConsentMeta(consentId: String, expirationDateTime: String) = Unit
     override fun consentId(): String? = consentId
     override fun consentExpiration(): Instant? = null
@@ -322,12 +349,10 @@ private class RecordingPaymentAuthSession : PaymentAuthSession {
     var cleared: Boolean = false
         private set
 
-    override fun savePending(consentId: String, state: String, nonce: String, type: ConsentType) = Unit
+    override fun savePending(consentId: String, state: String, flowId: String, type: ConsentType) = Unit
     override fun pendingConsentId(): String? = null
     override fun matchesPendingState(state: String?): Boolean = false
-    override fun pendingNonce(): String? = null
-    override fun paymentToken(): PsuTokenResponse? = null
-    override fun savePaymentToken(tokens: PsuTokenResponse) = Unit
+    override fun pendingFlowId(): String? = null
     override fun saveDraft(draft: PaymentDraft) = Unit
     override fun draft(): PaymentDraft? = null
     override fun saveScheduledDraft(draft: ScheduledPaymentDraft) = Unit
@@ -344,7 +369,9 @@ private class RecordingPaymentAuthSession : PaymentAuthSession {
     }
 }
 
-private class RecordingVrpConsentRepository : VrpConsentRepository {
+private class RecordingVrpConsentRepository(
+    private val order: MutableList<String> = mutableListOf(),
+) : VrpConsentRepository {
     val revoked = mutableListOf<String>()
 
     override fun observeActive(): Flow<List<VrpConsent>> = MutableStateFlow(emptyList())
@@ -358,6 +385,7 @@ private class RecordingVrpConsentRepository : VrpConsentRepository {
 
     override suspend fun revoke(consentId: String): NetworkResult<Unit, NetworkError> {
         revoked += consentId
+        order += "vrp:$consentId"
         return NetworkResult.Success(Unit)
     }
 }
@@ -418,14 +446,17 @@ private class RecordingVrpAuthSession : VrpAuthSession {
     var cleared = false
         private set
 
-    override fun saveAuthorisationInFlight(consentId: String, state: String, nonce: String) = Unit
+    override fun saveAuthorisationInFlight(
+        consentId: String,
+        state: String,
+        flowId: String,
+        authorizeUrl: String,
+    ) = Unit
     override fun pendingConsentId(): String? = null
-    override fun pendingNonce(): String? = null
+    override fun pendingFlowId(): String? = null
+    override fun pendingAuthorizeUrl(): String? = null
     override fun matchesPendingState(state: String?): Boolean = false
     override fun clearAuthorisationInFlight() = Unit
-    override fun saveRefreshToken(consentId: String, refreshToken: String) = Unit
-    override fun refreshToken(consentId: String): String? = null
-    override fun removeRefreshToken(consentId: String) = Unit
 
     override fun clear() {
         cleared = true

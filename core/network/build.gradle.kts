@@ -29,124 +29,62 @@ android {
     }
 }
 
-// ── Generate HsbcConfig.kt (our own reader, not BuildKonfig) ──
+// ─── Bank gateway (Cloudflare Worker) config generation ─────────────────────────────────────────
+// No secrets here. Every HSBC credential (signing key, transport certificate, client id, kid,
+// software statement, signing issuer) lives in the Worker's vault, never in local.properties and
+// never in a built artefact. The app is a plain HTTPS client of the Worker.
 //
-// This task is TOTAL: it never fails. A checkout with no secrets at all (CI, a fresh
-// clone) still generates a compilable HsbcConfig with blank credentials, so the build
-// is green everywhere and the missing-credential error surfaces at RUNTIME, at the
-// point the HSBC client is actually constructed (see hsbcSandboxHttpClient) rather
-// than breaking compilation for everyone.
+// local.properties (all public, none secret):
+//   GATEWAY_BASE_URL=https://mifos-x-open-banking-gateway.<account>.workers.dev
+//   PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER=<Google Cloud project number>   # Android attestation
 //
-// Each key resolves in priority order:
-//     environment variable  →  local.properties  →  gradle property  →  default
-// so real values can be injected on CI purely through env vars, with no code change.
-//
-// Every key defaults to "". A missing local.properties — or a key missing/blank within
-// it — yields a blank constant instead of a build failure. Nothing is ever hardcoded
-// here: this file is tracked, so a real value would be a committed secret.
-//
-// The output lives under `build/` (not the project dir) so source-scanning tools like
-// spotless and detekt do not pick the generated file up. The Kotlin source set below
-// registers the TASK PROVIDER, so compilation depends on generation and CI / fresh
-// clones need no manual step. The task also regenerates on EVERY build (see
-// upToDateWhen below) rather than being skipped as UP-TO-DATE.
-val hsbcConfigOutputDir = layout.buildDirectory.dir("generated/hsbcconfig/commonMain/kotlin")
+// Each key resolves env var → local.properties → gradle property → default, so CI can inject it.
+// The output lives under build/ so spotless/detekt never scan it, and the source set registers the
+// TASK PROVIDER so compilation depends on generation.
+val gatewayConfigOutputDir = layout.buildDirectory.dir("generated/gatewayconfig/commonMain/kotlin")
 
-// Read local.properties once, at configuration time. Absent file → empty properties.
-val hsbcLocalProperties = Properties().apply {
-    val localPropsFile = rootProject.file("local.properties")
-    if (localPropsFile.exists()) {
-        localPropsFile.inputStream().use { load(it) }
-    }
+val gatewayLocalProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
-// Every key falls back to a blank constant — never hardcode a real value into this file.
-val hsbcConfigKeys = mapOf(
-    "HSBC_CLIENT_ID" to "",
-    "HSBC_KID" to "",
-    "HSBC_SOFTWARE_STATEMENT" to "",
-    "HSBC_BANK_HOST" to "",
-    "HSBC_AUTHORIZE_HOST" to "",
-    "HSBC_REDIRECT_URI" to "",
-    "HSBC_TRANSPORT_P12_PASSWORD" to "",
-    "HSBC_SIGNING_ISSUER" to "",
+val gatewayConfigKeys = mapOf(
+    "GATEWAY_BASE_URL" to "https://mifos-x-open-banking-gateway.mifos-x-open-banking.workers.dev",
+    // mifos-mobile-apps: the Cloud project this app is registered in (cmp-android/google-services.json project_number).
+    "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" to "728434912738",
 )
 
-// env var → local.properties → gradle property → default. Blank is treated as absent
-// so an empty env var on CI falls through instead of blanking a good local value.
-fun resolveHsbcValue(key: String, default: String): String =
+fun resolveGatewayValue(key: String, default: String): String =
     providers.environmentVariable(key).orNull?.takeIf { it.isNotBlank() }
-        ?: hsbcLocalProperties.getProperty(key)?.takeIf { it.isNotBlank() }
+        ?: gatewayLocalProperties.getProperty(key)?.takeIf { it.isNotBlank() }
         ?: providers.gradleProperty(key).orNull?.takeIf { it.isNotBlank() }
         ?: default
 
-val generateHsbcConfig = tasks.register("generateHsbcConfig") {
-    val outputDir = hsbcConfigOutputDir
-    // Resolve at configuration time into plain Strings, so `doLast` never touches
-    // `project` / `providers` — keeps the task configuration-cache safe.
-    val resolved: Map<String, String> = hsbcConfigKeys.mapValues { (key, default) ->
-        resolveHsbcValue(key, default)
-    }
-    // Declared for correctness (and build-cache accuracy), though the task always runs.
-    resolved.forEach { (key, value) -> inputs.property(key, value) }
+val generateGatewayConfig = tasks.register("generateGatewayConfig") {
+    val outputDir = gatewayConfigOutputDir
+    // Resolved at configuration time into plain Strings so doLast stays configuration-cache safe.
+    val resolved: Map<String, String> = gatewayConfigKeys.mapValues { (k, d) -> resolveGatewayValue(k, d) }
+    resolved.forEach { (k, v) -> inputs.property(k, v) }
     outputs.dir(outputDir)
-    // Regenerate on every build command rather than being skipped as UP-TO-DATE, so the
-    // generated constants always reflect the current local.properties / env. Cheap: when
-    // the emitted bytes are unchanged, Kotlin compilation still stays UP-TO-DATE because
-    // Gradle hashes file content, not timestamps.
     outputs.upToDateWhen { false }
     doLast {
-        // Escape for safe embedding in a Kotlin "..." literal: backslash first, then $ (template), then quote.
-        fun value(key: String): String =
-            resolved.getValue(key).trim()
-                .replace("\\", "\\\\")
-                .replace("\$", "\\\$")
-                .replace("\"", "\\\"")
-
+        fun v(key: String): String = resolved.getValue(key).trim()
+            .replace("\\", "\\\\")
+            .replace("\$", "\\\$")
+            .replace("\"", "\\\"")
         val pkgDir = outputDir.get().asFile.resolve("org/mifosx/openbanking/core/network/config")
         pkgDir.mkdirs()
-        pkgDir.resolve("HsbcConfig.kt").writeText(
+        pkgDir.resolve("GatewayConfig.kt").writeText(
             """
             |/*
-            | * GENERATED by the :core:network `generateHsbcConfig` task, which resolves each key
-            | * from: environment variable → local.properties → gradle property → default.
-            | * Credentials with no configured value are generated blank, so a checkout with no
-            | * secrets still compiles; the failure surfaces at runtime instead.
+            | * GENERATED by the :core:network `generateGatewayConfig` task. Public configuration only.
             | * DO NOT EDIT — changes will be overwritten on the next build.
             | */
             |package org.mifosx.openbanking.core.network.config
             |
-            |internal object HsbcConfig {
-            |    const val CLIENT_ID: String = "${value("HSBC_CLIENT_ID")}"
-            |    const val KID: String = "${value("HSBC_KID")}"
-            |    const val SOFTWARE_STATEMENT: String = "${value("HSBC_SOFTWARE_STATEMENT")}"
-            |    const val BANK_HOST: String = "${value("HSBC_BANK_HOST")}"
-            |
-            |    /**
-            |     * The OIDC authorization host — DISTINCT from [BANK_HOST]. Token + consent calls go to
-            |     * the mTLS host (`secure.sandbox.ob.hsbc.co.uk`); the front-channel authorize URL the
-            |     * browser opens is served from `sandbox.ob.hsbc.co.uk`. Sending the browser to the mTLS
-            |     * host (or, as the pre-fix bug did, to a host-less relative URL that resolves to
-            |     * `http://localhost`) means the authorization page never loads.
-            |     */
-            |    const val AUTHORIZE_HOST: String = "${value("HSBC_AUTHORIZE_HOST")}"
-            |    const val REDIRECT_URI: String = "${value("HSBC_REDIRECT_URI")}"
-            |
-            |    /**
-            |     * The PKCS#12 export passphrase protecting [org.mifosx.openbanking.core.network.certs
-            |     * .CertPaths.TRANSPORT_P12]. Required, and required to be non-empty: Android's
-            |     * BouncyCastle refuses to run PBKDF2 on a zero-length password for a PBES2-encrypted
-            |     * bundle (`IllegalArgumentException: password empty`), while the JVM accepts it — so an
-            |     * empty passphrase builds and passes on desktop, then crashes every Android launch.
-            |     */
-            |    const val TRANSPORT_P12_PASSWORD: String = "${value("HSBC_TRANSPORT_P12_PASSWORD")}"
-            |
-            |    /**
-            |     * The `http://openbanking.org.uk/iss` claim carried in the detached JWS header on
-            |     * PISP writes: the organisation and software-statement pair the signing certificate
-            |     * was issued to. HSBC verifies it against the certificate.
-            |     */
-            |    const val SIGNING_ISSUER: String = "${value("HSBC_SIGNING_ISSUER")}"
+            |object GatewayConfig {
+            |    const val GATEWAY_BASE_URL: String = "${v("GATEWAY_BASE_URL")}"
+            |    const val PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER: String = "${v("PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER")}"
             |}
             |
             """.trimMargin(),
@@ -157,9 +95,8 @@ val generateHsbcConfig = tasks.register("generateHsbcConfig") {
 kotlin {
     sourceSets {
         commonMain {
-            // The TaskProvider, not a plain path: this is what makes Kotlin compilation
-            // depend on generateHsbcConfig, so a fresh clone / CI needs no manual step.
-            kotlin.srcDir(generateHsbcConfig)
+            // The TaskProvider, not a plain path: compilation depends on generateGatewayConfig.
+            kotlin.srcDir(generateGatewayConfig)
             dependencies {
                 api(projects.core.common)
                 api(projects.core.model)
@@ -181,9 +118,6 @@ kotlin {
 
                 implementation(libs.squareup.okio)
 
-                implementation(libs.cryptography.core)
-                implementation(libs.cryptography.provider.optimal)
-
                 implementation(libs.multiplatform.settings)
                 implementation(libs.multiplatform.settings.serialization)
                 implementation(libs.multiplatform.settings.coroutines)
@@ -198,27 +132,14 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.multiplatform.settings.test)
-
-            // TestSigningKey generates a throwaway PS256 key per run, so no signing material is
-            // committed. Declared explicitly rather than leaning on the test compilation's
-            // association with commonMain.
-            implementation(libs.cryptography.core)
         }
 
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
 
-            // FAPI signs the private_key_jwt client assertion with PS256 (RSA-PSS). Android's own JCA
-            // providers expose PSS only as `SHA256withRSA/PSS` (AndroidOpenSSL) and never register the
-            // standard name `RSASSA-PSS`, which is what the JDK cryptography provider asks for — so
-            // signPs256 dies with NoSuchAlgorithmException on device while passing on desktop. This
-            // artifact is a drop-in with no API surface: it contributes a ServiceLoader
-            // `DefaultJdkSecurityProvider` that hands BouncyCastle to the JDK provider, which does
-            // register RSASSA-PSS. It does NOT touch the global JCE provider list, so mTLS keeps
-            // loading its PKCS#12 through Android's own BouncyCastle. Upstream documents this exact
-            // case: RSA-PSS is "Not available on Android; use BouncyCastle".
-            implementation(libs.cryptography.provider.jdk.bc)
+            // Play Integrity standard API — the X-Attestation token for the Worker's attest rows.
+            implementation(libs.integrity)
         }
 
         androidUnitTest.dependencies {
@@ -228,12 +149,6 @@ kotlin {
 
         desktopMain.dependencies {
             implementation(libs.ktor.client.okhttp)
-        }
-
-        desktopTest.dependencies {
-            // HeldCertificate mints a throwaway self-signed mTLS identity per run, so no PKCS#12 is
-            // committed. okhttp itself is already here transitively via ktor-client-okhttp.
-            implementation(libs.okhttp.tls)
         }
 
         nativeMain.dependencies {

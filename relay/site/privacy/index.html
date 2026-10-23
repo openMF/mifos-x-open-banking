@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Privacy policy for the Mifos X Open Banking consent relay website.">
+  <meta name="theme-color" content="#125eaa">
+  <title>Privacy policy | Mifos X Open Banking relay</title>
+  <link rel="icon" href="../assets/mifos-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../site.css">
+</head>
+<body>
+<div class="band" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="../" aria-label="Mifos X Open Banking consent relay, home">
+      <img class="logo-light" src="../assets/mifos-logo.png" alt="Mifos" width="99" height="34">
+      <img class="logo-dark" src="../assets/mifos-logo-dark.png" alt="Mifos" width="99" height="34">
+      <span class="product">Open Banking relay</span>
+    </a>
+    <nav aria-label="Site">
+      <a href="./" aria-current="page">Privacy</a>
+      <a href="../terms/">Terms</a>
+      <a href="https://github.com/openMF/mifos-x-open-banking/tree/dev/relay">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <h1>Privacy policy</h1>
+  <p class="updated">Last updated 22 October 2026</p>
+
+  <div class="note">
+    <p><strong>In short:</strong> this website collects nothing about you. Your bank's answer stays in your browser and goes only to the Mifos X Open Banking app on your own device. Our hosting provider, Cloudflare, sees the ordinary technical details of each visit, never the bank's answer.</p>
+  </div>
+
+  <nav class="toc" aria-labelledby="toc">
+    <h2 id="toc">On this page</h2>
+    <ol>
+      <li><a href="#who">Who we are</a></li>
+      <li><a href="#scope">What this policy covers</a></li>
+      <li><a href="#answer">Your bank's answer</a></li>
+      <li><a href="#collect">What we collect</a></li>
+      <li><a href="#hosting">Hosting by Cloudflare</a></li>
+      <li><a href="#others">Your bank and the app</a></li>
+      <li><a href="#rights">Your rights</a></li>
+      <li><a href="#changes">Changes to this policy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ol>
+  </nav>
+
+  <section id="who" aria-labelledby="who-h">
+    <h2 id="who-h">1. Who we are</h2>
+    <p>This website, <code>mifos-x-open-banking-relay.pages.dev</code>, is run by the <a href="https://mifos.org">Mifos Initiative</a>, a Washington State non-profit corporation, as part of Mifos X Open Banking, an open-source reference app. In this policy, "we" means the Mifos Initiative.</p>
+  </section>
+
+  <section id="scope" aria-labelledby="scope-h">
+    <h2 id="scope-h">2. What this policy covers</h2>
+    <p>This policy covers this website only: the home page, these legal pages and the <code>/callback/</code> page your bank sends you to. It doesn't cover your bank's website or the Mifos X Open Banking app, which are described in <a href="#others">section 6</a>.</p>
+    <p>The Mifos Initiative's general <a href="https://mifos.org/privacy-policy/">privacy notice</a> covers mifos.org and our other services, including the cookies and analytics used there. None of those are used on this website. For this website, this policy applies wherever the two differ.</p>
+  </section>
+
+  <section id="answer" aria-labelledby="answer-h">
+    <h2 id="answer-h">3. Your bank's answer</h2>
+    <p>When you approve access or a payment, your bank redirects your browser to <code>/callback/</code> on this site. Its answer (a one-time authorisation code, a signed identity token and a reference value the app created) is placed after the <code>#</code> in the address.</p>
+    <ul>
+      <li><strong>It never reaches a server.</strong> Browsers don't send the part of an address after <code>#</code> when they request a page, so neither we nor Cloudflare receive it.</li>
+      <li><strong>It is read in your browser only.</strong> A small script on the page reads it and hands it to the app on your device.</li>
+      <li><strong>On a computer</strong>, the page sends it to the app over a connection to <code>127.0.0.1</code>, an address that never leaves your own machine. Your browser may ask your permission first.</li>
+      <li><strong>On a phone</strong>, the page opens the app through its own link, <code>org.mifosx.openbanking://callback</code>.</li>
+      <li><strong>It is cleared at once.</strong> The page removes the answer from the address bar and your browser history as soon as it has been read.</li>
+    </ul>
+    <p>The authorisation code can be used only once, only by the registered app, and only for a short time.</p>
+  </section>
+
+  <section id="collect" aria-labelledby="collect-h">
+    <h2 id="collect-h">4. What we collect</h2>
+    <p>Nothing. This website has:</p>
+    <ul>
+      <li>no accounts, sign-in or forms</li>
+      <li>no cookies, local storage or other browser storage</li>
+      <li>no analytics, tracking pixels or advertising</li>
+      <li>no third-party scripts, fonts or embedded content</li>
+      <li>no server code or database</li>
+    </ul>
+    <p>You can check this yourself. The complete source of the site is <a href="https://github.com/openMF/mifos-x-open-banking/tree/dev/relay">published on GitHub</a>, and its security headers block any third-party content from loading.</p>
+  </section>
+
+  <section id="hosting" aria-labelledby="hosting-h">
+    <h2 id="hosting-h">5. Hosting by Cloudflare</h2>
+    <p>The site is served by <a href="https://www.cloudflare.com/">Cloudflare</a> Pages. Like any web host, Cloudflare processes the technical details of each request in order to deliver the page and protect the site from abuse. These include your IP address, browser type, the page requested and the time.</p>
+    <p>Cloudflare never receives your bank's answer, for the reason given in <a href="#answer">section 3</a>. We haven't turned on any Cloudflare analytics or tracking product. Cloudflare's handling of this data is described in the <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare privacy policy</a>.</p>
+  </section>
+
+  <section id="others" aria-labelledby="others-h">
+    <h2 id="others-h">6. Your bank and the app</h2>
+    <p>Your bank handles your sign-in, your consent and your account data under its own privacy notice. The Mifos X Open Banking app connects to your bank directly. Your account and payment data travels between the app and your bank, never through this website.</p>
+  </section>
+
+  <section id="rights" aria-labelledby="rights-h">
+    <h2 id="rights-h">7. Your rights</h2>
+    <p>Depending on where you live, you may have the right to ask what personal data an organisation holds about you, and to have it corrected or deleted. This website holds no personal data about you, so there is nothing for us to provide or delete. For data held by Cloudflare or your bank, contact them directly. If you have a question about this, get in touch as described below. You may also have the right to complain to your local data protection authority.</p>
+  </section>
+
+  <section id="changes" aria-labelledby="changes-h">
+    <h2 id="changes-h">8. Changes to this policy</h2>
+    <p>If the way this site works changes, we'll update this page and the date at the top. Every past version is kept in the project's <a href="https://github.com/openMF/mifos-x-open-banking/commits/dev/relay/site/privacy/index.html">public change history</a>.</p>
+  </section>
+
+  <section id="contact" aria-labelledby="contact-h">
+    <h2 id="contact-h">9. Contact</h2>
+    <p>For questions about this policy or your data, email <a href="mailto:info@mifos.org">info@mifos.org</a>. You can also reach our Data Protection Officer using the details in section 15 of the <a href="https://mifos.org/privacy-policy/">Mifos Initiative privacy notice</a>, or write to us at:</p>
+    <p>The Mifos Initiative<br>4505 Pacific Hwy E, Ste C-2<br>Fife, WA 98424<br>United States</p>
+    <p>To report a security issue, email <a href="mailto:security-disclosure@mifos.org">security-disclosure@mifos.org</a>.</p>
+  </section>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Footer">
+      <a href="../">Home</a>
+      <a href="./" aria-current="page">Privacy policy</a>
+      <a href="../terms/">Terms of use</a>
+      <a href="https://github.com/openMF/mifos-x-open-banking/blob/dev/SECURITY.md">Security</a>
+      <a href="https://mifos.org">mifos.org</a>
+    </nav>
+    <p>Built by the <a href="https://mifos.org">Mifos Initiative</a> as an open-source reference app. Mifos X Open Banking is not affiliated with HSBC or any other bank.</p>
+    <p>Mifos and the Mifos logo are trademarks of the Mifos Initiative.</p>
+  </div>
+</footer>
+</body>
+</html>

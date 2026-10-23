@@ -1,0 +1,124 @@
+/*
+ * Copyright 2026 Mifos Initiative — MPL-2.0. See https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE
+ * Shared styles for the relay's public pages (home, privacy, terms).
+ * Colours are sampled from the Mifos logo's four-part X; system fonts only, because the CSP
+ * (default-src 'none') deliberately loads nothing from anywhere else.
+ */
+:root {
+  color-scheme: light dark;
+  --navy: #125eaa; --sky: #1e9de7; --green: #21a53f; --lime: #a6cf62;
+  --ink: #1f2328; --muted: #535a63; --line: #dde3ea; --paper: #ffffff; --mist: #f2f6fa;
+  --link: #125eaa; --code: #eef2f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8ebef; --muted: #a9b1bb; --line: #2c333b; --paper: #15191e; --mist: #1c2229;
+    --link: #6cbcf0; --code: #232a32;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem; line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* The brand band: the four quarters of the Mifos X, in the order they sit in the mark. */
+.band { display: flex; height: 6px; }
+.band span { flex: 1; }
+.band span:nth-child(1) { background: var(--navy); }
+.band span:nth-child(2) { background: var(--lime); }
+.band span:nth-child(3) { background: var(--sky); }
+.band span:nth-child(4) { background: var(--green); }
+
+.wrap { max-width: 46rem; margin: 0 auto; padding: 0 1rem; }
+
+.masthead { border-bottom: 1px solid var(--line); }
+.masthead .wrap {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .75rem 1.5rem; padding-top: 1rem; padding-bottom: 1rem;
+}
+.brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; color: var(--ink); }
+.brand img { display: block; height: 34px; width: auto; }
+.brand .product { font-weight: 600; font-size: .95rem; color: var(--muted); padding-left: .75rem; border-left: 1px solid var(--line); }
+.logo-dark { display: none !important; }
+@media (prefers-color-scheme: dark) {
+  .logo-light { display: none !important; }
+  .logo-dark { display: block !important; }
+}
+.masthead nav { display: flex; gap: 1.25rem; font-size: .95rem; }
+.masthead nav a { color: var(--muted); text-decoration: none; padding: .25rem 0; }
+.masthead nav a:hover { color: var(--ink); }
+.masthead nav a[aria-current="page"] { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--sky); }
+
+main.wrap { padding-top: 3rem; padding-bottom: 3.5rem; }
+
+.hero { margin-bottom: 3rem; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.15; margin: 0 0 1rem; letter-spacing: -.02em; font-weight: 700; }
+.lead { margin: 0; font-size: 1.2rem; color: var(--muted); max-width: 36rem; }
+
+/* The journey: bank → this page → the app. Real sequence, so it is an ordered list. */
+.journey {
+  list-style: none; padding: 0; margin: 2.25rem 0 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
+}
+.journey li { background: var(--mist); border-radius: 10px; padding: 1rem 1rem 1.1rem; border-top: 4px solid; }
+.journey li:nth-child(1) { border-color: var(--navy); }
+.journey li:nth-child(2) { border-color: var(--sky); }
+.journey li:nth-child(3) { border-color: var(--green); }
+.journey strong { display: block; font-size: 1rem; margin-bottom: .25rem; }
+.journey span { font-size: .93rem; color: var(--muted); line-height: 1.5; display: block; }
+@media (max-width: 600px) { .journey { grid-template-columns: 1fr; } }
+
+section { margin-bottom: 2.75rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 0 0 .75rem; letter-spacing: -.01em; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .4rem; }
+p, li, dd { max-width: 68ch; }
+p { margin: 0 0 1rem; }
+ol, ul { padding-left: 1.3rem; margin: 0 0 1rem; }
+li { margin: .35rem 0; }
+
+.facts { list-style: none; padding: 0; display: grid; gap: .6rem; }
+.facts li { padding-left: 1.6rem; position: relative; margin: 0; }
+.facts li::before {
+  content: ""; position: absolute; left: 0; top: .5em; width: .7rem; height: .7rem;
+  border-radius: 2px;
+  background: conic-gradient(from -45deg, var(--lime) 0 25%, var(--sky) 0 50%, var(--green) 0 75%, var(--navy) 0);
+}
+
+dl { margin: 0; display: grid; grid-template-columns: minmax(9rem, max-content) 1fr; gap: .6rem 1.5rem; }
+dt { font-weight: 600; }
+dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 600px) { dl { grid-template-columns: 1fr; gap: .15rem; } dd { margin-bottom: .75rem; } }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em;
+  background: var(--code); padding: .12em .4em; border-radius: 4px; overflow-wrap: anywhere;
+}
+a { color: var(--link); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; border-radius: 3px; }
+
+.note { background: var(--mist); margin-bottom: 1.5rem; border-left: 4px solid var(--sky); padding: .9rem 1.1rem; border-radius: 0 8px 8px 0; }
+.note p:last-child { margin-bottom: 0; }
+
+/* Legal pages */
+.doc .updated { color: var(--muted); font-size: .95rem; margin: -.25rem 0 2rem; }
+.doc .toc { background: var(--mist); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 2.5rem; }
+.doc .toc h2 { font-size: 1rem; margin-bottom: .4rem; }
+.doc .toc ol { margin: 0; columns: 2 14rem; column-gap: 2rem; }
+.doc .toc li { margin: .2rem 0; break-inside: avoid; }
+.doc section { scroll-margin-top: 1rem; }
+
+.sitefoot { border-top: 1px solid var(--line); background: var(--mist); font-size: .93rem; color: var(--muted); }
+.sitefoot .wrap { padding-top: 1.75rem; padding-bottom: 2rem; }
+.sitefoot nav { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-bottom: 1rem; }
+.sitefoot nav a { color: var(--ink); }
+.sitefoot p { margin: 0 0 .5rem; }
+
+@media print {
+  .band, .masthead nav, .sitefoot nav { display: none; }
+  body { font-size: 11pt; }
+}

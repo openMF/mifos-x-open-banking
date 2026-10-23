@@ -10,27 +10,26 @@
 package org.mifosx.openbanking.core.data.callback
 
 import com.russhwolf.settings.MapSettings
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.mifosx.openbanking.core.data.WORKER_SESSION
 import org.mifosx.openbanking.core.data.callback.impl.PaymentAuthRepositoryImpl
+import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.banking.BeneficiaryScheme
 import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.CreditorSelection
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,70 +39,53 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private const val CLIENT_CREDENTIALS_TOKEN = "tpp-client-credentials-token"
-private const val PSU_TOKEN = "psu-payments-token"
 private const val CONSENT_ID = "812774903"
 private const val STATE = "payment-state-1"
-private const val NONCE = "payment-nonce-1"
-
-private const val TOKEN_JSON =
-    """{"access_token":"$CLIENT_CREDENTIALS_TOKEN","expires_in":300,"scope":"payments","token_type":"Bearer"}"""
+private const val FLOW_ID = "payment-flow-1"
 private const val CONSENT_JSON = """{"Data":{"ConsentId":"$CONSENT_ID","Status":"Authorised"}}"""
 
 /**
  * Covers [PaymentAuthRepositoryImpl] — the return leg's data layer.
  *
- * The load-bearing case is [readingConsentStatusPresentsTheClientCredentialsToken]. Reading a
- * consent back on the PSU token returned `401` from the live sandbox *immediately after an
- * authorisation that had succeeded*, because a consent resource is TPP-authenticated: the credential
- * that created it is the one that may read it. The PSU token authorises the payment, not the consent.
+ * The redirect is matched locally on `state`, then redeemed at the Worker's `/v1/auth/complete` with
+ * the pending `flowId`, which attaches the payment leg to the app's existing session. The consent is
+ * read back through the Worker on the session; no bank token is ever on the device.
  */
 class PaymentAuthRepositoryImplTest {
 
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-
-    private data class Recorded(val path: String, val authorization: String?)
+    private data class Recorded(val path: String, val authorization: String?, val body: String = "")
 
     private val captured = mutableListOf<Recorded>()
 
-    private suspend fun repository(
+    private fun repository(
         session: PaymentAuthSession = SettingsPaymentAuthSession(MapSettings()),
     ): PaymentAuthRepositoryImpl {
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                captured += Recorded(
-                    path = request.url.encodedPath,
-                    authorization = request.headers[HttpHeaders.Authorization],
-                )
-                val body = when {
-                    request.url.encodedPath.contains("oauth2/token") -> TOKEN_JSON
-                    else -> CONSENT_JSON
-                }
-                respond(body, HttpStatusCode.OK, jsonHeaders)
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = gatewayClient { request: HttpRequestData ->
+            captured += Recorded(
+                path = request.url.encodedPath,
+                authorization = request.headers[HttpHeaders.Authorization],
+                body = request.body.toByteArray().decodeToString(),
+            )
+            val body = when (request.url.encodedPath) {
+                "/v1/auth/complete" -> completedAuthJson(CONSENT_ID, leg = "payment")
+                else -> CONSENT_JSON
+            }
+            respond(body, HttpStatusCode.OK, jsonHeaders)
         }
-        val signingKey = TestSigningKey.pem()
         return PaymentAuthRepositoryImpl(
-            oauth = OAuth(client, "https://sandbox.test/oauth2/token", "test-client", "test-kid", signingKey),
-            pisp = Pisp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = signingKey,
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
+            session = Session(client),
+            pisp = Pisp(client),
             paymentAuthSession = session,
-            redirectUri = "https://cb/",
         )
     }
 
     private fun pendingSession(): PaymentAuthSession =
         SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = CONSENT_ID, state = STATE, nonce = NONCE, type = ConsentType.DomesticSinglePayment)
-            savePaymentToken(
-                PsuTokenResponse(accesstoken = PSU_TOKEN, tokentype = "Bearer", expiresin = 300),
+            savePending(
+                consentId = CONSENT_ID,
+                state = STATE,
+                flowId = FLOW_ID,
+                type = ConsentType.DomesticSinglePayment,
             )
         }
 
@@ -139,29 +121,59 @@ class PaymentAuthRepositoryImplTest {
      */
     private fun sessionStaging(type: ConsentType): PaymentAuthSession =
         SettingsPaymentAuthSession(MapSettings()).apply {
-            savePending(consentId = CONSENT_ID, state = STATE, nonce = NONCE, type = type)
-            savePaymentToken(
-                PsuTokenResponse(accesstoken = PSU_TOKEN, tokentype = "Bearer", expiresin = 300),
-            )
+            savePending(consentId = CONSENT_ID, state = STATE, flowId = FLOW_ID, type = type)
             saveDraft(draft(if (type == ConsentType.InternationalSinglePayment) "USD" else null))
         }
 
-    // region — which credential reads the consent
+    // region — reading the consent and redeeming the redirect
 
     /**
-     * The `401`-after-success regression, pinned. A PSU token here is the wrong credential for the
-     * resource, however freshly minted it is.
+     * The consent is read through the Worker on the session. The Worker uses its client-credentials
+     * token (a consent resource is TPP-authenticated); the device presents no bank token at all.
      */
     @Test
-    fun readingConsentStatusPresentsTheClientCredentialsToken() = runTest {
-        val session = pendingSession()
-
-        val result = repository(session).consentStatus(CONSENT_ID)
+    fun readingConsentStatusPresentsTheWorkerSession() = runTest {
+        val result = repository(pendingSession()).consentStatus(CONSENT_ID)
 
         assertIs<NetworkResult.Success<String>>(result)
-        val read = assertNotNull(captured.lastOrNull { it.path.contains("domestic-payment-consents") })
-        assertEquals("Bearer $CLIENT_CREDENTIALS_TOKEN", read.authorization)
-        assertFalse(PSU_TOKEN in read.authorization.orEmpty())
+        val read = assertNotNull(captured.lastOrNull { it.path == "/v1/consents/payment/domestic/$CONSENT_ID" })
+        assertEquals("Session $WORKER_SESSION", read.authorization)
+    }
+
+    /** A validated redirect is redeemed at the Worker with the pending flow, on the existing session. */
+    @Test
+    fun exchangingAValidatedRedirectCompletesTheFlowAtTheWorker() = runTest {
+        val repository = repository(pendingSession())
+        val validation = repository.validateCallback("https://cb/#code=abc&id_token=h.p.s&state=$STATE")
+        assertIs<PaymentAuthValidation.Valid>(validation)
+
+        val result = repository.exchangeCode("abc")
+
+        assertIs<NetworkResult.Success<Unit>>(result)
+        val complete = assertNotNull(captured.lastOrNull { it.path == "/v1/auth/complete" })
+        assertEquals("Session $WORKER_SESSION", complete.authorization)
+        val body = Json.parseToJsonElement(complete.body).jsonObject
+        assertEquals(FLOW_ID, body["flowId"]?.jsonPrimitive?.content)
+        assertEquals("abc", body["code"]?.jsonPrimitive?.content)
+        assertEquals("h.p.s", body["idToken"]?.jsonPrimitive?.content)
+        assertEquals(STATE, body["state"]?.jsonPrimitive?.content)
+    }
+
+    /** A code that was never validated is refused locally — nothing reaches the Worker. */
+    @Test
+    fun exchangingAnUnvalidatedCodeFailsWithoutCallingTheWorker() = runTest {
+        val result = repository(pendingSession()).exchangeCode("abc")
+
+        assertIs<NetworkResult.Error<*>>(result)
+        assertTrue(captured.none { it.path == "/v1/auth/complete" })
+    }
+
+    /** A redirect without an `id_token` cannot be verified by the Worker, so it is hostile. */
+    @Test
+    fun aRedirectWithNoIdTokenIsASecurityError() = runTest {
+        val result = repository(pendingSession()).validateCallback("https://cb/?code=abc&state=$STATE")
+
+        assertEquals(PaymentAuthValidation.SecurityError, result)
     }
 
     @Test
@@ -190,9 +202,9 @@ class PaymentAuthRepositoryImplTest {
     fun anInternationalConsentIsReadFromTheInternationalEndpoint() = runTest {
         repository(sessionStaging(ConsentType.InternationalSinglePayment)).consentStatus(CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { "international-payment-consents" in it.path })
+        assertNotNull(captured.lastOrNull { "/v1/consents/payment/international/" in it.path })
         assertNull(
-            captured.lastOrNull { it.path.contains("/domestic-payment-consents") },
+            captured.lastOrNull { it.path.contains("/v1/consents/payment/domestic/") },
             "an international consent must never be read at the domestic path",
         )
     }
@@ -201,9 +213,9 @@ class PaymentAuthRepositoryImplTest {
     fun aDomesticConsentIsReadFromTheDomesticEndpoint() = runTest {
         repository(sessionStaging(ConsentType.DomesticSinglePayment)).consentStatus(CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { "/domestic-payment-consents" in it.path })
+        assertNotNull(captured.lastOrNull { "/v1/consents/payment/domestic/" in it.path })
         assertNull(
-            captured.lastOrNull { "international-payment-consents" in it.path },
+            captured.lastOrNull { "/v1/consents/payment/international/" in it.path },
             "a domestic consent must never be read at the international path",
         )
     }
@@ -218,7 +230,7 @@ class PaymentAuthRepositoryImplTest {
     fun aSessionWithNoStagedDraftFallsBackToDomestic() = runTest {
         repository(pendingSession()).consentStatus(CONSENT_ID)
 
-        assertNotNull(captured.lastOrNull { "/domestic-payment-consents" in it.path })
+        assertNotNull(captured.lastOrNull { "/v1/consents/payment/domestic/" in it.path })
     }
 
     // endregion
@@ -227,8 +239,7 @@ class PaymentAuthRepositoryImplTest {
 
     /**
      * Both legs return through the same bus on the same registered redirect URI. Getting this wrong
-     * would exchange a payment code into the AIS session and overwrite the account bearer with a
-     * payments-scoped token, breaking every read in the app.
+     * would redeem a payment code as a sign-in and replace the app's session, breaking every read.
      */
     @Test
     fun aRedirectMatchingTheAuthorisationInFlightIsAPaymentRedirect() = runTest {
@@ -289,17 +300,17 @@ class PaymentAuthRepositoryImplTest {
     // region — discarding the authorisation
 
     /**
-     * Called at each of the three points a payment stops being in flight. Leaving the PSU token
-     * behind would let a later payment submit on a credential its own authorisation never issued.
+     * Called at each of the three points a payment stops being in flight. Leaving the flow behind
+     * would let a stale redirect be redeemed against a payment that is no longer in progress.
      */
     @Test
-    fun discardingForgetsTheTokensTheConsentAndTheDraft() = runTest {
+    fun discardingForgetsTheFlowTheConsentAndTheDraft() = runTest {
         val session = pendingSession()
 
         repository(session).discardAuthorisation()
 
         assertNull(session.pendingConsentId())
-        assertNull(session.paymentToken())
+        assertNull(session.pendingFlowId())
         assertNull(session.draft())
         assertFalse(session.matchesPendingState(STATE))
     }

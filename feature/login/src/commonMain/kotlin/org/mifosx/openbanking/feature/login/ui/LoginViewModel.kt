@@ -88,7 +88,7 @@ class LoginViewModel(
      * Refuses up front on platforms with no redirect receiver: the PSU would otherwise authorise
      * successfully at HSBC and the callback would never arrive, leaving a live consent stranded.
      *
-     * On success the `state`/`nonce`/`consentId` are persisted BEFORE handing off to the browser.
+     * On success the `state`/`flowId`/`consentId` are persisted BEFORE handing off to the browser.
      * The PSU leaves the app entirely and the process may be killed while backgrounded, so the
      * redirect can arrive on a cold start — these are the values it is authenticated against.
      *
@@ -112,7 +112,7 @@ class LoginViewModel(
                 is NetworkResult.Success -> {
                     pendingAuthStore.save(
                         state = result.data.state,
-                        nonce = result.data.nonce,
+                        flowId = result.data.flowId,
                         consentId = result.data.consentId,
                     )
                     // Authorising means "the PSU is away at HSBC" and is only cleared by the

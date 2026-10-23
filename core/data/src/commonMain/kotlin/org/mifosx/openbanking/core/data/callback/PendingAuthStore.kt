@@ -13,19 +13,19 @@ import co.touchlab.kermit.Logger
 import com.russhwolf.settings.Settings
 
 /**
- * The `state` / `nonce` / `consentId` minted when the authorisation URL was built, held across the
- * browser round-trip so the redirect can be validated when it returns.
+ * The Worker's pending `flowId`, the `state` its authorize URL carries and the `consentId`, held across
+ * the browser round-trip so the redirect can be matched and completed when it returns.
  */
 data class PendingAuth(
     val state: String,
-    val nonce: String,
+    val flowId: String,
     val consentId: String,
 )
 
 /**
  * Survives the OAuth browser hop — and nothing longer.
  *
- * `state` and `nonce` are single-use, short-lived values, but they cannot live in memory: the PSU
+ * `state` and `flowId` are single-use, short-lived values, but they cannot live in memory: the PSU
  * leaves the app entirely to authorise at HSBC, and on Android the process may be killed while
  * backgrounded, so the redirect can arrive via a **cold start**. Holding them in memory would fail a
  * legitimate consent with a SecurityError. This mirrors AppAuth, which persists the authorization
@@ -35,11 +35,11 @@ data class PendingAuth(
  * [SettingsPendingAuthStore]:
  *  - **single-use** — [consume] deletes on read, so a redirect can never be replayed;
  *  - **TTL** — entries older than [TTL_SECONDS] are refused and purged. The bound is not arbitrary:
- *    it matches `REQUEST_OBJECT_TTL_SECONDS` in `ConsentAuthorization.kt`, after which HSBC's signed
- *    request object has expired anyway, so a surviving entry is dead weight.
+ *    it matches the Worker's pending-flow TTL, after which `/v1/auth/complete` answers
+ *    `400 unknown_flow` anyway, so a surviving entry is dead weight.
  */
 interface PendingAuthStore {
-    fun save(state: String, nonce: String, consentId: String)
+    fun save(state: String, flowId: String, consentId: String)
 
     /**
      * Reads and **deletes** the pending auth. Returns `null` when absent or past its TTL.
@@ -55,9 +55,9 @@ class SettingsPendingAuthStore(
     private val nowEpochSeconds: () -> Long,
 ) : PendingAuthStore {
 
-    override fun save(state: String, nonce: String, consentId: String) {
+    override fun save(state: String, flowId: String, consentId: String) {
         secureSettings.putString(KEY_STATE, state)
-        secureSettings.putString(KEY_NONCE, nonce)
+        secureSettings.putString(KEY_FLOW_ID, flowId)
         secureSettings.putString(KEY_CONSENT_ID, consentId)
         secureSettings.putLong(KEY_CREATED_AT, nowEpochSeconds())
     }
@@ -85,12 +85,12 @@ class SettingsPendingAuthStore(
     @Suppress("ReturnCount")
     private fun readStored(): StoredAuth? {
         val state = secureSettings.getStringOrNull(KEY_STATE) ?: return null
-        val nonce = secureSettings.getStringOrNull(KEY_NONCE) ?: return null
+        val flowId = secureSettings.getStringOrNull(KEY_FLOW_ID) ?: return null
         val consentId = secureSettings.getStringOrNull(KEY_CONSENT_ID) ?: return null
         val createdAt = secureSettings.getLongOrNull(KEY_CREATED_AT) ?: return null
 
         return StoredAuth(
-            auth = PendingAuth(state = state, nonce = nonce, consentId = consentId),
+            auth = PendingAuth(state = state, flowId = flowId, consentId = consentId),
             createdAt = createdAt,
         )
     }
@@ -98,11 +98,11 @@ class SettingsPendingAuthStore(
     override fun clear() {
         Logger.d(TAG) {
             "clear: hadState=${secureSettings.getStringOrNull(KEY_STATE) != null} " +
-                "hadNonce=${secureSettings.getStringOrNull(KEY_NONCE) != null} " +
+                "hadFlowId=${secureSettings.getStringOrNull(KEY_FLOW_ID) != null} " +
                 "hadConsentId=${secureSettings.getStringOrNull(KEY_CONSENT_ID) != null}"
         }
         secureSettings.remove(KEY_STATE)
-        secureSettings.remove(KEY_NONCE)
+        secureSettings.remove(KEY_FLOW_ID)
         secureSettings.remove(KEY_CONSENT_ID)
         secureSettings.remove(KEY_CREATED_AT)
     }
@@ -110,11 +110,11 @@ class SettingsPendingAuthStore(
     companion object {
         private const val TAG = "PendingAuthStore"
 
-        /** Matches `REQUEST_OBJECT_TTL_SECONDS` in `ConsentAuthorization.kt` (20 minutes). */
-        const val TTL_SECONDS = 1200L
+        /** Matches the Worker's pending-flow TTL (gateway `SessionDO`, 600 s). */
+        const val TTL_SECONDS = 600L
 
         private const val KEY_STATE = "pending_auth_state"
-        private const val KEY_NONCE = "pending_auth_nonce"
+        private const val KEY_FLOW_ID = "pending_auth_flow_id"
         private const val KEY_CONSENT_ID = "pending_auth_consent_id"
         private const val KEY_CREATED_AT = "pending_auth_created_at"
     }

@@ -25,7 +25,7 @@ class FakeLoginRepository : LoginRepository {
         ConsentResult(
             authorizationUrl = "https://sandbox.test/authorize",
             state = "test-state",
-            nonce = "test-nonce",
+            flowId = "test-flow",
             consentId = "test-consent-id",
         ),
     )
@@ -61,9 +61,9 @@ class FakePendingAuthStore : PendingAuthStore {
     var clearCount: Int = 0
         private set
 
-    override fun save(state: String, nonce: String, consentId: String) {
+    override fun save(state: String, flowId: String, consentId: String) {
         saveCount++
-        pending = PendingAuth(state = state, nonce = nonce, consentId = consentId)
+        pending = PendingAuth(state = state, flowId = flowId, consentId = consentId)
         saved = pending
     }
 

@@ -10,23 +10,20 @@
 package org.mifosx.openbanking.core.data.vrp
 
 import com.russhwolf.settings.MapSettings
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
+import org.mifosx.openbanking.core.data.WORKER_SESSION
+import org.mifosx.openbanking.core.data.authorizeUrl
+import org.mifosx.openbanking.core.data.consentStartJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.database.vrp.dao.VrpConsentDao
 import org.mifosx.openbanking.core.database.vrp.entity.VrpConsentEntity
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
@@ -37,7 +34,6 @@ import org.mifosx.openbanking.core.model.vrp.PeriodicLimit
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpConsentDraft
 import org.mifosx.openbanking.core.model.vrp.VrpControlParameters
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Vrp
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
@@ -49,11 +45,10 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-private const val TOKEN_URL = "https://secure.example.test/oauth2/token"
 private const val CONSENT_ID = "45411"
 
-/** The credential the client-credentials grant returns. Every consent call presents this one. */
-private const val TPP_TOKEN = "tpp-client-credentials-token"
+/** The only credential the app presents: its Worker session. */
+private const val SESSION_AUTH = "Session $WORKER_SESSION"
 
 /** The bank's code for a consent that no longer resolves. */
 private const val RESOURCE_GONE_BODY =
@@ -69,7 +64,7 @@ private const val RESOURCE_GONE_BODY =
  */
 class VrpConsentRepositoryImplTest {
 
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private val session = SettingsVrpAuthSession(MapSettings())
 
     private data class Recorded(
         val path: String,
@@ -166,78 +161,64 @@ class VrpConsentRepositoryImplTest {
     )
 
     /**
-     * @param resourceStatus Applied to the consent calls only; the token endpoint always succeeds,
-     *   so a failure case exercises the refusal path rather than dying at authentication.
+     * @param resourceStatus Applied to every Worker call.
+     * @param resourceBody Overrides every response body (the stage answers `{flowId, consentId,
+     *   authorizeUrl}`, the reads answer the bank's consent).
      */
-    private suspend fun repository(
+    private fun repository(
         dao: FakeConsentDao = FakeConsentDao(),
         consentStatus: String = "AWAU",
         resourceStatus: HttpStatusCode = HttpStatusCode.Created,
         resourceBody: String? = null,
-        refuseToken: Boolean = false,
     ): Triple<VrpConsentRepositoryImpl, FakeConsentDao, MutableList<Recorded>> {
         val captured = mutableListOf<Recorded>()
-        val client = HttpClient(
-            MockEngine { request: HttpRequestData ->
-                val path = request.url.encodedPath
-                if (path.contains("oauth2/token")) {
-                    if (refuseToken) {
-                        respond("", HttpStatusCode.Unauthorized, jsonHeaders)
-                    } else {
-                        respond(
-                            """{"access_token":"$TPP_TOKEN","token_type":"Bearer","expires_in":299,""" +
-                                """"scope":"payments"}""",
-                            HttpStatusCode.OK,
-                            jsonHeaders,
-                        )
-                    }
-                } else {
-                    captured += Recorded(
-                        path = path,
-                        method = request.method.value,
-                        authorization = request.headers[HttpHeaders.Authorization],
-                    )
-                    respond(
-                        resourceBody ?: consentJson(consentStatus),
-                        resourceStatus,
-                        jsonHeaders,
-                    )
-                }
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = gatewayClient { request: HttpRequestData ->
+            val path = request.url.encodedPath
+            captured += Recorded(
+                path = path,
+                method = request.method.value,
+                authorization = request.headers[HttpHeaders.Authorization],
+            )
+            val isStage = request.method.value == "POST" && path == "/v1/consents/vrp"
+            respond(
+                resourceBody
+                    ?: if (isStage) consentStartJson(CONSENT_ID, state = "vrp-state") else consentJson(consentStatus),
+                resourceStatus,
+                jsonHeaders,
+            )
         }
-
-        val session = SettingsVrpAuthSession(MapSettings())
-        val oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem())
-        val repository = VrpConsentRepositoryImpl(
-            vrp = Vrp(
-                httpClient = client,
-                kid = "test-kid",
-                signingKeyPem = TestSigningKey.pem(),
-                financialId = "",
-                signingIssuer = "mifos_init_00000/0000000000000000000000",
-            ),
-            oauth = oauth,
-            dao = dao,
-            session = session,
-            tokens = VrpTokenProviderImpl(oauth, session),
-        )
+        val repository = VrpConsentRepositoryImpl(vrp = Vrp(client), dao = dao, session = session)
         return Triple(repository, dao, captured)
     }
 
     // staging
 
     @Test
-    fun stagesOnTheTppCredential() = runTest {
+    fun stagesThroughTheWorkerOnTheSession() = runTest {
         val (repository, _, calls) = repository()
 
         val result = repository.stageConsent(draft())
 
-        assertIs<NetworkResult.Success<VrpConsent>>(result)
-        val call = assertNotNull(calls.firstOrNull { it.method == "POST" })
-        assertTrue(call.path.endsWith("domestic-vrp-consents"))
-        assertEquals("Bearer $TPP_TOKEN", call.authorization)
+        val consent = assertIs<NetworkResult.Success<VrpConsent>>(result).data
+        assertEquals(CONSENT_ID, consent.consentId)
+        assertEquals(ConsentStatus.AwaitingAuthorisation, consent.status)
+        assertEquals("Mr Dharani C", consent.payee.name)
+        val call = calls.single()
+        assertEquals("POST" to "/v1/consents/vrp", call.method to call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
+    }
+
+    /** The Worker-signed URL and the redirect's state are recorded so the return leg can be matched. */
+    @Test
+    fun stagingRecordsTheAuthorisationInFlight() = runTest {
+        val (repository, _, _) = repository()
+
+        repository.stageConsent(draft())
+
+        assertEquals(CONSENT_ID, session.pendingConsentId())
+        assertEquals("flow-1", session.pendingFlowId())
+        assertEquals(authorizeUrl("vrp-state"), session.pendingAuthorizeUrl())
+        assertTrue(session.matchesPendingState("vrp-state"))
     }
 
     /** An abandoned setup must leave nothing behind, so nothing is written until it is approved. */
@@ -306,13 +287,14 @@ class VrpConsentRepositoryImplTest {
     }
 
     @Test
-    fun readsBackOnTheTppCredential() = runTest {
+    fun readsBackThroughTheWorkerOnTheSession() = runTest {
         val (repository, _, calls) = repository(consentStatus = "AUTH")
 
         repository.refreshStatus(CONSENT_ID)
 
         val call = assertNotNull(calls.firstOrNull { it.method == "GET" })
-        assertEquals("Bearer $TPP_TOKEN", call.authorization)
+        assertEquals("/v1/consents/vrp/$CONSENT_ID", call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
     }
 
     /** A consent that no longer resolves at the bank cannot be paid under, so it is dropped here. */
@@ -345,7 +327,7 @@ class VrpConsentRepositoryImplTest {
     // removal
 
     @Test
-    fun removesOnTheTppCredential() = runTest {
+    fun removesThroughTheWorkerOnTheSession() = runTest {
         val dao = FakeConsentDao(storedConsent().toEntity())
         val (repository, _, calls) = repository(dao = dao, resourceStatus = HttpStatusCode.NoContent)
 
@@ -353,7 +335,8 @@ class VrpConsentRepositoryImplTest {
 
         assertIs<NetworkResult.Success<Unit>>(result)
         val call = assertNotNull(calls.firstOrNull { it.method == "DELETE" })
-        assertEquals("Bearer $TPP_TOKEN", call.authorization)
+        assertEquals("/v1/consents/vrp/$CONSENT_ID", call.path)
+        assertEquals(SESSION_AUTH, call.authorization)
     }
 
     @Test
@@ -382,9 +365,9 @@ class VrpConsentRepositoryImplTest {
     }
 
     @Test
-    fun aRemovalThatCannotEvenBeAuthenticatedStillDropsTheLocalAuthority() = runTest {
+    fun aRemovalTheWorkerRefusesAsUnauthenticatedStillDropsTheLocalAuthority() = runTest {
         val dao = FakeConsentDao(storedConsent().toEntity())
-        val (repository, _, _) = repository(dao = dao, refuseToken = true)
+        val (repository, _, _) = repository(dao = dao, resourceStatus = HttpStatusCode.Unauthorized)
 
         val result = repository.revoke(CONSENT_ID)
 

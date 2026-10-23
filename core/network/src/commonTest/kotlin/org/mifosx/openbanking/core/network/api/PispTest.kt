@@ -9,21 +9,24 @@
  */
 package org.mifosx.openbanking.core.network.api
 
-import io.ktor.client.HttpClient
+import com.russhwolf.settings.MapSettings
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.mifosx.openbanking.core.network.TestSigningKey
+import org.mifosx.openbanking.core.network.FakeAttestation
+import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
+import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
+import org.mifosx.openbanking.core.network.SESSION_KEY
+import org.mifosx.openbanking.core.network.TEST_SESSION
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.CreditorAccount
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Data
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DebtorAccount
@@ -39,10 +42,6 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.reque
 import org.mifosx.openbanking.core.network.model.pisp.internationalPayment.request.InternationalPaymentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InternationalScheduledPaymentRequest
-import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_FINANCIAL_ID
-import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_INTERACTION_ID
-import org.mifosx.openbanking.core.network.pisp.HEADER_IDEMPOTENCY_KEY
-import org.mifosx.openbanking.core.network.pisp.HEADER_JWS_SIGNATURE
 import org.mifosx.openbanking.core.network.pisp.obieBody
 import template.core.base.network.NetworkResult
 import kotlin.test.Test
@@ -69,10 +68,10 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPaym
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.InstructedAmount as IntlSchedInstructedAmount
 import org.mifosx.openbanking.core.network.model.pisp.internationalScheduledPayment.request.Risk as IntlSchedRisk
 
-private const val KID = "test-kid-1"
-private const val SIGNING_ISSUER = "mifos_init_00000/0000000000000000000000"
 private const val IDEMPOTENCY_KEY = "MFX-20260805-0001"
 private const val CONSENT_ID = "812774903"
+private const val CONSENT_START =
+    """{"flowId":"f-1","consentId":"812774903","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/authorize?state=s"}"""
 private const val SUBMITTED_PAYMENT_BODY =
     """{"Data":{"DomesticPaymentId":"PMT-1","Status":"AcceptedSettlementInProcess"}}"""
 private const val INTL_CONSENT_RESPONSE =
@@ -100,40 +99,39 @@ class PispTest {
     )
 
     private suspend fun pisp(
-        financialId: String = "",
         responseBody: String = "{}",
         status: HttpStatusCode = HttpStatusCode.Created,
     ): Pisp {
-        val client = HttpClient(
-            MockEngine { request ->
-                captured += RecordedRequest(
-                    method = request.method,
-                    path = request.url.encodedPath,
-                    headers = listOf(
-                        HttpHeaders.Authorization,
-                        HEADER_IDEMPOTENCY_KEY,
-                        HEADER_JWS_SIGNATURE,
-                        HEADER_FAPI_INTERACTION_ID,
-                        HEADER_FAPI_FINANCIAL_ID,
-                    ).associateWith { request.headers[it] },
-                    body = request.body.toByteArray().decodeToString(),
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath == "/v1/attest/challenge") {
+                return@MockEngine respond(
+                    """{"challenge":"c"}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
                 )
-                respond(
-                    content = responseBody,
-                    status = status,
-                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                )
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            }
+            captured += RecordedRequest(
+                method = request.method,
+                path = request.url.encodedPath,
+                headers = listOf(
+                    HttpHeaders.Authorization,
+                    HEADER_IDEMPOTENCY_KEY,
+                    HEADER_ATTESTATION,
+                    "x-jws-signature",
+                ).associateWith { request.headers[it] },
+                body = request.body.toByteArray().decodeToString(),
+            )
+            // A consent create answers with the Worker's {flowId, consentId, authorizeUrl}.
+            val isConsentCreate = request.method == HttpMethod.Post &&
+                request.url.encodedPath.startsWith("/v1/consents/")
+            respond(
+                content = if (isConsentCreate) CONSENT_START else responseBody,
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
         }
-        return Pisp(
-            httpClient = client,
-            kid = KID,
-            signingKeyPem = TestSigningKey.pem(),
-            financialId = financialId,
-            signingIssuer = SIGNING_ISSUER,
-        )
+        val settings = MapSettings(SESSION_KEY to TEST_SESSION)
+        return Pisp(gatewayHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
     }
 
     private fun consumerConsentRequest(): DomesticPaymentConsentRequest = DomesticPaymentConsentRequest(
@@ -159,51 +157,48 @@ class PispTest {
     )
 
     @Test
-    fun `stages a consent on the v4 pisp path with the payments scope token`() = runTest {
-        val pisp = pisp(responseBody = """{"Data":{"ConsentId":"$CONSENT_ID","Status":"AWAU"}}""")
+    fun `stages a consent through the worker and gets back its signed authorize url`() = runTest {
+        val pisp = pisp()
 
         val result = pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
             request = consumerConsentRequest(),
             idempotencyKey = IDEMPOTENCY_KEY,
         )
 
-        assertIs<NetworkResult.Success<*>>(result)
+        val start = assertIs<NetworkResult.Success<ConsentStart>>(result).data
+        assertEquals(CONSENT_ID, start.consentId)
+        assertEquals("f-1", start.flowId)
         val request = captured.single()
         assertEquals(HttpMethod.Post, request.method)
-        assertEquals("/v4.0/pisp/domestic-payment-consents", request.path)
-        assertEquals("Bearer cc-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("/v1/consents/payment/domestic", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
     }
 
     @Test
-    fun `write calls carry the idempotency key the jws signature and an interaction id`() = runTest {
+    fun `a consent create carries the idempotency key and the attestation but no bank signature`() = runTest {
         val pisp = pisp()
 
         pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
             request = consumerConsentRequest(),
             idempotencyKey = IDEMPOTENCY_KEY,
         )
 
         val headers = captured.single().headers
         assertEquals(IDEMPOTENCY_KEY, headers[HEADER_IDEMPOTENCY_KEY])
-        assertNotNull(headers[HEADER_FAPI_INTERACTION_ID])
-        val signature = assertNotNull(headers[HEADER_JWS_SIGNATURE])
-        assertEquals("", signature.split(".")[1])
+        assertEquals("play c.t", headers[HEADER_ATTESTATION])
+        assertNull(headers["x-jws-signature"])
     }
 
     /**
-     * The body must be the canonical serialization of the request, because that same object is what
-     * the detached JWS is computed over. Any re-serialisation between signing and sending would
-     * invalidate the signature.
+     * The body must be the compact canonical serialization of the request: the Worker signs exactly
+     * these bytes and refuses anything else with `400 body_not_compact`.
      */
     @Test
-    fun `transmits the exact bytes that were signed`() = runTest {
+    fun `transmits the compact canonical bytes the worker signs`() = runTest {
         val request = consumerConsentRequest()
         val pisp = pisp()
 
         pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
             request = request,
             idempotencyKey = IDEMPOTENCY_KEY,
         )
@@ -224,7 +219,6 @@ class PispTest {
         val pisp = pisp()
 
         pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
             request = consumerConsentRequest(),
             idempotencyKey = IDEMPOTENCY_KEY,
         )
@@ -237,38 +231,11 @@ class PispTest {
     }
 
     @Test
-    fun `omits the financial id header while no value is configured`() = runTest {
-        val pisp = pisp(financialId = "")
-
-        pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
-            request = consumerConsentRequest(),
-            idempotencyKey = IDEMPOTENCY_KEY,
-        )
-
-        assertNull(captured.single().headers[HEADER_FAPI_FINANCIAL_ID])
-    }
-
-    @Test
-    fun `sends the financial id header once configured`() = runTest {
-        val pisp = pisp(financialId = "0015800000jf8aAAAQ")
-
-        pisp.createDomesticPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
-            request = consumerConsentRequest(),
-            idempotencyKey = IDEMPOTENCY_KEY,
-        )
-
-        assertEquals("0015800000jf8aAAAQ", captured.single().headers[HEADER_FAPI_FINANCIAL_ID])
-    }
-
-    @Test
     fun `submits a payment against the staged consent on the psu token`() = runTest {
         val staged = consumerConsentRequest().data?.initiation
         val pisp = pisp(responseBody = SUBMITTED_PAYMENT_BODY)
 
         val result = pisp.createDomesticPayment(
-            psuAccessToken = "psu-payments-token",
             request = DomesticPaymentRequest(
                 data = Data(consentId = CONSENT_ID, initiation = staged),
                 risk = Risk(paymentContextCode = "TransferToThirdParty"),
@@ -278,8 +245,8 @@ class PispTest {
 
         assertIs<NetworkResult.Success<*>>(result)
         val request = captured.single()
-        assertEquals("/v4.0/pisp/domestic-payments", request.path)
-        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("/v1/payments/domestic", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
         assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
     }
 
@@ -296,8 +263,8 @@ class PispTest {
         )
         val pisp = pisp()
 
-        pisp.createDomesticPayment("psu-payments-token", submit, IDEMPOTENCY_KEY)
-        pisp.createDomesticPayment("psu-payments-token", submit, IDEMPOTENCY_KEY)
+        pisp.createDomesticPayment(submit, IDEMPOTENCY_KEY)
+        pisp.createDomesticPayment(submit, IDEMPOTENCY_KEY)
 
         assertEquals(captured[0].body, captured[1].body)
         assertEquals(captured[0].headers[HEADER_IDEMPOTENCY_KEY], captured[1].headers[HEADER_IDEMPOTENCY_KEY])
@@ -311,15 +278,13 @@ class PispTest {
         )
 
         val result = pisp.getFundsConfirmation(
-            psuAccessToken = "psu-payments-token",
             consentId = CONSENT_ID,
         )
 
         assertIs<NetworkResult.Success<*>>(result)
         val request = captured.single()
         assertEquals(HttpMethod.Get, request.method)
-        assertEquals("/v4.0/pisp/domestic-payment-consents/$CONSENT_ID/funds-confirmation", request.path)
-        assertNull(request.headers[HEADER_JWS_SIGNATURE])
+        assertEquals("/v1/consents/payment/domestic/$CONSENT_ID/funds-confirmation", request.path)
         assertNull(request.headers[HEADER_IDEMPOTENCY_KEY])
     }
 
@@ -330,10 +295,10 @@ class PispTest {
             status = HttpStatusCode.OK,
         )
 
-        val result = pisp.getDomesticPayment(accessToken = "payments-token", domesticPaymentId = "PMT-1")
+        val result = pisp.getDomesticPayment(domesticPaymentId = "PMT-1")
 
         assertIs<NetworkResult.Success<*>>(result)
-        assertEquals("/v4.0/pisp/domestic-payments/PMT-1", captured.single().path)
+        assertEquals("/v1/payments/domestic/PMT-1", captured.single().path)
     }
 
     @Test
@@ -342,7 +307,6 @@ class PispTest {
 
         assertFailsWith<IllegalArgumentException> {
             pisp.createDomesticPaymentConsent(
-                paymentsScopeToken = "cc-payments-token",
                 request = consumerConsentRequest(),
                 idempotencyKey = "x".repeat(41),
             )
@@ -384,30 +348,22 @@ class PispTest {
         val pisp = pisp()
 
         pisp.createInternationalPaymentConsent(
-            paymentsScopeToken = "cc-payments-token",
             request = internationalConsentRequest(),
             idempotencyKey = IDEMPOTENCY_KEY,
         )
 
         val request = captured.single()
         assertEquals(HttpMethod.Post, request.method)
-        assertEquals("/v4.0/pisp/international-payment-consents", request.path)
-        assertEquals("Bearer cc-payments-token", request.headers[HttpHeaders.Authorization])
-        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
+        assertEquals("/v1/consents/payment/international", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
         assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
     }
 
     @Test
-    fun `deserialises international consent response`() = runTest {
-        val pisp = pisp(
-            responseBody = INTL_CONSENT_RESPONSE,
-        )
+    fun `deserialises an international consent read back`() = runTest {
+        val pisp = pisp(responseBody = INTL_CONSENT_RESPONSE, status = HttpStatusCode.OK)
 
-        val result = pisp.createInternationalPaymentConsent(
-            paymentsScopeToken = "cc-token",
-            request = internationalConsentRequest(),
-            idempotencyKey = IDEMPOTENCY_KEY,
-        )
+        val result = pisp.getInternationalPaymentConsent("45076")
 
         val consent = assertIs<NetworkResult.Success<*>>(result).data
         assertNotNull(consent)
@@ -420,10 +376,10 @@ class PispTest {
             status = HttpStatusCode.OK,
         )
 
-        val result = pisp.getInternationalPaymentConsent("cc-token", "45076")
+        val result = pisp.getInternationalPaymentConsent("45076")
 
         assertIs<NetworkResult.Success<*>>(result)
-        assertEquals("/v4.0/pisp/international-payment-consents/45076", captured.single().path)
+        assertEquals("/v1/consents/payment/international/45076", captured.single().path)
     }
 
     @Test
@@ -433,11 +389,11 @@ class PispTest {
             status = HttpStatusCode.OK,
         )
 
-        val result = pisp.getInternationalFundsConfirmation("psu-token", "45076")
+        val result = pisp.getInternationalFundsConfirmation("45076")
 
         assertIs<NetworkResult.Success<*>>(result)
         assertEquals(
-            "/v4.0/pisp/international-payment-consents/45076/funds-confirmation",
+            "/v1/consents/payment/international/45076/funds-confirmation",
             captured.single().path,
         )
     }
@@ -456,7 +412,6 @@ class PispTest {
             risk = internationalConsentRequest().risk,
         )
         val result = pisp.createInternationalPayment(
-            psuAccessToken = "psu-payments-token",
             request = submission,
             idempotencyKey = "intl-submit-key",
         )
@@ -464,8 +419,8 @@ class PispTest {
         val response = assertIs<NetworkResult.Success<*>>(result).data
         assertNotNull(response)
         val request = captured.single()
-        assertEquals("/v4.0/pisp/international-payments", request.path)
-        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("/v1/payments/international", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
     }
 
     @Test
@@ -475,23 +430,17 @@ class PispTest {
             status = HttpStatusCode.OK,
         )
 
-        val result = pisp.getInternationalPayment("cc-token", "INT-PMT-1")
+        val result = pisp.getInternationalPayment("INT-PMT-1")
 
         assertIs<NetworkResult.Success<*>>(result)
-        assertEquals("/v4.0/pisp/international-payments/INT-PMT-1", captured.single().path)
+        assertEquals("/v1/payments/international/INT-PMT-1", captured.single().path)
     }
 
     @Test
-    fun `deserialises charges from international consent`() = runTest {
-        val pisp = pisp(
-            responseBody = INTL_CONSENT_WITH_CHARGES_RESPONSE,
-        )
+    fun `deserialises charges from an international consent read back`() = runTest {
+        val pisp = pisp(responseBody = INTL_CONSENT_WITH_CHARGES_RESPONSE, status = HttpStatusCode.OK)
 
-        val result = pisp.createInternationalPaymentConsent(
-            paymentsScopeToken = "cc-token",
-            request = internationalConsentRequest(),
-            idempotencyKey = IDEMPOTENCY_KEY,
-        )
+        val result = pisp.getInternationalPaymentConsent("99")
 
         assertIs<NetworkResult.Success<*>>(result)
     }
@@ -540,34 +489,30 @@ class PispTest {
 
     @Test
     fun `stages a domestic scheduled consent on the payments-scope token`() = runTest {
-        pisp().createDomesticScheduledPaymentConsent("cc-payments-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticScheduledPaymentConsent(schedConsentRequest(), IDEMPOTENCY_KEY)
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/domestic-scheduled-payment-consents", request.path)
+        assertEquals("/v1/consents/payment/domestic-scheduled", request.path)
         assertEquals(HttpMethod.Post, request.method)
-        assertEquals("Bearer cc-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
         assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
-        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
     }
 
     @Test
     fun `stages an international scheduled consent on the payments-scope token`() = runTest {
         pisp().createInternationalScheduledPaymentConsent(
-            "cc-payments-token",
             intlSchedConsentRequest(),
             IDEMPOTENCY_KEY,
         )
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/international-scheduled-payment-consents", request.path)
+        assertEquals("/v1/consents/payment/international-scheduled", request.path)
         assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
-        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
     }
 
     @Test
     fun `creates a domestic scheduled payment on the psu token`() = runTest {
         pisp().createDomesticScheduledPayment(
-            psuAccessToken = "psu-payments-token",
             request = DomesticScheduledPaymentRequest(
                 data = SchedData(consentId = "45149", initiation = schedConsentRequest().data?.initiation),
                 risk = SchedRisk(paymentContextCode = "TransferToThirdParty"),
@@ -576,15 +521,13 @@ class PispTest {
         )
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/domestic-scheduled-payments", request.path)
-        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
-        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
+        assertEquals("/v1/payments/domestic-scheduled", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
     }
 
     @Test
     fun `creates an international scheduled payment on the psu token`() = runTest {
         pisp().createInternationalScheduledPayment(
-            psuAccessToken = "psu-payments-token",
             request = InternationalScheduledPaymentRequest(
                 data = IntlSchedData(consentId = "45157", initiation = intlSchedConsentRequest().data?.initiation),
                 risk = IntlSchedRisk(categoryPurposeCode = "EPAY"),
@@ -593,8 +536,8 @@ class PispTest {
         )
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/international-scheduled-payments", request.path)
-        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("/v1/payments/international-scheduled", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
     }
 
     /**
@@ -606,23 +549,22 @@ class PispTest {
     fun `scheduled reads carry neither an idempotency key nor a signature`() = runTest {
         val client = pisp(responseBody = "{}", status = HttpStatusCode.OK)
 
-        client.getDomesticScheduledPaymentConsent("cc-token", "45149")
-        client.getDomesticScheduledPayment("cc-token", "19919")
-        client.getInternationalScheduledPaymentConsent("cc-token", "45157")
-        client.getInternationalScheduledPayment("cc-token", "19921")
+        client.getDomesticScheduledPaymentConsent("45149")
+        client.getDomesticScheduledPayment("19919")
+        client.getInternationalScheduledPaymentConsent("45157")
+        client.getInternationalScheduledPayment("19921")
 
         assertEquals(4, captured.size)
         captured.forEach { request ->
             assertEquals(HttpMethod.Get, request.method)
             assertNull(request.headers[HEADER_IDEMPOTENCY_KEY], "a read must not carry an idempotency key")
-            assertNull(request.headers[HEADER_JWS_SIGNATURE], "a read must not carry a signature")
         }
         assertEquals(
             listOf(
-                "/v4.0/pisp/domestic-scheduled-payment-consents/45149",
-                "/v4.0/pisp/domestic-scheduled-payments/19919",
-                "/v4.0/pisp/international-scheduled-payment-consents/45157",
-                "/v4.0/pisp/international-scheduled-payments/19921",
+                "/v1/consents/payment/domestic-scheduled/45149",
+                "/v1/payments/domestic-scheduled/19919",
+                "/v1/consents/payment/international-scheduled/45157",
+                "/v1/payments/international-scheduled/19921",
             ),
             captured.map { it.path },
         )
@@ -637,7 +579,7 @@ class PispTest {
     fun `transmits the exact scheduled bytes that were signed`() = runTest {
         val request = schedConsentRequest()
 
-        pisp().createDomesticScheduledPaymentConsent("cc-token", request, IDEMPOTENCY_KEY)
+        pisp().createDomesticScheduledPaymentConsent(request, IDEMPOTENCY_KEY)
 
         assertEquals(
             obieBody(DomesticScheduledPaymentConsentRequest.serializer(), request).toString(),
@@ -651,7 +593,7 @@ class PispTest {
      */
     @Test
     fun `the scheduled consent body carries the create permission`() = runTest {
-        pisp().createDomesticScheduledPaymentConsent("cc-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticScheduledPaymentConsent(schedConsentRequest(), IDEMPOTENCY_KEY)
 
         val data = Json.parseToJsonElement(captured.single().body).jsonObject.getValue("Data").jsonObject
         assertEquals("Create", data.getValue("Permission").jsonPrimitive.content)
@@ -663,7 +605,7 @@ class PispTest {
      */
     @Test
     fun `the scheduled consent body sends no local instrument`() = runTest {
-        pisp().createDomesticScheduledPaymentConsent("cc-token", schedConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticScheduledPaymentConsent(schedConsentRequest(), IDEMPOTENCY_KEY)
 
         val initiation = Json.parseToJsonElement(captured.single().body)
             .jsonObject.getValue("Data").jsonObject.getValue("Initiation").jsonObject

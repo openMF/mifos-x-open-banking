@@ -13,10 +13,14 @@ import org.mifosx.openbanking.core.model.hsbcPermission.OBPermission
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
+/**
+ * A started sign-in: the Worker-signed [authorizationUrl] to open, its [state], and the Worker's
+ * pending [flowId] that `/v1/auth/complete` redeems.
+ */
 data class ConsentResult(
     val authorizationUrl: String,
     val state: String,
-    val nonce: String,
+    val flowId: String,
     val consentId: String,
 )
 

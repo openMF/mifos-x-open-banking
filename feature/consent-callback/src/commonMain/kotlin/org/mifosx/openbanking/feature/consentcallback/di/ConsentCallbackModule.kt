@@ -9,7 +9,6 @@
  */
 package org.mifosx.openbanking.feature.consentcallback.di
 
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackViewModel
 
@@ -18,7 +17,6 @@ val ConsentCallbackModule = module {
         ConsentCallbackViewModel(
             repository = get(),
             consentSession = get(),
-            redirectUri = get(named("hsbcRedirectUri")),
         )
     }
 }

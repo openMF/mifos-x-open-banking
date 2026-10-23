@@ -15,8 +15,6 @@ import org.mifosx.openbanking.core.data.banking.ConsentRevokeRepository
 import org.mifosx.openbanking.core.data.infra.NetworkMonitor
 import org.mifosx.openbanking.core.model.banking.ConsentSummary
 import org.mifosx.openbanking.core.network.api.Aisp
-import org.mifosx.openbanking.core.network.api.ConsentCreationScope
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mobilenativefoundation.store.store5.Store
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -51,27 +49,20 @@ internal class ConsentDetailRepositoryImpl(
 }
 
 /**
- * Issues the OBIE `DELETE /account-access-consents/{ConsentId}`.
+ * Revokes the sign-in consent at the bank through the Worker (`DELETE /v1/consents/ais/{ConsentId}`).
  *
  * Talks to the network directly rather than through a store: this is a mutation, and routing it
  * through a cache would only create somewhere for a stale "still authorised" answer to live.
  */
 internal class ConsentRevokeRepositoryImpl(
     private val aisp: Aisp,
-    private val oauth: OAuth,
 ) : ConsentRevokeRepository {
 
-    override suspend fun revokeConsent(consentId: String): NetworkResult<Unit, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.ACCOUNTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> return NetworkResult.Error(result.error)
-        }
-
-        return when (val result = aisp.deleteConsent(token, consentId)) {
+    override suspend fun revokeConsent(consentId: String): NetworkResult<Unit, NetworkError> =
+        when (val result = aisp.deleteConsent(consentId)) {
             is NetworkResult.Success -> result
             is NetworkResult.Error -> result.orSuccessIfAlreadyGone()
         }
-    }
 
     /**
      * Treats a `404` as a success.

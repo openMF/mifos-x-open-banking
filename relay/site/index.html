@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="The open-source consent relay for Mifos X Open Banking. It passes your bank's authorisation response back to the app on your device and stores nothing.">
+  <meta name="theme-color" content="#125eaa">
+  <title>Mifos X Open Banking consent relay</title>
+  <link rel="icon" href="assets/mifos-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="band" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Mifos X Open Banking consent relay, home">
+      <img class="logo-light" src="assets/mifos-logo.png" alt="Mifos" width="99" height="34">
+      <img class="logo-dark" src="assets/mifos-logo-dark.png" alt="Mifos" width="99" height="34">
+      <span class="product">Open Banking relay</span>
+    </a>
+    <nav aria-label="Site">
+      <a href="privacy/">Privacy</a>
+      <a href="terms/">Terms</a>
+      <a href="https://github.com/openMF/mifos-x-open-banking/tree/dev/relay">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <h1>Your bank's answer, passed straight back to the app.</h1>
+    <p class="lead">If your bank sent you here, you're done. You can close this tab and go back to Mifos X Open Banking.</p>
+    <ol class="journey" aria-label="How the consent relay works">
+      <li><strong>You approve at your bank</strong><span>You sign in on your bank's own site and approve access or a payment.</span></li>
+      <li><strong>Your bank sends you here</strong><span>The bank's answer arrives in the part of this page's address that only your browser can read.</span></li>
+      <li><strong>The app picks it up</strong><span>This page hands the answer to the app on your computer, or opens the app on your phone.</span></li>
+    </ol>
+  </div>
+
+  <section aria-labelledby="data">
+    <h2 id="data">What happens to your data</h2>
+    <ul class="facts">
+      <li>Nothing is stored. This site has no server code, database, account, cookie or analytics.</li>
+      <li>The bank's answer never reaches our host. It sits after the <code>#</code> in the address, which browsers keep to themselves.</li>
+      <li>The answer is removed from your browser history as soon as it has been read.</li>
+      <li>No third-party code is loaded, the site can't be embedded in another page, and nothing is cached.</li>
+      <li>The site holds no keys or credentials, so it can't sign in to your bank or make payments.</li>
+    </ul>
+    <p>The full detail is in the <a href="privacy/">privacy policy</a>.</p>
+  </section>
+
+  <section aria-labelledby="dev">
+    <h2 id="dev">For developers and reviewers</h2>
+    <dl>
+      <dt>Redirect URI</dt>
+      <dd><code>https://mifos-x-open-banking-relay.pages.dev/callback/</code></dd>
+      <dt>Source code</dt>
+      <dd><a href="https://github.com/openMF/mifos-x-open-banking/tree/dev/relay">openMF/mifos-x-open-banking, relay/</a>, with tests, the deploy runbook and the security headers</dd>
+      <dt>Check the headers</dt>
+      <dd><code>curl -I https://mifos-x-open-banking-relay.pages.dev/callback/</code></dd>
+      <dt>Forking the app</dt>
+      <dd>Deploy your own copy of <code>relay/site/</code> and register your own URL with your bank. Never reuse this one.</dd>
+      <dt>Licence</dt>
+      <dd><a href="https://github.com/openMF/mifos-x-open-banking/blob/dev/LICENSE">Mozilla Public License 2.0</a></dd>
+    </dl>
+  </section>
+
+  <section aria-labelledby="report">
+    <h2 id="report">Report a security issue</h2>
+    <p>
+      Email <a href="mailto:security-disclosure@mifos.org">security-disclosure@mifos.org</a> and follow the
+      <a href="https://github.com/openMF/mifos-x-open-banking/blob/dev/SECURITY.md">security policy</a>.
+      Please don't open a public issue for a vulnerability.
+    </p>
+  </section>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <nav aria-label="Footer">
+      <a href="privacy/">Privacy policy</a>
+      <a href="terms/">Terms of use</a>
+      <a href="https://github.com/openMF/mifos-x-open-banking/blob/dev/SECURITY.md">Security</a>
+      <a href="https://mifos.org">mifos.org</a>
+    </nav>
+    <p>Built by the <a href="https://mifos.org">Mifos Initiative</a> as an open-source reference app. Mifos X Open Banking is not affiliated with HSBC or any other bank. It currently connects to the HSBC UK Open Banking sandbox for testing.</p>
+    <p>Mifos and the Mifos logo are trademarks of the Mifos Initiative.</p>
+  </div>
+</footer>
+</body>
+</html>

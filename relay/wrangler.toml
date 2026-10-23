@@ -1,0 +1,5 @@
+# Cloudflare Pages project for the consent relay. See relay/README.md.
+# The account is chosen by CLOUDFLARE_ACCOUNT_ID at deploy time — never commit an account ID or token here.
+name = "mifos-x-open-banking-relay"
+compatibility_date = "2026-10-01"
+pages_build_output_dir = "site"

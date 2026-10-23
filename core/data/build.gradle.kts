@@ -49,12 +49,6 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.multiplatform.settings.test)
-
-            // TestSigningKey generates a throwaway PS256 key per run. Both are needed here: this
-            // module reaches :core:network via `implementation`, so neither the crypto API nor a
-            // provider is on its compile classpath.
-            implementation(libs.cryptography.core)
-            implementation(libs.cryptography.provider.optimal)
         }
 
         androidMain.dependencies {

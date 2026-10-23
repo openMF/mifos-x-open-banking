@@ -36,7 +36,7 @@ class LoginViewModelTest {
         ConsentResult(
             authorizationUrl = "https://sandbox.test/auth",
             state = "state-abc",
-            nonce = "nonce-xyz",
+            flowId = "flow-xyz",
             consentId = "consent-123",
         ),
     )
@@ -145,7 +145,7 @@ class LoginViewModelTest {
 
     @Test
     fun `StartOAuth clears any orphaned pending auth before beginning`() = runTest {
-        pendingAuthStore.save("stale-state", "stale-nonce", "stale-consent")
+        pendingAuthStore.save("stale-state", "stale-flow", "stale-consent")
         val repo = FakeLoginRepository().apply { createConsentResult = successResult() }
         val (vm, _) = createViewModel(repo)
         vm.stateFlow.first { it is LoginUiState.Content }
@@ -198,7 +198,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `StartOAuth persists the state nonce and consentId for the callback to validate against`() = runTest {
+    fun `StartOAuth persists the state flow and consentId for the callback to validate against`() = runTest {
         val repo = FakeLoginRepository().apply { createConsentResult = successResult() }
         val (vm, _) = createViewModel(repo)
         vm.stateFlow.first { it is LoginUiState.Content }
@@ -209,7 +209,7 @@ class LoginViewModelTest {
         val saved = pendingAuthStore.saved
         assertNotNull(saved, "without this the callback has nothing to authenticate the redirect against")
         assertEquals("state-abc", saved.state)
-        assertEquals("nonce-xyz", saved.nonce)
+        assertEquals("flow-xyz", saved.flowId)
         assertEquals("consent-123", saved.consentId)
     }
 
