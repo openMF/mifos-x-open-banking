@@ -153,6 +153,8 @@ export function fakeGoogle(publicKey: CryptoKey, verdictFor: (token: string) => 
       calls.decodeUrls.push(url.pathname);
       if (req.headers.get("authorization") !== "Bearer fixture-google-access-5a1c") return Response.json({ error: { code: 401 } }, { status: 401 });
       const v = verdictFor(((await req.json()) as { integrity_token: string }).integrity_token);
+      // Google decodes a token only under the package it was issued to; any other path is a 400.
+      if (typeof v !== "number" && url.pathname !== `/v1/${v.requestPackageName ?? BUNDLE_ID}:decodeIntegrityToken`) return Response.json({ error: { code: 400 } }, { status: 400 });
       return typeof v === "number" ? Response.json({ error: { code: v, message: "fixture google error detail" } }, { status: v }) : Response.json(verdictPayload(v));
     }
     return new Response("unexpected fetch", { status: 599 });

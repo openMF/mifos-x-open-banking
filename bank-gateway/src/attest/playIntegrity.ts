@@ -23,6 +23,7 @@ import { CHALLENGE, concat, fail, OK, sha256, type Verdict } from "./bytes";
  * never per request; a request costs two subrequests (DO + Google) and a hash.
  */
 
+// Default when PLAY_INTEGRITY_PACKAGES is unset: the store package only.
 const PACKAGE = "org.mifosx.openbanking";
 const TOKEN_URI = "https://oauth2.googleapis.com/token";
 const CACHE_KEY = "google:playintegrity";
@@ -81,15 +82,28 @@ export async function verifyPlayIntegrity(env: Env, value: string, clientData: U
 
   const access = await googleToken(env);
   if (!access) return fail("google_error");
-  const res = await fetch(`https://playintegrity.googleapis.com/v1/${PACKAGE}:decodeIntegrityToken`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
-    body: JSON.stringify({ integrity_token: token }),
-  });
-  if (!res.ok) return fail("google_error"); // Google's error body stays out of the response and the log
-  const p = (await res.json<DecodeResponse>()).tokenPayloadExternal;
+  // Google decodes a token only under the package it was issued to (400 otherwise), so each allowed
+  // package is tried in order: the store build first, dev builds (.debug, .demo) only when listed.
+  const packages = (env.PLAY_INTEGRITY_PACKAGES ?? PACKAGE).split(",").map((s) => s.trim()).filter(Boolean);
+  let p: DecodeResponse["tokenPayloadExternal"];
+  let refused = 0;
+  for (const pkg of packages) {
+    const res = await fetch(`https://playintegrity.googleapis.com/v1/${pkg}:decodeIntegrityToken`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
+      body: JSON.stringify({ integrity_token: token }),
+    });
+    if (res.ok) {
+      p = (await res.json<DecodeResponse>()).tokenPayloadExternal;
+      break;
+    }
+    if (res.status === 400) refused++; // wrong package for this token; Google's error body stays out of the log
+    else return fail("google_error");
+  }
+  // Refused under every listed package: a garbage token, or one issued to an app we do not list.
+  if (!p) return fail(refused === packages.length ? "undecodable" : "google_error");
 
-  if (p?.requestDetails?.requestPackageName !== PACKAGE) return fail("package");
+  if (!p.requestDetails?.requestPackageName || !packages.includes(p.requestDetails.requestPackageName)) return fail("package");
   if (p.requestDetails.requestHash !== base64url(await sha256(concat(utf8(challenge), clientData)))) return fail("request_hash");
   if (p.appIntegrity?.appRecognitionVerdict !== "PLAY_RECOGNIZED") return fail("app_verdict");
   if (!p.deviceIntegrity?.deviceRecognitionVerdict?.includes("MEETS_DEVICE_INTEGRITY")) return fail("device_verdict");

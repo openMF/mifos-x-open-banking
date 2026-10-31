@@ -32,6 +32,7 @@ export interface Env {
   ATTESTATION: DurableObjectNamespace<AttestationDO>;
   // Attestation (phase 06). Absent until handed off from the vault — see attest/gate.ts for what each mode does then.
   PLAY_INTEGRITY_SA_JSON?: string;
+  PLAY_INTEGRITY_PACKAGES?: string; // comma-separated Android packages whose tokens are decoded; default the store package
   APPLE_TEAM_ID?: string;
   ATTESTATION_MODE?: string; // "report-only" | anything else (incl. unset) = enforce
   CORS_ORIGINS?: string; // comma-separated web-client origins allowed to call cross-origin (phase 07); unset = none

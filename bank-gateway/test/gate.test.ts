@@ -179,7 +179,7 @@ describe("attestation gate (attest: true rows)", () => {
     const res = await call(e, "POST", "/v1/consents/ais", { body: AIS, headers: { "X-Client-Platform": "android", "X-Attestation": `play ${ch}.BAD` } });
     expect(res.status).toBe(403);
     const body = (await res.json()) as Record<string, unknown>;
-    expect(body).toMatchObject({ error: "attestation_invalid", reason: "google_error" });
+    expect(body).toMatchObject({ error: "attestation_invalid", reason: "undecodable" });
     expect(JSON.stringify(body)).not.toContain("fixture google error detail");
   });
 

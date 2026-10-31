@@ -34,7 +34,7 @@ async function attempt(verdict: (ch: string) => Promise<Verdict> | Verdict, o: {
   let v: Verdict = {};
   const g = fakeGoogle(sa.publicKey, () => v);
   vi.spyOn(globalThis, "fetch").mockImplementation(g.fake);
-  const e = await testEnv(fakeBank(), { PLAY_INTEGRITY_SA_JSON: sa.json, ATTESTATION_MODE: "enforce" });
+  const e = await testEnv(fakeBank(), { PLAY_INTEGRITY_SA_JSON: sa.json, ATTESTATION_MODE: "enforce", PLAY_INTEGRITY_PACKAGES: BUNDLE_ID });
   const ch = o.reuse ?? (await challenge(e));
   v = await verdict(ch);
   const res = await call(e, "POST", "/v1/consents/ais", { body: o.body ?? BODY, headers: { "X-Client-Platform": "android", "X-Attestation": `play ${ch}.TOKEN-${ch}` } });
@@ -66,10 +66,28 @@ describe("Play Integrity (standard request)", () => {
     expect(g.calls.decode).toBe(3);
   });
 
-  it("rejects wrong package", async () => {
+  it("decodes a listed dev-build package (PLAY_INTEGRITY_PACKAGES), trying each in order", async () => {
+    let v: Verdict = {};
+    const g = fakeGoogle(sa.publicKey, () => v);
+    vi.spyOn(globalThis, "fetch").mockImplementation(g.fake);
+    const e = await testEnv(fakeBank(), { PLAY_INTEGRITY_SA_JSON: sa.json, ATTESTATION_MODE: "enforce", PLAY_INTEGRITY_PACKAGES: `${BUNDLE_ID},${BUNDLE_ID}.debug` });
+    const ch = await challenge(e);
+    v = { requestHash: await requestHash(ch, DATA), requestPackageName: `${BUNDLE_ID}.debug` };
+    const res = await call(e, "POST", "/v1/consents/ais", { body: BODY, headers: { "X-Client-Platform": "android", "X-Attestation": `play ${ch}.T` } });
+    expect(res.status).toBe(200);
+    expect(g.calls.decodeUrls).toEqual([`/v1/${BUNDLE_ID}:decodeIntegrityToken`, `/v1/${BUNDLE_ID}.debug:decodeIntegrityToken`]);
+  });
+
+  it("an unlisted package is never decoded as a listed one", async () => {
+    const { res, g } = await attempt(async (ch) => ({ ...(await good(ch)), requestPackageName: `${BUNDLE_ID}.debug` }));
+    expect(res.status).toBe(403);
+    expect(g.calls.decodeUrls).toEqual([`/v1/${BUNDLE_ID}:decodeIntegrityToken`]);
+  });
+
+  it("a token issued to another app cannot be decoded under ours", async () => {
     const { res } = await attempt(async (ch) => ({ ...(await good(ch)), requestPackageName: "com.evil.clone" }));
     expect(res.status).toBe(403);
-    expect(await res.json()).toMatchObject({ error: "attestation_invalid", reason: "package" });
+    expect(await res.json()).toMatchObject({ error: "attestation_invalid", reason: "undecodable" });
   });
 
   it("rejects nonce mismatch (requestHash over a different body)", async () => {
