@@ -30,6 +30,7 @@ route is missing here, if this file documents a route the table does not have, o
 | `Authorization: Session <id>` | every route whose Auth line says **session**; optional on `POST /v1/auth/complete` | The opaque session id from `/v1/auth/complete`: exactly 43 base64url characters (32 random bytes). The Worker hashes it (SHA-256) before looking up the `SessionDO`, so the raw id is never stored. Missing or malformed → `401 missing_session`; unknown → `401 unknown_session` (`src/gate.ts`). |
 | `X-Client-Platform` | every request from the app | `android`, `ios`, `desktop` or `web`. Selects the attestation check on attestation routes (`android` → Play Integrity, `ios` → App Attest, anything else → none) and, with `web`, the web return prefix on consent routes. Client-asserted, see [SECURITY.md](SECURITY.md#4-attestation). |
 | `X-Client-Instance` | every request from the app | A random id the app creates on first launch (`gateway_client_instance`). Not a secret. Rate-limit key, together with the IP (`src/limits.ts`). Only the first 64 characters are used; absent → `anon`. |
+| `X-Client-App` | Android | The build's package (`org.mifosx.openbanking`, `….debug`, …). On a consent route, a package listed in `ANDROID_RETURN_APPS` at index > 0 makes `state` start with `a<index>.`, so the relay returns to that build's own scheme. Unlisted or absent → plain state (the store build). Never refused. |
 | `X-Attestation` | attestation routes, from android / ios | `play <challenge>.<integrity token>` (Android) or `ios <keyId>.<base64 CBOR assertion>` (iOS). Both sign over `clientData` = UTF-8 `"METHOD /path\n"` followed by the exact request body bytes. Android: Play Integrity standard request with `requestHash = base64url(SHA-256(challenge ‖ clientData))`, the challenge from `POST /v1/attest/challenge`. iOS: `generateAssertion(keyId, SHA-256(clientData))` with a key registered at `POST /v1/attest/ios/register`. See `src/attest/gate.ts`. |
 | `X-Idempotency-Key` | every signed POST (payment and VRP consents, payments, VRP funds check) | Required. 1–40 characters from `A–Z a–z 0–9 . _ ~ -`, otherwise `400 idempotency_key`. Forwarded to HSBC as `x-idempotency-key`. Reuse the same key when retrying the same payment. |
 | `Content-Type: application/json` | every request with a body | Any other type → `415 unsupported_media_type`. |
@@ -50,7 +51,8 @@ route is missing here, if this file documents a route the table does not have, o
 Every error is JSON with a snake_case `error` code. Some codes carry extra fields:
 
 ```json
-{ "error": "bank_error", "bankStatus": 400, "bankError": "UK.OBIE.Field.Invalid | Data.Initiation | …" }
+{ "error": "bank_error", "bankStatus": 400, "bankError": "400 ; U002 | Data.Initiation… | …",
+  "Errors": [{ "ErrorCode": "U002", "Path": "Data.Initiation…", "Message": "…" }] }
 ```
 
 | Field | Present on |
@@ -59,7 +61,8 @@ Every error is JSON with a snake_case `error` code. Some codes carry extra field
 | `requestId` | the router and entry-point errors: `404 route_not_found`, `413 payload_too_large`, `415 unsupported_media_type`, `500 internal`. Every other error carries the same id in the `x-request-id` header only. |
 | `bankStatus` | `bank_error`, `token_exchange_failed`: the HTTP status HSBC returned. |
 | `bankError` | `bank_error` on signed writes: HSBC's error codes, paths and messages only, at most 400 characters (`bankError()` in `src/hsbc/client.ts`). Never tokens, headers or request data. |
-| `reason` | `attestation_invalid`: which check failed (for example `challenge`, `request_hash`, `device_verdict`, `counter`). |
+| `Errors` | `bank_error` on signed writes: HSBC's `Errors[]` cut to `ErrorCode`, `Path`, `Message` — the OBIE shape, so a client reads it exactly as it would read the bank (`bankErrorDetail()` in `src/hsbc/client.ts`). |
+| `reason` | `attestation_invalid`: which check failed (for example `challenge`, `request_hash`, `device_verdict`, `counter`, `package`, `undecodable`, `google_error`). |
 | `retryAfter` | `rate_limited`: seconds until the window resets. |
 
 Errors every route can return:
@@ -160,6 +163,7 @@ content-type, x-client-platform, x-client-instance, x-attestation, x-idempotency
   endpoint on the authorize host (`HSBC_AUTHORIZE_HOST`) carrying the Worker-signed request object.
   The Worker parks `{state, nonce, leg: "ais", consentId}` as a single-use pending flow for 600 s.
   For web, `state` starts with `w<index>.` (see [ARCHITECTURE.md](ARCHITECTURE.md#27-web-return-through-the-relay)).
+  For an Android dev build, `state` starts with `a<index>.` (`X-Client-App` above).
 - **Errors:** `400 invalid_request` · `400 web_origin_not_allowed` · `502 bank_error` + `bankStatus` ·
   the gate errors.
 - **HSBC:** `POST /v4.0/aisp/account-access-consents` on the client-credentials token (scope `accounts`).

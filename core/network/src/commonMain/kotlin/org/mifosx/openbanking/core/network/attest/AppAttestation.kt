@@ -24,6 +24,12 @@ interface AppAttestation {
     /** The `X-Client-Platform` header: `android` | `ios` | `desktop` | `web`. */
     val platform: String
 
+    /**
+     * The `X-Client-App` header: this build's package, so the gateway can route the bank's return to it when
+     * several builds share a phone (state prefix `a<i>.`). Null where there is only one build per device.
+     */
+    val app: String? get() = null
+
     /** The `X-Attestation` header over [clientData], or null when this device cannot attest. */
     suspend fun header(clientData: ByteArray, gateway: AttestationGateway): String?
 }

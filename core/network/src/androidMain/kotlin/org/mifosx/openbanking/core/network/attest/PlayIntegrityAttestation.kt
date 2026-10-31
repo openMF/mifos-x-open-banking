@@ -34,6 +34,7 @@ class PlayIntegrityAttestation(
     private val cloudProjectNumber: String,
 ) : AppAttestation {
     override val platform: String = "android"
+    override val app: String = context.packageName
 
     private val lock = Mutex()
     private var provider: StandardIntegrityTokenProvider? = null

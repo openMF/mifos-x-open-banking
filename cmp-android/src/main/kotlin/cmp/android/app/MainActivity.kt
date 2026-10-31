@@ -11,6 +11,7 @@ package cmp.android.app
 
 import android.content.Intent
 import android.content.res.Resources
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -138,7 +139,16 @@ class MainActivity : AppCompatActivity() {
      * [consumeConsentRedirectUrl] filters out everything that is not our callback.
      */
     private fun publishConsentRedirect(intent: Intent?) {
-        intent?.consumeConsentRedirectUrl()?.let(ConsentRedirectBus::publish)
+        val url = intent?.consumeConsentRedirectUrl(packageName) ?: return
+        val sibling = siblingRedirectTarget(url, packageName)
+        if (sibling == null) {
+            ConsentRedirectBus.publish(url)
+            return
+        }
+        // Another build on this phone started the flow (the App Link landed here): hand it over, and
+        // close this task if it only exists to carry the redirect.
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(sibling))) }
+        if (isTaskRoot) finish()
     }
 
     override fun onResume() {

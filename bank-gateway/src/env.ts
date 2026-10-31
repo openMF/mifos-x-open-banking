@@ -37,4 +37,5 @@ export interface Env {
   ATTESTATION_MODE?: string; // "report-only" | anything else (incl. unset) = enforce
   CORS_ORIGINS?: string; // comma-separated web-client origins allowed to call cross-origin (phase 07); unset = none
   WEB_RETURN_ORIGINS?: string; // ordered, comma-separated web origins a sign-in may return to; state carries `w<index>.` (relay bridge.js holds the same list)
+  ANDROID_RETURN_APPS?: string; // ordered, comma-separated Android packages; state carries `a<index>.` for index > 0 (relay bridge.js + app hold the same list)
 }

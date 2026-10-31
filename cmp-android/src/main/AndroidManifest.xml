@@ -70,8 +70,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="org.mifosx.openbanking" android:host="callback" />
-                <data android:scheme="org.mifosx.openbanking" android:host="oauth" />
+                <data android:scheme="${applicationId}" android:host="callback" />
+                <data android:scheme="${applicationId}" android:host="oauth" />
             </intent-filter>
 
             <!--

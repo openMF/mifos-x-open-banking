@@ -30,6 +30,9 @@ ATTESTATION_MODE = "report-only"
 # Android packages whose Play Integrity tokens are decoded. This sandbox Worker serves dev builds too;
 # a production Worker lists only the store package (the default when unset).
 PLAY_INTEGRITY_PACKAGES = "org.mifosx.openbanking,org.mifosx.openbanking.debug,org.mifosx.openbanking.demo,org.mifosx.openbanking.demo.debug"
+# Android builds a sign-in may return to; state carries `a<index>.` for index > 0. Append, never reorder:
+# relay/site/callback/bridge.js and cmp-android ConsentRedirectIntent.kt hold the same list (tests pin it).
+ANDROID_RETURN_APPS = "org.mifosx.openbanking,org.mifosx.openbanking.debug,org.mifosx.openbanking.demo,org.mifosx.openbanking.demo.debug"
 # Web client origins (cmp-web) allowed to call the Worker cross-origin. Localhost is the dev / Playwright
 # server; add the production web host when it is deployed.
 CORS_ORIGINS = "http://localhost:8080"

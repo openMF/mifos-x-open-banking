@@ -146,13 +146,24 @@ export async function psuFetch(
   );
 }
 
+export interface ObieError { ErrorCode?: string; Path?: string; Message?: string }
+
 /** Bank error codes, paths and messages only — never request data, tokens or headers. */
 export async function bankError(res: Response): Promise<string> {
+  return (await bankErrorDetail(res)).summary;
+}
+
+/**
+ * The bank's error as a one-line summary (for logs) plus its `Errors[]` cut to ErrorCode / Path / Message —
+ * the OBIE shape the app's classifiers read. Reads the body once.
+ */
+export async function bankErrorDetail(res: Response): Promise<{ summary: string; errors: ObieError[] }> {
   try {
-    const b = (await res.json()) as { error?: string; error_description?: string; Code?: string; Errors?: { ErrorCode?: string; Message?: string; Path?: string }[] };
-    const parts = [b.error, b.error_description, b.Code, ...(b.Errors ?? []).map((e) => [e.ErrorCode, e.Path, e.Message].filter(Boolean).join(" | "))];
-    return parts.filter(Boolean).join(" ; ").slice(0, 400) || "unparsed";
+    const b = (await res.json()) as { error?: string; error_description?: string; Code?: string; Errors?: ObieError[] };
+    const errors = (b.Errors ?? []).map(({ ErrorCode, Path, Message }) => ({ ErrorCode, Path, Message }));
+    const parts = [b.error, b.error_description, b.Code, ...errors.map((e) => [e.ErrorCode, e.Path, e.Message].filter(Boolean).join(" | "))];
+    return { summary: parts.filter(Boolean).join(" ; ").slice(0, 400) || "unparsed", errors };
   } catch {
-    return "non-json";
+    return { summary: "non-json", errors: [] };
   }
 }

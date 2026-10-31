@@ -69,9 +69,22 @@ export async function consentAisCreate(c: HandlerContext): Promise<Response> {
  * Origin. "" for every other platform; null for web from an origin that is not on the list.
  */
 export function webStatePrefix(req: Request, e: Env): string | null {
-  if (req.headers.get("x-client-platform")?.trim().toLowerCase() !== "web") return "";
+  const platform = req.headers.get("x-client-platform")?.trim().toLowerCase();
+  if (platform === "android") return androidStatePrefix(req, e);
+  if (platform !== "web") return "";
   const i = (e.WEB_RETURN_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean).indexOf(req.headers.get("origin") ?? "");
   return i < 0 ? null : `w${i}.`;
+}
+
+/**
+ * `a<index>.` for an Android build listed in ANDROID_RETURN_APPS (comma-separated packages; the relay and
+ * the app hold the same ordered list), so the relay opens THAT build's scheme (`<package>://callback`)
+ * and not whichever build Android picks. Index 0 (the store build), an unlisted package or no
+ * X-Client-App keep the plain state, which the relay sends to the store scheme. Never refuses.
+ */
+function androidStatePrefix(req: Request, e: Env): string {
+  const i = (e.ANDROID_RETURN_APPS ?? "").split(",").map((a) => a.trim()).filter(Boolean).indexOf(req.headers.get("x-client-app")?.trim() ?? "");
+  return i > 0 ? `a${i}.` : "";
 }
 
 /**

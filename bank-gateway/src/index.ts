@@ -98,7 +98,7 @@ function log(level: "info" | "error", entry: Record<string, unknown>): void {
   else console.log(line);
 }
 
-const CORS_ALLOW_HEADERS = "authorization, content-type, x-client-platform, x-client-instance, x-attestation, x-idempotency-key";
+const CORS_ALLOW_HEADERS = "authorization, content-type, x-client-platform, x-client-instance, x-client-app, x-attestation, x-idempotency-key";
 
 /** The request's Origin when it is on the CORS_ORIGINS allowlist (the web client), else null. */
 function allowedOrigin(req: Request, env: Env): string | null {

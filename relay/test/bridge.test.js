@@ -22,7 +22,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const SITE = path.join(__dirname, '..', 'site');
-const { readParams, appUrl, loopbackUrl, webReturnUrl, WEB_RETURN_ORIGINS } = require(path.join(SITE, 'callback', 'bridge.js'));
+const { readParams, appUrl, loopbackUrl, webReturnUrl, WEB_RETURN_ORIGINS, ANDROID_RETURN_APPS } = require(path.join(SITE, 'callback', 'bridge.js'));
 
 const HYBRID_FRAGMENT = '#code=abc123&id_token=ey.J.sig&state=st-1';
 
@@ -304,5 +304,32 @@ test('assetlinks.json verifies the app for the callback App Link', () => {
     assert.deepEqual(l.relation, ['delegate_permission/common.handle_all_urls']);
     assert.equal(l.target.namespace, 'android_app');
     for (const fp of l.target.sha256_cert_fingerprints) assert.match(fp, /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/, 'colon-separated upper-case SHA-256');
+  }
+});
+
+/* ── android return app (state prefix `a<index>.` set by the Worker) ── */
+
+test('ANDROID_RETURN_APPS matches the Worker, entry for entry and in order', () => {
+  const toml = fs.readFileSync(path.join(__dirname, '..', '..', 'bank-gateway', 'wrangler.toml'), 'utf8');
+  const m = toml.match(/^ANDROID_RETURN_APPS\s*=\s*"([^"]*)"/m);
+  assert.ok(m, 'bank-gateway/wrangler.toml must declare ANDROID_RETURN_APPS');
+  assert.deepEqual(ANDROID_RETURN_APPS, m[1].split(',').map((a) => a.trim()).filter(Boolean));
+});
+
+test('ANDROID_RETURN_APPS matches the app, which forwards a callback meant for a sibling build', () => {
+  const kt = fs.readFileSync(path.join(__dirname, '..', '..', 'cmp-android', 'src', 'main', 'kotlin', 'cmp', 'android', 'app', 'ConsentRedirectIntent.kt'), 'utf8');
+  const m = kt.match(/ANDROID_RETURN_APPS\s*=\s*listOf\(([^)]*)\)/);
+  assert.ok(m, 'ConsentRedirectIntent.kt must declare ANDROID_RETURN_APPS');
+  assert.deepEqual(ANDROID_RETURN_APPS, [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]));
+});
+
+test('an a<i>. state hands off to that build\'s own scheme', () => {
+  assert.equal(appUrl('code=abc&state=a1.st-1'), 'org.mifosx.openbanking.debug://callback?code=abc&state=a1.st-1');
+  assert.equal(appUrl('code=abc&state=a3.st-1'), 'org.mifosx.openbanking.demo.debug://callback?code=abc&state=a3.st-1');
+});
+
+test('a plain, unknown or out-of-range prefix keeps the store scheme', () => {
+  for (const s of ['st-1', 'a0.st-1', 'a99.st-1', 'w0.st-1', 'a01.st-1']) {
+    assert.ok(appUrl('code=abc&state=' + s).startsWith('org.mifosx.openbanking://callback?'), s);
   }
 });

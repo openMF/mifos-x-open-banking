@@ -32,6 +32,14 @@ var LOOPBACK_PORT = 8765;
  */
 var WEB_RETURN_ORIGINS = ['http://localhost:8080'];
 
+/*
+ * Android builds a sign-in may return to (store, debug, demo …). Each registers its own package as its
+ * callback scheme. The Worker prefixes `state` with `a<index>.` into this list for index > 0, so a phone
+ * with several builds installed hands the response to the one that started the flow. Append, never
+ * reorder — same list as ANDROID_RETURN_APPS in bank-gateway/wrangler.toml and the app (tests pin both).
+ */
+var ANDROID_RETURN_APPS = ['org.mifosx.openbanking', 'org.mifosx.openbanking.debug', 'org.mifosx.openbanking.demo', 'org.mifosx.openbanking.demo.debug'];
+
 /**
  * Returns the raw parameter string the bank sent back, or '' when there is nothing to relay.
  *
@@ -44,9 +52,11 @@ function readParams(hash, search) {
   return fromHash || fromQuery;
 }
 
-/** The mobile hand-off: Android intent-filter / iOS CFBundleURLSchemes. */
+/** The mobile hand-off: Android intent-filter / iOS CFBundleURLSchemes. An `a<i>.` state picks that Android build. */
 function appUrl(raw) {
-  return SCHEME + '://callback?' + raw;
+  var m = /^a([1-9][0-9]*)\./.exec(new URLSearchParams(raw).get('state') || '');
+  var scheme = (m && ANDROID_RETURN_APPS[Number(m[1])]) || SCHEME;
+  return scheme + '://callback?' + raw;
 }
 
 /**
@@ -71,5 +81,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     readParams: readParams, appUrl: appUrl, loopbackUrl: loopbackUrl, webReturnUrl: webReturnUrl,
     SCHEME: SCHEME, LOOPBACK_PORT: LOOPBACK_PORT, WEB_RETURN_ORIGINS: WEB_RETURN_ORIGINS,
+    ANDROID_RETURN_APPS: ANDROID_RETURN_APPS,
   };
 }

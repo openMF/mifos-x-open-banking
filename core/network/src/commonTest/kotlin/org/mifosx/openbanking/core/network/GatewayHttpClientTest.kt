@@ -32,7 +32,11 @@ import kotlin.test.assertTrue
 internal const val TEST_SESSION = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 /** An attestation double: records what it was asked to sign and answers with a fixed header. */
-internal class FakeAttestation(override val platform: String, private val answer: String? = null) : AppAttestation {
+internal class FakeAttestation(
+    override val platform: String,
+    private val answer: String? = null,
+    override val app: String? = null,
+) : AppAttestation {
     val signed = mutableListOf<String>()
     var challenge: String? = null
 
@@ -62,6 +66,18 @@ internal class Recorder(
 }
 
 class GatewayHttpClientTest {
+
+    /** The gateway routes the bank's return to the build that started the flow (several can share a phone). */
+    @Test
+    fun sendsTheBuildPackageAsXClientAppOnlyWhenThereIsOne() = runTest {
+        val rec = Recorder()
+        val debugBuild = FakeAttestation("android", app = "org.mifosx.openbanking.debug")
+        gatewayHttpClient(MapSettings(), debugBuild, rec.engine).get("/v1/health")
+        assertEquals("org.mifosx.openbanking.debug", rec.last("/v1/health").first.headers[HEADER_CLIENT_APP])
+
+        gatewayHttpClient(MapSettings(), FakeAttestation("desktop"), rec.engine).get("/v1/ais/accounts")
+        assertNull(rec.last("/v1/ais/accounts").first.headers[HEADER_CLIENT_APP])
+    }
 
     @Test
     fun sendsSessionPlatformAndInstanceHeadersToTheWorker() = runTest {

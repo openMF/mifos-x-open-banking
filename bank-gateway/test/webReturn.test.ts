@@ -78,3 +78,35 @@ describe("web return origin in state", () => {
     expect(res.status).toBe(200);
   });
 });
+
+// Several builds of the app can share a phone (store, debug, demo). Each registers its own package as
+// its callback scheme, and the Worker tells the relay which one started the flow: `a<index>.` into
+// ANDROID_RETURN_APPS (index 0, the store build, keeps the plain state).
+const APPS = "org.mifosx.openbanking, org.mifosx.openbanking.debug, org.mifosx.openbanking.demo";
+
+describe("android return app in state", () => {
+  it("android + a listed non-store app → state carries a<index>.", async () => {
+    const e = await testEnv(fakeBank(), { ANDROID_RETURN_APPS: APPS });
+    const dbg = await ais(e, { "X-Client-Platform": "android", "X-Client-App": "org.mifosx.openbanking.debug" });
+    expect(dbg.res.status).toBe(200);
+    expect(dbg.state).toMatch(/^a1\.[0-9a-f-]{36}$/);
+    const demo = await start(e, "/v1/consents/payment/domestic", { "X-Client-Platform": "android", "X-Client-App": "org.mifosx.openbanking.demo", "X-Idempotency-Key": "and-pay-1" }, consentBody());
+    expect(demo.state).toMatch(/^a2\./);
+  });
+
+  it("the store app, an unlisted app or no header → plain state (the store scheme)", async () => {
+    const e = await testEnv(fakeBank(), { ANDROID_RETURN_APPS: APPS });
+    for (const app of ["org.mifosx.openbanking", "com.evil.clone", undefined]) {
+      const headers: Record<string, string> = { "X-Client-Platform": "android", ...(app ? { "X-Client-App": app } : {}) };
+      const r = await ais(e, headers);
+      expect(r.res.status).toBe(200);
+      expect(r.state).toMatch(/^[0-9a-f-]{36}$/);
+    }
+  });
+
+  it("X-Client-App is ignored off Android", async () => {
+    const e = await testEnv(fakeBank(), { ANDROID_RETURN_APPS: APPS });
+    const r = await ais(e, { "X-Client-Platform": "desktop", "X-Client-App": "org.mifosx.openbanking.debug" });
+    expect(r.state).toMatch(/^[0-9a-f-]{36}$/);
+  });
+});

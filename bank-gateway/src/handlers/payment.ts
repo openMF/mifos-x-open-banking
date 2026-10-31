@@ -11,7 +11,7 @@
 import { detachedJwsSignature } from "../crypto/detachedJws";
 import { initSigner } from "../crypto/signer";
 import type { Env } from "../env";
-import { bankError, ccAccessToken, HsbcError, hsbcFetch, psuFetch } from "../hsbc/client";
+import { bankErrorDetail, ccAccessToken, HsbcError, hsbcFetch, psuFetch } from "../hsbc/client";
 import { json } from "../http";
 import type { HandlerContext } from "../index";
 import { bankPath, payLeg } from "../routes";
@@ -66,7 +66,8 @@ function sign(e: Env, raw: Uint8Array): Promise<string> {
 /** The bank's error codes / paths / messages (never tokens); a 4xx keeps its status, anything else is 502. */
 async function bankFailure(res: Response): Promise<Response> {
   const status = res.status >= 400 && res.status < 500 ? res.status : 502;
-  return json({ error: "bank_error", bankStatus: res.status, bankError: await bankError(res) }, status);
+  const { summary, errors } = await bankErrorDetail(res);
+  return json({ error: "bank_error", bankStatus: res.status, bankError: summary, Errors: errors }, status);
 }
 
 /**

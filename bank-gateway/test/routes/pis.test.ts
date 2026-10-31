@@ -235,6 +235,12 @@ describe("signed POST guard — refusals before any signing work", () => {
     expect(res.status).toBe(400);
     const out = await exposed(res);
     for (const t of ALL_TOKENS) expect(out).not.toContain(t);
-    expect(await res.json()).toEqual({ error: "bank_error", bankStatus: 400, bankError: "400 ; U004 | Data.Initiation.RemittanceInformation | Field missing" });
+    expect(await res.json()).toEqual({
+      error: "bank_error",
+      bankStatus: 400,
+      bankError: "400 ; U004 | Data.Initiation.RemittanceInformation | Field missing",
+      // OBIE-shaped so the app's existing error classifiers (ErrorCode / Path / Message) keep working
+      Errors: [{ ErrorCode: "U004", Path: "Data.Initiation.RemittanceInformation", Message: "Field missing" }],
+    });
   });
 });

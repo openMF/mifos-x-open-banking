@@ -54,6 +54,7 @@ const val SESSION_KEY = "gateway_session"
 const val INSTANCE_KEY = "gateway_client_instance"
 
 const val HEADER_CLIENT_PLATFORM = "X-Client-Platform"
+const val HEADER_CLIENT_APP = "X-Client-App"
 const val HEADER_CLIENT_INSTANCE = "X-Client-Instance"
 const val HEADER_ATTESTATION = "X-Attestation"
 const val HEADER_IDEMPOTENCY_KEY = "X-Idempotency-Key"
@@ -137,6 +138,7 @@ private fun HttpClient.installWorkerHeaders(settings: Settings, attestation: App
     plugin(HttpSend).intercept { request ->
         if (request.url.host == workerHost) {
             request.headers[HEADER_CLIENT_PLATFORM] = attestation.platform
+            attestation.app?.let { request.headers[HEADER_CLIENT_APP] = it }
             request.headers[HEADER_CLIENT_INSTANCE] = instance
             settings.getStringOrNull(SESSION_KEY)?.let { request.headers[HttpHeaders.Authorization] = "Session $it" }
             if (request.attributes.contains(Attested) && attestation.platform in ATTESTED_PLATFORMS) {

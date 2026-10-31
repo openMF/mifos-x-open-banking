@@ -7,6 +7,10 @@ JavaScript can read. This page reads it and hands it to the app:
 - **Desktop** — `http://127.0.0.1:8765/callback?…` (the desktop app's `ConsentRedirectListener`)
 - **Mobile** — `org.mifosx.openbanking://callback?…` (Android intent-filter / iOS URL scheme), used only
   when no desktop listener answers
+  - An Android dev build (debug, demo …) gets its own scheme, `<applicationId>://callback?…`, when `state`
+    starts with `a<index>.` and `<index>` is an entry of `ANDROID_RETURN_APPS` (same list in
+    `bank-gateway/wrangler.toml` and the app's `ConsentRedirectIntent.kt`; a test pins all three).
+    A build that receives a return meant for a sibling (the verified App Link picks one) forwards it.
 - **Web** — `<origin>/#mifos-callback?…` (cmp-web), used only when `state` starts with `w<index>.` and
   `<index>` is an entry of `WEB_RETURN_ORIGINS` (see below). No loopback probe, no custom scheme.
 
