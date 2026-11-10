@@ -1,5 +1,5 @@
-# Contributor Covenant Code of Conduct
 
-This repo is controlled by Mifos and the Mifos Code of Conduct applies:
+# Code of Conduct
 
-https://mifos.org/resources/community/code-of-conduct/ 
+- Always follow the Mifos Initiative [code of conduct](https://mifos.org/resources/community/code-of-conduct/) - this is important to us. We are proud to be open, tolerant and providing a positive environment.
+
