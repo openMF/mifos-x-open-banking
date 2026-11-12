@@ -15,7 +15,6 @@ import org.mifosx.openbanking.core.model.banking.payment.ConsentType
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.ScheduledPaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.StandingOrderDraft
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
 
 /**
  * The payment authorisation leg's own storage — deliberately separate from [ConsentSession].
@@ -23,9 +22,9 @@ import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
  * [ConsentSession] models exactly one consent: `consentId()` returns a single string, and the
  * consent screens and the revoke path all read it as *the* connection this device is signed in
  * under. A payment consent is a second consent — short-lived, single-use, and authorised on
- * `scope=payments` — and its token exchange yields a PSU token scoped to payments rather than
- * accounts. Writing either into [ConsentSession] would overwrite the AIS consent id and bearer, and
- * every account read would start failing.
+ * `scope=payments`. The Worker keeps its PSU token as a separate payment leg of the app's session;
+ * writing the payment consent into [ConsentSession] would overwrite the AIS consent id the consent
+ * screens and the revoke path read.
  *
  * So this holds its own keys, and the two never touch. Clearing a payment authorisation leaves the
  * PSU signed in; signing out clears both.
@@ -44,7 +43,7 @@ interface PaymentAuthSession {
      * through the same URL with the same scope, so the callback is indistinguishable and this
      * session is the only thing that remembers.
      */
-    fun savePending(consentId: String, state: String, nonce: String, type: ConsentType)
+    fun savePending(consentId: String, state: String, flowId: String, type: ConsentType)
 
     /**
      * The consent family of the authorisation in flight, or null when it cannot be established.
@@ -60,13 +59,8 @@ interface PaymentAuthSession {
     /** Whether [state] is the one issued for the authorisation in flight. */
     fun matchesPendingState(state: String?): Boolean
 
-    /** The nonce issued for the authorisation in flight. */
-    fun pendingNonce(): String?
-
-    /** The payments-scoped PSU token from a completed authorisation. */
-    fun paymentToken(): PsuTokenResponse?
-
-    fun savePaymentToken(tokens: PsuTokenResponse)
+    /** The Worker's pending flow for the authorisation in flight, redeemed by `/v1/auth/complete`. */
+    fun pendingFlowId(): String?
 
     /**
      * Records the staged instruction so the leg that returns from the bank can submit it.
@@ -138,10 +132,10 @@ class SettingsPaymentAuthSession(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun savePending(consentId: String, state: String, nonce: String, type: ConsentType) {
+    override fun savePending(consentId: String, state: String, flowId: String, type: ConsentType) {
         secureSettings.putString(KEY_CONSENT_ID, consentId)
         secureSettings.putString(KEY_STATE, state)
-        secureSettings.putString(KEY_NONCE, nonce)
+        secureSettings.putString(KEY_FLOW_ID, flowId)
         secureSettings.putString(KEY_CONSENT_TYPE, type.wireValue)
     }
 
@@ -180,19 +174,7 @@ class SettingsPaymentAuthSession(
         return !pending.isNullOrBlank() && pending == state
     }
 
-    override fun pendingNonce(): String? = secureSettings.getStringOrNull(KEY_NONCE)
-
-    override fun paymentToken(): PsuTokenResponse? {
-        val raw = secureSettings.getStringOrNull(KEY_PAYMENT_TOKENS) ?: return null
-        return runCatching { json.decodeFromString(PsuTokenResponse.serializer(), raw) }.getOrNull()
-    }
-
-    override fun savePaymentToken(tokens: PsuTokenResponse) {
-        secureSettings.putString(
-            KEY_PAYMENT_TOKENS,
-            json.encodeToString(PsuTokenResponse.serializer(), tokens),
-        )
-    }
+    override fun pendingFlowId(): String? = secureSettings.getStringOrNull(KEY_FLOW_ID)
 
     override fun saveDraft(draft: PaymentDraft) {
         secureSettings.putString(KEY_DRAFT, json.encodeToString(PaymentDraft.serializer(), draft))
@@ -236,8 +218,7 @@ class SettingsPaymentAuthSession(
     override fun clear() {
         secureSettings.remove(KEY_CONSENT_ID)
         secureSettings.remove(KEY_STATE)
-        secureSettings.remove(KEY_NONCE)
-        secureSettings.remove(KEY_PAYMENT_TOKENS)
+        secureSettings.remove(KEY_FLOW_ID)
         secureSettings.remove(KEY_DRAFT)
         secureSettings.remove(KEY_SCHEDULED_DRAFT)
         secureSettings.remove(KEY_STANDING_ORDER_DRAFT)
@@ -248,8 +229,7 @@ class SettingsPaymentAuthSession(
     private companion object {
         const val KEY_CONSENT_ID = "payment_auth_consent_id"
         const val KEY_STATE = "payment_auth_state"
-        const val KEY_NONCE = "payment_auth_nonce"
-        const val KEY_PAYMENT_TOKENS = "payment_auth_tokens"
+        const val KEY_FLOW_ID = "payment_auth_flow_id"
         const val KEY_APPROVED_AT = "payment_auth_approved_at"
         const val KEY_DRAFT = "payment_auth_draft"
         const val KEY_SCHEDULED_DRAFT = "payment_auth_scheduled_draft"

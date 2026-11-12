@@ -125,7 +125,7 @@ val BankingModule: Module = module {
     }
 
     single<Store<String, ConsentSummary>>(AppStoreRegistry.ConsentDetail) {
-        ConsentStores.consentDetailStore(aisp = get(), oauth = get()).registerForLogout(get())
+        ConsentStores.consentDetailStore(aisp = get()).registerForLogout(get())
     }
 
     single<Store<String, PartyProfile>>(AppStoreRegistry.Party) {
@@ -186,7 +186,7 @@ val BankingModule: Module = module {
     }
 
     single<ConsentRevokeRepository> {
-        ConsentRevokeRepositoryImpl(aisp = get(), oauth = get())
+        ConsentRevokeRepositoryImpl(aisp = get())
     }
 
     single<DirectDebitsRepository> {

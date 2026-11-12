@@ -20,8 +20,6 @@ import org.mifosx.openbanking.core.model.vrp.Money
 import org.mifosx.openbanking.core.model.vrp.PeriodUsage
 import org.mifosx.openbanking.core.model.vrp.VrpConsent
 import org.mifosx.openbanking.core.model.vrp.VrpPayment
-import org.mifosx.openbanking.core.network.api.ConsentCreationScope
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Vrp
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
@@ -29,10 +27,8 @@ import kotlin.time.Clock
 
 class VrpPaymentRepositoryImpl(
     private val vrp: Vrp,
-    private val oauth: OAuth,
     private val consentDao: VrpConsentDao,
     private val paymentDao: VrpPaymentDao,
-    private val tokens: VrpTokenProvider,
 ) : VrpPaymentRepository {
 
     override fun observeForConsent(consentId: String): Flow<List<VrpPayment>> =
@@ -55,9 +51,7 @@ class VrpPaymentRepositoryImpl(
     ): NetworkResult<FundsAvailability, NetworkError> {
         val request = checkFundsRequest(consentId, amount)
 
-        val result = callAsCustomer(consentId) { token ->
-            vrp.checkFunds(token, consentId, request, fundsCheckKey(consentId, amount))
-        }
+        val result = vrp.checkFunds(consentId, request, fundsCheckKey(consentId, amount))
 
         return when (result) {
             is NetworkResult.Error -> result
@@ -88,9 +82,8 @@ class VrpPaymentRepositoryImpl(
             endToEndIdentification = endToEndIdentification,
         )
 
-        val result = callAsCustomer(consent.consentId) { token ->
-            vrp.createPayment(token, request, idempotencyKey)
-        }
+        // The Worker refreshes the consent's access token on a 401 and retries once.
+        val result = vrp.createPayment(request, idempotencyKey)
 
         return when (result) {
             is NetworkResult.Error -> result
@@ -111,12 +104,7 @@ class VrpPaymentRepositoryImpl(
     override suspend fun refreshStatus(payment: VrpPayment): NetworkResult<VrpPayment, NetworkError> {
         val paymentId = payment.paymentId ?: return NetworkResult.Success(payment)
 
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> return result
-        }
-
-        return when (val result = vrp.getPayment(token, paymentId)) {
+        return when (val result = vrp.getPayment(paymentId)) {
             is NetworkResult.Error -> result
 
             is NetworkResult.Success -> {
@@ -130,35 +118,6 @@ class VrpPaymentRepositoryImpl(
                 )
                 paymentDao.upsert(merged.toEntity())
                 NetworkResult.Success(merged)
-            }
-        }
-    }
-
-    /**
-     * Runs [call] on the consent's access token, once more on a freshly minted one if the first
-     * attempt is refused.
-     *
-     * An access token lives about five minutes while a consent lives indefinitely, so a token held
-     * across a quiet period is expected to be refused rather than exceptional.
-     */
-    private suspend fun <T> callAsCustomer(
-        consentId: String,
-        call: suspend (String) -> NetworkResult<T, NetworkError>,
-    ): NetworkResult<T, NetworkError> {
-        val attempt = when (val token = tokens.accessToken(consentId)) {
-            is NetworkResult.Success -> call(token.data)
-            is NetworkResult.Error -> return token
-        }
-
-        val refused = attempt is NetworkResult.Error &&
-            attempt.error is NetworkError.Client.Unauthorized
-
-        return if (!refused) {
-            attempt
-        } else {
-            when (val refreshed = tokens.refreshAccessToken(consentId)) {
-                is NetworkResult.Success -> call(refreshed.data)
-                is NetworkResult.Error -> attempt
             }
         }
     }

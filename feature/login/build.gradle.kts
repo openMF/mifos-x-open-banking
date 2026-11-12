@@ -34,6 +34,11 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
         }
 
+        androidMain.dependencies {
+            // Custom Tabs: the in-app browser tab for bank authorisation (FR-056).
+            implementation(libs.androidx.browser)
+        }
+
         androidUnitTest.dependencies {
             implementation(libs.robolectric)
             implementation(libs.bundles.androidx.compose.ui.test)

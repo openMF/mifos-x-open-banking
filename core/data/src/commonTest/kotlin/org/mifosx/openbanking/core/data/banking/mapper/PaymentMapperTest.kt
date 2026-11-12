@@ -122,15 +122,31 @@ class PaymentMapperTest {
         assertEquals("40120965872310", initiation.creditorAccount?.identification)
     }
 
-    /** The reference is the one optional field; a blank one is omitted rather than sent empty. */
+    /**
+     * HSBC refuses a domestic consent without `Structured[0].CreditorReferenceInformation.Reference`
+     * (`U004`), with or without a reference, so it is always sent: the PSU's reference, or the
+     * end-to-end id when they gave none. `Unstructured` carries only a real reference.
+     */
     @Test
-    fun omitsRemittanceInformationWhenThereIsNoReference() {
-        assertNull(draft(reference = null).toInitiation().remittanceInformation)
-        assertNull(draft(reference = "   ").toInitiation().remittanceInformation)
-        assertEquals(
-            listOf("RENT-FLAT12"),
-            draft().toInitiation().remittanceInformation?.unstructured,
-        )
+    fun alwaysSendsAStructuredCreditorReference() {
+        val given = draft().toInitiation().remittanceInformation
+        assertEquals(listOf("RENT-FLAT12"), given?.unstructured)
+        assertEquals("RENT-FLAT12", given?.structured?.single()?.creditorReferenceInformation?.reference)
+
+        for (blank in listOf(null, "   ", "!!")) {
+            val none = draft(reference = blank).toInitiation().remittanceInformation
+            // The end-to-end id, cut to the 18-char FPS limit.
+            assertEquals("E2E-RENT-FLAT12-20", none?.structured?.single()?.creditorReferenceInformation?.reference)
+        }
+        assertNull(draft(reference = null).toInitiation().remittanceInformation?.unstructured)
+    }
+
+    /** HSBC allows 18 chars of A-Z a-z 0-9 & - . / (`U002`); `Unstructured` keeps the reference as typed. */
+    @Test
+    fun theStructuredReferenceIsCutToTheFpsCharacterSet() {
+        val remittance = draft(reference = "Rent for flat 12, Oct/Nov & more").toInitiation().remittanceInformation
+        assertEquals("Rentforflat12Oct/N", remittance?.structured?.single()?.creditorReferenceInformation?.reference)
+        assertEquals(listOf("Rent for flat 12, Oct/Nov & more"), remittance?.unstructured)
     }
 
     @Test

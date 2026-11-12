@@ -123,17 +123,19 @@ class ScheduledPaymentInitiationMapperTest {
 
     @Test
     fun theDomesticRailSendsRemittanceInformation() {
-        assertEquals(
-            listOf("RENT-AUG"),
-            draft().toScheduledInitiation().remittanceInformation?.unstructured,
-        )
+        val given = draft().toScheduledInitiation().remittanceInformation
+        assertEquals(listOf("RENT-AUG"), given?.unstructured)
+        assertEquals("RENT-AUG", given?.structured?.single()?.creditorReferenceInformation?.reference)
     }
 
-    /** A blank reference is omitted rather than sent empty. */
+    /** No reference still sends the structured creditor reference HSBC requires (`U004`): the end-to-end id. */
     @Test
-    fun aBlankReferenceIsOmittedEntirely() {
-        assertNull(draft(reference = "  ").toScheduledInitiation().remittanceInformation)
-        assertNull(draft(reference = null).toScheduledInitiation().remittanceInformation)
+    fun aBlankReferenceFallsBackToTheEndToEndId() {
+        for (blank in listOf(null, "  ")) {
+            val none = draft(reference = blank).toScheduledInitiation().remittanceInformation
+            assertNull(none?.unstructured)
+            assertEquals("E2E-SCHED-202608", none?.structured?.single()?.creditorReferenceInformation?.reference)
+        }
     }
 
     /**

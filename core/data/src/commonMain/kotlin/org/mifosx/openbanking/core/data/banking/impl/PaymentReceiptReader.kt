@@ -35,42 +35,41 @@ import template.core.base.network.NetworkResult
  * added to and one place for it to be forgotten.
  */
 internal suspend fun Pisp.readReceipt(
-    token: String,
     paymentId: String,
     type: ConsentType,
 ): NetworkResult<PaymentReceipt, NetworkError> = when (type) {
     ConsentType.DomesticSinglePayment ->
-        when (val result = getDomesticPayment(token, paymentId)) {
+        when (val result = getDomesticPayment(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toPaymentReceipt())
             is NetworkResult.Error -> result
         }
 
     ConsentType.InternationalSinglePayment ->
-        when (val result = getInternationalPayment(token, paymentId)) {
+        when (val result = getInternationalPayment(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toIntlPaymentReceipt())
             is NetworkResult.Error -> result
         }
 
     ConsentType.DomesticScheduledPayment ->
-        when (val result = getDomesticScheduledPayment(token, paymentId)) {
+        when (val result = getDomesticScheduledPayment(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toScheduledPaymentReceipt())
             is NetworkResult.Error -> result
         }
 
     ConsentType.InternationalScheduledPayment ->
-        when (val result = getInternationalScheduledPayment(token, paymentId)) {
+        when (val result = getInternationalScheduledPayment(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toIntlScheduledPaymentReceipt())
             is NetworkResult.Error -> result
         }
 
     ConsentType.DomesticStandingOrder ->
-        when (val result = getDomesticStandingOrder(token, paymentId)) {
+        when (val result = getDomesticStandingOrder(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toStandingOrderReceipt())
             is NetworkResult.Error -> result
         }
 
     ConsentType.InternationalStandingOrder ->
-        when (val result = getInternationalStandingOrder(token, paymentId)) {
+        when (val result = getInternationalStandingOrder(paymentId)) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toIntlStandingOrderReceipt())
             is NetworkResult.Error -> result
         }

@@ -10,27 +10,11 @@
 package org.mifosx.openbanking.core.network.di
 
 import org.koin.core.module.Module
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
-import org.mifosx.openbanking.core.network.certs.CertPaths
-import org.mifosx.openbanking.core.network.config.HsbcConfig
-import org.mifosx.openbanking.core.network.mtls.MtlsIdentity
+import org.mifosx.openbanking.core.network.attest.AppAttestation
+import org.mifosx.openbanking.core.network.attest.NoAttestation
 
-/** Desktop (JVM): reads the certificate material from the classpath (`desktopMain/resources/certs/`). */
+/** desktop: no device attestation — the Worker gates this platform on session + rate limits (GOAL D3). */
 actual val networkPlatformModule: Module = module {
-    single {
-        MtlsIdentity(
-            pkcs12 = readClasspathCert(CertPaths.TRANSPORT_P12),
-            pkcs12Password = HsbcConfig.TRANSPORT_P12_PASSWORD,
-        )
-    }
-    single(named("hsbcSigningKey")) { readClasspathCert(CertPaths.SIGNING_KEY_PEM).decodeToString() }
-}
-
-internal fun readClasspathCert(name: String): ByteArray {
-    val loader = Thread.currentThread().contextClassLoader ?: object {}.javaClass.classLoader
-    return (
-        loader?.getResourceAsStream(name)
-            ?: error("Missing network certificate on the classpath: $name")
-        ).use { it.readBytes() }
+    single<AppAttestation> { NoAttestation("desktop") }
 }

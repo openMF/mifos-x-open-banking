@@ -9,6 +9,8 @@
  */
 package org.mifosx.openbanking.core.data.callback.impl
 
+import org.mifosx.openbanking.core.network.api.ConsentStart
+
 internal data class CallbackUrlParams(
     val code: String? = null,
     val idToken: String? = null,
@@ -25,11 +27,16 @@ internal data class CallbackUrlParams(
  * fragment — `…/callback/#code=…&id_token=…&state=…`. Android and iOS receive that fragment intact
  * through the custom scheme. A fragment is never sent to a server, though, so for desktop the bridge
  * page rewrites it into a query string before relaying to the loopback listener. Query wins on
- * conflict, since that is the deliberately-rewritten form.
+ * conflict, since that is the deliberately-rewritten form. On web the relay returns to the app's own
+ * origin as `<origin>/#mifos-callback?…` (fragment, so the web server never sees it); that marker is
+ * stripped before the fragment is decoded.
  */
+/** The fragment prefix the relay uses when it hands a web sign-in back to its origin (relay bridge.js). */
+const val WEB_CALLBACK_MARKER = "mifos-callback?"
+
 internal fun parseCallbackUrl(url: String): CallbackUrlParams {
     val afterScheme = url.substringAfter("://", url)
-    val fragment = afterScheme.substringAfter('#', "")
+    val fragment = afterScheme.substringAfter('#', "").removePrefix(WEB_CALLBACK_MARKER)
     val query = afterScheme.substringBefore('#').substringAfter('?', "")
 
     val params = decodeParams(fragment) + decodeParams(query)
@@ -89,3 +96,9 @@ private fun percentDecode(value: String): String {
     }
     return bytes.toByteArray().decodeToString()
 }
+
+/**
+ * The `state` the Worker put on its authorize URL. The redirect must echo it back, so the app keeps
+ * it to match the return leg locally before handing it to `/v1/auth/complete`.
+ */
+internal fun ConsentStart.authorizeState(): String? = parseCallbackUrl(authorizeUrl).state

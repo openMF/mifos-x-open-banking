@@ -18,6 +18,8 @@ import org.mifosx.openbanking.core.model.banking.payment.PaymentCharge
 import org.mifosx.openbanking.core.model.banking.payment.PaymentDraft
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
 import org.mifosx.openbanking.core.model.banking.payment.PaymentStatus
+import org.mifosx.openbanking.core.network.model.ais.standingOrders.CreditorReferenceInformation
+import org.mifosx.openbanking.core.network.model.ais.standingOrders.Structured
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.CreditorAccount
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.Data
 import org.mifosx.openbanking.core.network.model.pisp.domesticPayment.request.DebtorAccount
@@ -79,10 +81,29 @@ internal fun PaymentDraft.toInitiation(): Initiation = Initiation(
     // Absent when the PSU chose to pick their account at the bank instead.
     debtorAccount = debtorAccount?.toObieDebtor(),
     creditorAccount = creditor.toObieCreditor(),
-    remittanceInformation = reference
-        ?.takeIf { it.isNotBlank() }
-        ?.let { RemittanceInformation(unstructured = listOf(it)) },
+    remittanceInformation = RemittanceInformation(
+        unstructured = reference?.takeIf { it.isNotBlank() }?.let { listOf(it) },
+        structured = listOf(creditorReference(reference, endToEndIdentification)),
+    ),
 )
+
+// Faster Payments reference rules, as HSBC enforces them (U002, measured live): 18 chars of A-Z a-z 0-9 & - . /
+private const val MAX_CREDITOR_REFERENCE = 18
+private val NOT_FPS_REFERENCE = Regex("[^A-Za-z0-9&./-]")
+
+/**
+ * `Structured[0].CreditorReferenceInformation.Reference`, which HSBC requires on every domestic
+ * consent (`U004` otherwise, measured live with and without a reference). The PSU's reference cut
+ * to the FPS character set and length when anything survives; otherwise the draft's end-to-end id,
+ * so the mapping stays pure (`U008`). The full reference still travels in `Unstructured`.
+ */
+internal fun creditorReference(reference: String?, endToEndIdentification: String): Structured = Structured(
+    CreditorReferenceInformation(
+        reference = reference?.toFpsReference()?.ifEmpty { null } ?: endToEndIdentification.toFpsReference(),
+    ),
+)
+
+private fun String.toFpsReference(): String = replace(NOT_FPS_REFERENCE, "").take(MAX_CREDITOR_REFERENCE)
 
 /**
  * The `Risk` block for a consumer payment.

@@ -20,9 +20,9 @@ class FakePendingAuthStore : PendingAuthStore {
     var saveCount: Int = 0
         private set
 
-    override fun save(state: String, nonce: String, consentId: String) {
+    override fun save(state: String, flowId: String, consentId: String) {
         saveCount++
-        pending = PendingAuth(state = state, nonce = nonce, consentId = consentId)
+        pending = PendingAuth(state = state, flowId = flowId, consentId = consentId)
     }
 
     override fun consume(): PendingAuth? = pending.also { pending = null }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * [ConsentRedirectBus] is a process-wide object with a replay cache, so state carries between tests.
@@ -83,5 +84,31 @@ class ConsentRedirectBusTest {
             ),
             received,
         )
+    }
+
+    /**
+     * Leaving the app with Back finishes the Activity but keeps the process, so a relaunch builds a new
+     * navigator that subscribes afresh. Without the acknowledgement, replay hands it the redirect that
+     * was already handled, the single-use PendingAuth is gone, and the PSU sees "Security check failed".
+     */
+    @Test
+    fun `a routed redirect is not replayed to the next subscriber`() = runTest {
+        val url = "org.mifosx.openbanking://callback?code=routed-once"
+        ConsentRedirectBus.publish(url)
+        assertEquals(url, ConsentRedirectBus.redirects.first())
+
+        ConsentRedirectBus.markRouted(url)
+
+        assertTrue(ConsentRedirectBus.redirects.replayCache.isEmpty())
+    }
+
+    @Test
+    fun `acknowledging an older redirect keeps a newer one`() = runTest {
+        ConsentRedirectBus.publish("org.mifosx.openbanking://callback?code=older")
+        ConsentRedirectBus.publish("org.mifosx.openbanking://callback?code=newer")
+
+        ConsentRedirectBus.markRouted("org.mifosx.openbanking://callback?code=older")
+
+        assertEquals("org.mifosx.openbanking://callback?code=newer", ConsentRedirectBus.redirects.first())
     }
 }

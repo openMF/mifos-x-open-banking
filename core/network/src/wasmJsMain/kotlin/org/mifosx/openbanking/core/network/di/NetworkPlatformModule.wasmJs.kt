@@ -11,9 +11,10 @@ package org.mifosx.openbanking.core.network.di
 
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.mifosx.openbanking.core.network.attest.AppAttestation
+import org.mifosx.openbanking.core.network.attest.NoAttestation
 
-/**
- * Web (wasmJs): no certificate material is provided — a browser cannot present a client certificate,
- * so mTLS (and therefore the HSBC sandbox client) is unavailable on this target.
- */
-actual val networkPlatformModule: Module = module { }
+/** wasmJs: no device attestation — the Worker gates this platform on session + rate limits (GOAL D3). */
+actual val networkPlatformModule: Module = module {
+    single<AppAttestation> { NoAttestation("web") }
+}

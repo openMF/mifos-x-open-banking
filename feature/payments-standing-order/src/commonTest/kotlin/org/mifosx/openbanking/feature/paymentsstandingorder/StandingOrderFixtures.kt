@@ -195,7 +195,7 @@ object StandingOrderFixtures {
         status = "AWAU",
         authorizationUrl = "https://sandbox.ob.hsbc.co.uk/authorize?request=jwt",
         state = "state-1",
-        nonce = "nonce-1",
+        flowId = "nonce-1",
     )
 
     fun receipt(): PaymentReceipt = PaymentReceipt(

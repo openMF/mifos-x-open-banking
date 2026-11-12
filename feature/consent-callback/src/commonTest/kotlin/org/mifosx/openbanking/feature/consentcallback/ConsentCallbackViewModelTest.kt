@@ -16,10 +16,10 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.mifosx.openbanking.core.data.callback.ConsentStatusResult
+import org.mifosx.openbanking.core.data.callback.CallbackSecurityRejected
+import org.mifosx.openbanking.core.data.callback.ConsentRejectedAtBank
 import org.mifosx.openbanking.core.data.callback.SettingsConsentSession
 import org.mifosx.openbanking.core.data.callback.ValidationResult
-import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackAction
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackEvent
 import org.mifosx.openbanking.feature.consentcallback.ui.ConsentCallbackUiState
@@ -45,7 +45,6 @@ class ConsentCallbackViewModelTest {
         return ConsentCallbackViewModel(
             repository = repository,
             consentSession = consentSession,
-            redirectUri = REDIRECT_URI,
         )
     }
 
@@ -73,35 +72,30 @@ class ConsentCallbackViewModelTest {
 
     @Test
     fun `a valid callback exchanges the code and reaches Content`() = runTest {
-        repository.validateResult = ValidationResult.Valid(code = "auth-code", consentId = "cn-1")
+        repository.validateResult = FakeConsentCallbackRepository.VALID
         val vm = createViewModel()
 
         vm.processCallback()
 
         assertIs<ConsentCallbackUiState.Content>(vm.stateFlow.first { it is ConsentCallbackUiState.Content })
         assertEquals(listOf("auth-code"), repository.exchangedCodes)
-        assertEquals(listOf("cn-1"), repository.polledConsentIds)
+        assertTrue(repository.polledConsentIds.isEmpty(), "auth/complete already carries the consent status")
     }
 
     @Test
-    fun `a valid callback persists the psu tokens`() = runTest {
+    fun `a valid callback persists the worker session and no bank token`() = runTest {
         val vm = createViewModel()
 
         vm.processCallback()
         vm.stateFlow.first { it is ConsentCallbackUiState.Content }
 
-        val stored = secureSettings.getStringOrNull("hsbc_tokens")
-        assertTrue(stored != null && stored.contains("psu-access-token"))
+        assertEquals("worker-session", secureSettings.getStringOrNull("gateway_session"))
+        assertTrue(consentSession.isActive())
+        assertTrue(secureSettings.keys.none { "token" in it }, "keys: ${secureSettings.keys}")
     }
 
     @Test
     fun `an authorised consent persists the consent id and expiry`() = runTest {
-        repository.pollResults = mutableListOf(
-            ScreenState.Content(
-                ConsentStatusResult(ConsentStatus.Authorised, "2026-07-01T00:00:00Z"),
-                DataFreshness.FRESH,
-            ),
-        )
         val vm = createViewModel()
 
         vm.processCallback()
@@ -175,6 +169,31 @@ class ConsentCallbackViewModelTest {
     }
 
     @Test
+    fun `a security rejection from the worker shows the SecurityError state, not a decline`() = runTest {
+        repository.exchangeResult = ScreenState.Error(CallbackSecurityRejected("invalid_id_token"))
+        val vm = createViewModel()
+
+        vm.processCallback()
+
+        assertIs<ConsentCallbackUiState.SecurityError>(
+            vm.stateFlow.first { it is ConsentCallbackUiState.SecurityError },
+        )
+    }
+
+    @Test
+    fun `a consent the bank rejected clears the session and says so`() = runTest {
+        consentSession.saveConsentMeta("cn-old", "")
+        repository.exchangeResult = ScreenState.Error(ConsentRejectedAtBank())
+        val vm = createViewModel()
+
+        vm.processCallback()
+
+        val state = assertIs<ConsentCallbackUiState.Error>(vm.stateFlow.first { it is ConsentCallbackUiState.Error })
+        assertTrue(state.message.contains("rejected"))
+        assertTrue(!consentSession.isActive())
+    }
+
+    @Test
     fun `a failed token exchange surfaces an Error and does not poll`() = runTest {
         repository.exchangeResult = ScreenState.Error(FakeConsentCallbackRepository.NETWORK_ERROR)
         val vm = createViewModel()
@@ -210,15 +229,13 @@ class ConsentCallbackViewModelTest {
     }
 
     @Test
-    fun `an awaiting poll still records the consent and completes sign-in`() = runTest {
-        // A successful token exchange already proves authorisation; the bank reporting
-        // AwaitingAuthorisation a beat later is a propagation lag, so it must not block — this is the
-        // fix for a fresh consent staying invisible until a second authorisation.
-        repository.pollResults = mutableListOf(
-            ScreenState.Content(
-                ConsentStatusResult(ConsentStatus.AwaitingAuthorisation, "2026-07-01T00:00:00Z"),
-                DataFreshness.FRESH,
-            ),
+    fun `an awaiting consent status still records the consent and completes sign-in`() = runTest {
+        // The Worker issued a session, so the PSU authorised; the bank reporting AwaitingAuthorisation
+        // a beat later is a propagation lag, so it must not block — this is the fix for a fresh
+        // consent staying invisible until a second authorisation.
+        repository.exchangeResult = ScreenState.Content(
+            FakeConsentCallbackRepository.COMPLETED_AUTH.copy(consentStatus = "AwaitingAuthorisation"),
+            DataFreshness.FRESH,
         )
         val vm = createViewModel()
 
@@ -230,9 +247,12 @@ class ConsentCallbackViewModelTest {
     }
 
     @Test
-    fun `a failed poll still completes sign-in with an empty expiry`() = runTest {
-        // The tokens are already persisted (signed in), so failing to read the expiry must not block.
-        repository.pollResults = mutableListOf(ScreenState.Error(FakeConsentCallbackRepository.NETWORK_ERROR))
+    fun `an unknown consent expiry still completes sign-in with an empty expiry`() = runTest {
+        // The Worker could not read the consent (consentStatus Unknown, no expiry); that must not block.
+        repository.exchangeResult = ScreenState.Content(
+            FakeConsentCallbackRepository.COMPLETED_AUTH.copy(consentStatus = "Unknown", consentExpiresAt = null),
+            DataFreshness.FRESH,
+        )
         val vm = createViewModel()
 
         vm.processCallback()
@@ -254,18 +274,18 @@ class ConsentCallbackViewModelTest {
 
     @Test
     fun `NavigateRetry emits NavigateToLogin and keeps the session`() = runTest {
-        secureSettings.putString("hsbc_tokens", "existing")
+        secureSettings.putString("gateway_session", "existing")
         val vm = createViewModel()
 
         vm.trySendAction(ConsentCallbackAction.NavigateRetry)
 
         assertIs<ConsentCallbackEvent.NavigateToLogin>(vm.eventFlow.first())
-        assertEquals("existing", secureSettings.getStringOrNull("hsbc_tokens"))
+        assertEquals("existing", secureSettings.getStringOrNull("gateway_session"))
     }
 
     @Test
     fun `NavigateLogin clears the secure session before emitting NavigateToLogin`() = runTest {
-        secureSettings.putString("hsbc_tokens", "existing")
+        secureSettings.putString("gateway_session", "existing")
         val vm = createViewModel()
 
         vm.trySendAction(ConsentCallbackAction.NavigateLogin)

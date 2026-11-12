@@ -9,33 +9,31 @@
  */
 package org.mifosx.openbanking.core.network.api
 
-import io.ktor.client.HttpClient
+import com.russhwolf.settings.MapSettings
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.mifosx.openbanking.core.network.TestSigningKey
+import org.mifosx.openbanking.core.network.FakeAttestation
+import org.mifosx.openbanking.core.network.HEADER_ATTESTATION
+import org.mifosx.openbanking.core.network.HEADER_IDEMPOTENCY_KEY
+import org.mifosx.openbanking.core.network.SESSION_KEY
+import org.mifosx.openbanking.core.network.TEST_SESSION
+import org.mifosx.openbanking.core.network.gatewayHttpClient
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.DomesticStandingOrderRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderConsentRequest
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.InternationalStandingOrderRequest
-import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_FINANCIAL_ID
-import org.mifosx.openbanking.core.network.pisp.HEADER_FAPI_INTERACTION_ID
-import org.mifosx.openbanking.core.network.pisp.HEADER_IDEMPOTENCY_KEY
-import org.mifosx.openbanking.core.network.pisp.HEADER_JWS_SIGNATURE
 import org.mifosx.openbanking.core.network.pisp.obieBody
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.mifosx.openbanking.core.network.model.pisp.domesticStandingOrder.request.CreditorAccount as SoCreditorAccount
@@ -53,10 +51,10 @@ import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.MandateRelatedInformation as IntlSoMandate
 import org.mifosx.openbanking.core.network.model.pisp.internationalStandingOrder.request.Risk as IntlSoRisk
 
-private const val KID = "test-kid-1"
-private const val SIGNING_ISSUER = "mifos_init_00000/0000000000000000000000"
 private const val IDEMPOTENCY_KEY = "MFX-20260805-0001"
 private const val CONSENT_ID = "812774903"
+private const val CONSENT_START =
+    """{"flowId":"f-1","consentId":"812774903","authorizeUrl":"https://sandbox.ob.hsbc.co.uk/authorize?state=s"}"""
 
 /**
  * [Pisp]'s standing-order surface at the wire.
@@ -124,31 +122,28 @@ class PispStandingOrderTest {
 
     @Test
     fun `stages a domestic standing-order consent on the payments-scope token`() = runTest {
-        pisp().createDomesticStandingOrderConsent("cc-payments-token", soConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(soConsentRequest(), IDEMPOTENCY_KEY)
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/domestic-standing-order-consents", request.path)
+        assertEquals("/v1/consents/payment/domestic-standing-order", request.path)
         assertEquals(HttpMethod.Post, request.method)
-        assertEquals("Bearer cc-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
         assertEquals(IDEMPOTENCY_KEY, request.headers[HEADER_IDEMPOTENCY_KEY])
-        assertNotNull(request.headers[HEADER_JWS_SIGNATURE])
     }
 
     @Test
     fun `stages an international standing-order consent on its own path`() = runTest {
         pisp().createInternationalStandingOrderConsent(
-            "cc-payments-token",
             intlSoConsentRequest(),
             IDEMPOTENCY_KEY,
         )
 
-        assertEquals("/v4.0/pisp/international-standing-order-consents", captured.single().path)
+        assertEquals("/v1/consents/payment/international-standing-order", captured.single().path)
     }
 
     @Test
     fun `creates a domestic standing order on the psu token`() = runTest {
         pisp().createDomesticStandingOrder(
-            "psu-payments-token",
             DomesticStandingOrderRequest(
                 data = SoData(consentId = CONSENT_ID, initiation = soConsentRequest().data?.initiation),
                 risk = SoRisk,
@@ -157,14 +152,13 @@ class PispStandingOrderTest {
         )
 
         val request = captured.single()
-        assertEquals("/v4.0/pisp/domestic-standing-orders", request.path)
-        assertEquals("Bearer psu-payments-token", request.headers[HttpHeaders.Authorization])
+        assertEquals("/v1/payments/domestic-standing-order", request.path)
+        assertEquals("Session $TEST_SESSION", request.headers[HttpHeaders.Authorization])
     }
 
     @Test
     fun `creates an international standing order on the psu token`() = runTest {
         pisp().createInternationalStandingOrder(
-            "psu-payments-token",
             InternationalStandingOrderRequest(
                 data = IntlSoData(consentId = CONSENT_ID, initiation = intlSoConsentRequest().data?.initiation),
                 risk = IntlSoRisk,
@@ -172,7 +166,7 @@ class PispStandingOrderTest {
             IDEMPOTENCY_KEY,
         )
 
-        assertEquals("/v4.0/pisp/international-standing-orders", captured.single().path)
+        assertEquals("/v1/payments/international-standing-order", captured.single().path)
     }
 
     /**
@@ -185,24 +179,23 @@ class PispStandingOrderTest {
     @Test
     fun `standing-order reads carry neither an idempotency key nor a signature`() = runTest {
         val api = pisp()
-        api.getDomesticStandingOrderConsent("cc-token", CONSENT_ID)
-        api.getDomesticStandingOrder("cc-token", "19916")
-        api.getInternationalStandingOrderConsent("cc-token", CONSENT_ID)
-        api.getInternationalStandingOrder("cc-token", "19917")
+        api.getDomesticStandingOrderConsent(CONSENT_ID)
+        api.getDomesticStandingOrder("19916")
+        api.getInternationalStandingOrderConsent(CONSENT_ID)
+        api.getInternationalStandingOrder("19917")
 
         assertEquals(
             listOf(
-                "/v4.0/pisp/domestic-standing-order-consents/$CONSENT_ID",
-                "/v4.0/pisp/domestic-standing-orders/19916",
-                "/v4.0/pisp/international-standing-order-consents/$CONSENT_ID",
-                "/v4.0/pisp/international-standing-orders/19917",
+                "/v1/consents/payment/domestic-standing-order/$CONSENT_ID",
+                "/v1/payments/domestic-standing-order/19916",
+                "/v1/consents/payment/international-standing-order/$CONSENT_ID",
+                "/v1/payments/international-standing-order/19917",
             ),
             captured.map { it.path },
         )
         captured.forEach {
             assertEquals(HttpMethod.Get, it.method)
             assertNull(it.headers[HEADER_IDEMPOTENCY_KEY])
-            assertNull(it.headers[HEADER_JWS_SIGNATURE])
         }
     }
 
@@ -210,7 +203,7 @@ class PispStandingOrderTest {
     fun `transmits the exact standing-order bytes that were signed`() = runTest {
         val request = soConsentRequest()
 
-        pisp().createDomesticStandingOrderConsent("cc-token", request, IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(request, IDEMPOTENCY_KEY)
 
         assertEquals(
             obieBody(DomesticStandingOrderConsentRequest.serializer(), request).toString(),
@@ -225,7 +218,7 @@ class PispStandingOrderTest {
      */
     @Test
     fun `the standing-order consent body carries the create permission`() = runTest {
-        pisp().createDomesticStandingOrderConsent("cc-token", soConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(soConsentRequest(), IDEMPOTENCY_KEY)
 
         val data = Json.parseToJsonElement(captured.single().body).jsonObject.getValue("Data").jsonObject
         assertEquals("Create", data.getValue("Permission").jsonPrimitive.content)
@@ -239,7 +232,7 @@ class PispStandingOrderTest {
      */
     @Test
     fun `the standing-order body sends the frequency as an object`() = runTest {
-        pisp().createDomesticStandingOrderConsent("cc-token", soConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(soConsentRequest(), IDEMPOTENCY_KEY)
 
         val initiation = Json.parseToJsonElement(captured.single().body)
             .jsonObject.getValue("Data").jsonObject.getValue("Initiation").jsonObject
@@ -256,7 +249,7 @@ class PispStandingOrderTest {
      */
     @Test
     fun `the standing-order body sends an empty risk block`() = runTest {
-        pisp().createDomesticStandingOrderConsent("cc-token", soConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(soConsentRequest(), IDEMPOTENCY_KEY)
 
         val risk = Json.parseToJsonElement(captured.single().body).jsonObject.getValue("Risk").jsonObject
         assertTrue(risk.isEmpty(), "actual: $risk")
@@ -270,7 +263,7 @@ class PispStandingOrderTest {
      */
     @Test
     fun `the standing-order body sends no local instrument or payment identifiers`() = runTest {
-        pisp().createDomesticStandingOrderConsent("cc-token", soConsentRequest(), IDEMPOTENCY_KEY)
+        pisp().createDomesticStandingOrderConsent(soConsentRequest(), IDEMPOTENCY_KEY)
 
         val initiation = Json.parseToJsonElement(captured.single().body)
             .jsonObject.getValue("Data").jsonObject.getValue("Initiation").jsonObject
@@ -284,39 +277,38 @@ class PispStandingOrderTest {
     // endregion
 
     private suspend fun pisp(
-        financialId: String = "",
         responseBody: String = "{}",
         status: HttpStatusCode = HttpStatusCode.Created,
     ): Pisp {
-        val client = HttpClient(
-            MockEngine { request ->
-                captured += RecordedRequest(
-                    method = request.method,
-                    path = request.url.encodedPath,
-                    headers = listOf(
-                        HttpHeaders.Authorization,
-                        HEADER_IDEMPOTENCY_KEY,
-                        HEADER_JWS_SIGNATURE,
-                        HEADER_FAPI_INTERACTION_ID,
-                        HEADER_FAPI_FINANCIAL_ID,
-                    ).associateWith { request.headers[it] },
-                    body = request.body.toByteArray().decodeToString(),
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath == "/v1/attest/challenge") {
+                return@MockEngine respond(
+                    """{"challenge":"c"}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
                 )
-                respond(
-                    content = responseBody,
-                    status = status,
-                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                )
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+            }
+            captured += RecordedRequest(
+                method = request.method,
+                path = request.url.encodedPath,
+                headers = listOf(
+                    HttpHeaders.Authorization,
+                    HEADER_IDEMPOTENCY_KEY,
+                    HEADER_ATTESTATION,
+                    "x-jws-signature",
+                ).associateWith { request.headers[it] },
+                body = request.body.toByteArray().decodeToString(),
+            )
+            // A consent create answers with the Worker's {flowId, consentId, authorizeUrl}.
+            val isConsentCreate = request.method == HttpMethod.Post &&
+                request.url.encodedPath.startsWith("/v1/consents/")
+            respond(
+                content = if (isConsentCreate) CONSENT_START else responseBody,
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
         }
-        return Pisp(
-            httpClient = client,
-            kid = KID,
-            signingKeyPem = TestSigningKey.pem(),
-            financialId = financialId,
-            signingIssuer = SIGNING_ISSUER,
-        )
+        val settings = MapSettings(SESSION_KEY to TEST_SESSION)
+        return Pisp(gatewayHttpClient(settings, FakeAttestation("android", answer = "play c.t"), engine))
     }
 }

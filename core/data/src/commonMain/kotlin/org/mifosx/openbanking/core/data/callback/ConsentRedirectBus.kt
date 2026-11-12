@@ -37,4 +37,19 @@ object ConsentRedirectBus {
     fun publish(url: String) {
         _redirects.tryEmit(url)
     }
+
+    /**
+     * Called by the navigator once it has routed [url]: drops it from the replay cache, so a later
+     * subscriber is not handed a redirect that was already handled.
+     *
+     * Replay outlives the Activity. Back finishes the Activity but keeps the process, so a relaunch
+     * builds a new navigator whose saved state is gone; replay then routed the old redirect again,
+     * found its single-use PendingAuth already spent, and showed "Security check failed". Only the
+     * routed URL is dropped — a newer redirect already in the cache is kept.
+     */
+    fun markRouted(url: String) {
+        // ponytail: check-then-reset is not atomic; a publish landing between the two is lost. Redirects
+        // arrive seconds apart (a human finishing at the bank), so a lock is not worth it yet.
+        if (_redirects.replayCache.lastOrNull() == url) _redirects.resetReplayCache()
+    }
 }

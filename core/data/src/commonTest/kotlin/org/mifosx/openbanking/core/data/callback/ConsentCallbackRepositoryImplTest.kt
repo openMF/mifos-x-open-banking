@@ -9,25 +9,19 @@
  */
 package org.mifosx.openbanking.core.data.callback
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import org.mifosx.openbanking.core.data.TestSigningKey
 import org.mifosx.openbanking.core.data.callback.impl.ConsentCallbackRepositoryImpl
+import org.mifosx.openbanking.core.data.completedAuthJson
+import org.mifosx.openbanking.core.data.gatewayClient
+import org.mifosx.openbanking.core.data.jsonHeaders
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
 import org.mifosx.openbanking.core.network.api.Aisp
-import org.mifosx.openbanking.core.network.api.OAuth
+import org.mifosx.openbanking.core.network.api.CompletedAuth
+import org.mifosx.openbanking.core.network.api.Session
 import template.core.base.common.screen.ScreenState
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -35,47 +29,33 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Covers [ConsentCallbackRepositoryImpl] — chiefly `validateCallback`, the security gate on HSBC's
- * redirect.
- *
- * `exchangeCode` / `pollConsentStatus` reach `clientAssertion()` and so need a signing key; that key
- * is generated per run by [TestSigningKey] rather than read from a fixture, which is what lets these
- * paths be covered at all without putting signing material in the repository.
+ * Covers [ConsentCallbackRepositoryImpl] — `validateCallback`, the local gate on HSBC's redirect
+ * (single-use, state match, error classification), and the two Worker calls behind it. The `id_token`
+ * is verified by the Worker (`400 invalid_id_token`); the app only requires it to be present.
  */
-@OptIn(ExperimentalEncodingApi::class)
 class ConsentCallbackRepositoryImplTest {
 
     private val pendingAuthStore = FakePendingAuthStore()
-    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private val sent = mutableListOf<Pair<String, String>>()
 
-    /**
-     * `validateCallback` never signs anything, so the key is irrelevant to most of this class — but
-     * `exchangeCode` / `pollConsentStatus` do reach `clientAssertion()`, hence a real generated one.
-     */
-    private suspend fun buildRepo(
-        tokenJson: String = TOKEN_JSON,
-        tokenStatus: HttpStatusCode = HttpStatusCode.OK,
+    private fun buildRepo(
+        completeStatus: HttpStatusCode = HttpStatusCode.OK,
+        completeBody: String = completedAuthJson("cn-1"),
         consentStatus: String = "Authorised",
         consentHttpStatus: HttpStatusCode = HttpStatusCode.OK,
         consentExpiration: String = "",
     ): ConsentCallbackRepositoryImpl {
-        val client = HttpClient(
-            MockEngine { request ->
-                when {
-                    request.url.encodedPath.contains("oauth2/token") ->
-                        respond(tokenJson, tokenStatus, jsonHeaders)
-
-                    request.url.encodedPath.contains("account-access-consents") ->
-                        respond(consentJson(consentStatus, consentExpiration), consentHttpStatus, jsonHeaders)
-
-                    else -> respond("{}", HttpStatusCode.OK, jsonHeaders)
-                }
-            },
-        ) {
-            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        val client = gatewayClient { request ->
+            sent += request.url.encodedPath to request.body.toByteArray().decodeToString()
+            when {
+                request.url.encodedPath == "/v1/auth/complete" -> respond(completeBody, completeStatus, jsonHeaders)
+                request.url.encodedPath.startsWith("/v1/consents/ais/") ->
+                    respond(consentJson(consentStatus, consentExpiration), consentHttpStatus, jsonHeaders)
+                else -> respond("{}", HttpStatusCode.OK, jsonHeaders)
+            }
         }
         return ConsentCallbackRepositoryImpl(
-            oauth = OAuth(client, TOKEN_URL, "test-client", "test-kid", TestSigningKey.pem()),
+            session = Session(client),
             aisp = Aisp(client),
             pendingAuthStore = pendingAuthStore,
         )
@@ -88,27 +68,19 @@ class ConsentCallbackRepositoryImplTest {
             """"StatusUpdateDateTime":"","TransactionFromDateTime":"","TransactionToDateTime":""},""" +
             """"Links":{"Self":""},"Meta":{"TotalPages":1},"Risk":{}}"""
 
-    /**
-     * Builds an unsigned id_token whose payload carries [nonce]; only the payload is inspected.
-     *
-     * Padding is stripped on purpose — that is what a real JWT looks like (RFC 7515 §2), and the
-     * strict [Base64.UrlSafe] decoder throws on it.
-     */
-    private fun idTokenWithNonce(nonce: String): String {
-        val payload = Base64.UrlSafe.encode("""{"nonce":"$nonce"}""".encodeToByteArray()).trimEnd('=')
-        return "header.$payload.signature"
-    }
+    /** An opaque id_token — the app never opens it; the Worker verifies it. */
+    private val idToken = "header.payload.signature"
 
     private fun savePending(
         state: String = "st-1",
-        nonce: String = "no-1",
+        flowId: String = "fl-1",
         consentId: String = "cn-1",
-    ) = pendingAuthStore.save(state, nonce, consentId)
+    ) = pendingAuthStore.save(state, flowId, consentId)
 
     private fun callbackUrl(
         code: String? = "auth-code",
         state: String? = "st-1",
-        idToken: String? = null,
+        idToken: String? = this.idToken,
         error: String? = null,
         errorDescription: String? = null,
     ): String {
@@ -123,16 +95,17 @@ class ConsentCallbackRepositoryImplTest {
     }
 
     @Test
-    fun `validateCallback returns Valid with the code and the stored consent id`() = runTest {
-        savePending(nonce = "no-1", consentId = "cn-1")
+    fun `validateCallback returns Valid with everything auth complete needs`() = runTest {
+        savePending(flowId = "fl-1", consentId = "cn-1")
 
-        val result = buildRepo().validateCallback(
-            callbackUrl(code = "auth-code", idToken = idTokenWithNonce("no-1")),
-        )
+        val result = buildRepo().validateCallback(callbackUrl(code = "auth-code"))
 
         val valid = assertIs<ValidationResult.Valid>(result)
         assertEquals("auth-code", valid.code)
         assertEquals("cn-1", valid.consentId)
+        assertEquals(idToken, valid.idToken)
+        assertEquals("st-1", valid.state)
+        assertEquals("fl-1", valid.flowId)
     }
 
     @Test
@@ -150,37 +123,10 @@ class ConsentCallbackRepositoryImplTest {
     }
 
     @Test
-    fun `validateCallback returns SecurityError for nonce mismatch`() = runTest {
-        savePending(nonce = "no-expected")
-
-        assertIs<ValidationResult.SecurityError>(
-            buildRepo().validateCallback(callbackUrl(idToken = idTokenWithNonce("no-attacker"))),
-        )
-    }
-
-    @Test
     fun `validateCallback returns SecurityError when the id_token is absent entirely`() = runTest {
         savePending()
 
         assertIs<ValidationResult.SecurityError>(buildRepo().validateCallback(callbackUrl(idToken = null)))
-    }
-
-    @Test
-    fun `validateCallback returns SecurityError for a malformed id_token`() = runTest {
-        savePending()
-
-        assertIs<ValidationResult.SecurityError>(
-            buildRepo().validateCallback(callbackUrl(idToken = "not-a-jwt")),
-        )
-    }
-
-    @Test
-    fun `validateCallback returns SecurityError for an id_token with undecodable payload`() = runTest {
-        savePending()
-
-        assertIs<ValidationResult.SecurityError>(
-            buildRepo().validateCallback(callbackUrl(idToken = "header.!!!not-base64!!!.sig")),
-        )
     }
 
     @Test
@@ -202,7 +148,7 @@ class ConsentCallbackRepositoryImplTest {
 
         assertIs<ValidationResult.AccessDenied>(
             result,
-            "errors must be classified before the nonce check, or a plain refusal surfaces as a " +
+            "errors must be classified before the id_token check, or a plain refusal surfaces as a " +
                 "SecurityError",
         )
     }
@@ -229,18 +175,18 @@ class ConsentCallbackRepositoryImplTest {
 
     @Test
     fun `validateCallback returns MissingCode when the response has no code`() = runTest {
-        savePending(nonce = "no-1")
+        savePending()
 
         assertIs<ValidationResult.MissingCode>(
-            buildRepo().validateCallback(callbackUrl(code = null, idToken = idTokenWithNonce("no-1"))),
+            buildRepo().validateCallback(callbackUrl(code = null)),
         )
     }
 
     @Test
     fun `validateCallback consumes the pending auth so a replay is refused`() = runTest {
-        savePending(nonce = "no-1")
+        savePending()
         val repo = buildRepo()
-        val url = callbackUrl(idToken = idTokenWithNonce("no-1"))
+        val url = callbackUrl()
 
         assertIs<ValidationResult.Valid>(repo.validateCallback(url))
         assertIs<ValidationResult.SecurityError>(
@@ -260,58 +206,68 @@ class ConsentCallbackRepositoryImplTest {
 
     @Test
     fun `validateCallback reads the fragment form delivered by the mobile custom scheme`() = runTest {
-        savePending(nonce = "no-1")
+        savePending()
 
         val result = buildRepo().validateCallback(
-            "org.mifosx.openbanking://callback#code=auth-code&state=st-1&id_token=${idTokenWithNonce("no-1")}",
+            "org.mifosx.openbanking://callback#code=auth-code&state=st-1&id_token=$idToken",
         )
 
         assertIs<ValidationResult.Valid>(result)
     }
 
     @Test
-    fun `an unpadded id_token validates as every real jwt is unpadded base64url`() = runTest {
-        savePending(nonce = "no-1")
-        val unpadded = idTokenWithNonce("no-1")
-        assertTrue(!unpadded.contains('='), "fixture must model a real JWT")
+    fun `exchangeCode redeems the validated redirect at the worker for a session`() = runTest {
+        savePending(flowId = "fl-1")
+        val repo = buildRepo()
+        val valid = assertIs<ValidationResult.Valid>(repo.validateCallback(callbackUrl(code = "auth-code")))
 
-        val result = buildRepo().validateCallback(callbackUrl(idToken = unpadded))
+        val result = repo.exchangeCode(valid)
 
-        assertIs<ValidationResult.Valid>(
-            result,
-            "Base64.UrlSafe rejects unpadded input by default, which failed every genuine consent",
-        )
+        val done = assertIs<ScreenState.Content<CompletedAuth>>(result).data
+        assertEquals("cn-1", done.consentId)
+        assertEquals("Authorised", done.consentStatus)
+        val (path, body) = sent.single { it.first == "/v1/auth/complete" }
+        assertEquals("/v1/auth/complete", path)
+        assertEquals("""{"flowId":"fl-1","code":"auth-code","idToken":"$idToken","state":"st-1"}""", body)
     }
 
     @Test
-    fun `a padded id_token still validates`() = runTest {
-        savePending(nonce = "no-1")
-        val padded = "header.${Base64.UrlSafe.encode("""{"nonce":"no-1"}""".encodeToByteArray())}.sig"
-
-        assertIs<ValidationResult.Valid>(buildRepo().validateCallback(callbackUrl(idToken = padded)))
-    }
-
-    @Test
-    fun `an id_token whose payload carries no nonce is refused`() = runTest {
-        savePending(nonce = "no-1")
-        val noNonce = "header.${Base64.UrlSafe.encode("""{"sub":"psu"}""".encodeToByteArray()).trimEnd('=')}.sig"
-
-        assertIs<ValidationResult.SecurityError>(buildRepo().validateCallback(callbackUrl(idToken = noNonce)))
-    }
-
-    @Test
-    fun `exchangeCode returns Content when the token endpoint accepts the code`() = runTest {
-        assertIs<ScreenState.Content<*>>(buildRepo().exchangeCode("auth-code", REDIRECT_URI))
-    }
-
-    @Test
-    fun `exchangeCode returns Error when the token endpoint rejects the code`() = runTest {
+    fun `exchangeCode returns Error when the worker refuses the id_token`() = runTest {
         val repo = buildRepo(
-            tokenJson = """{"error":"invalid_grant"}""",
-            tokenStatus = HttpStatusCode.BadRequest,
+            completeStatus = HttpStatusCode.BadRequest,
+            completeBody = """{"error":"invalid_id_token"}""",
         )
 
-        assertIs<ScreenState.Error>(repo.exchangeCode("stale-code", REDIRECT_URI))
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
+        assertIs<CallbackSecurityRejected>(error.error)
+    }
+
+    @Test
+    fun `exchangeCode treats a state mismatch at the worker as a security rejection`() = runTest {
+        val repo = buildRepo(
+            completeStatus = HttpStatusCode.BadRequest,
+            completeBody = """{"error":"state_mismatch"}""",
+        )
+
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
+        assertIs<CallbackSecurityRejected>(error.error)
+    }
+
+    @Test
+    fun `a rejected consent never yields a session`() = runTest {
+        val repo = buildRepo(
+            completeStatus = HttpStatusCode.Conflict,
+            completeBody = """{"error":"consent_rejected"}""",
+        )
+
+        val error = assertIs<ScreenState.Error>(
+            repo.exchangeCode(ValidationResult.Valid("c", "cn-1", idToken, "st-1", "fl-1")),
+        )
+        assertIs<ConsentRejectedAtBank>(error.error)
     }
 
     @Test
@@ -341,16 +297,6 @@ class ConsentCallbackRepositoryImplTest {
     }
 
     @Test
-    fun `pollConsentStatus surfaces an unauthenticated token call rather than polling on`() = runTest {
-        val repo = buildRepo(
-            tokenJson = """{"error":"invalid_client"}""",
-            tokenStatus = HttpStatusCode.Unauthorized,
-        )
-
-        assertIs<ScreenState.Unauthenticated>(repo.pollConsentStatus("cn-1"))
-    }
-
-    @Test
     fun `pollConsentStatus returns Error when the consent lookup fails`() = runTest {
         val repo = buildRepo(consentHttpStatus = HttpStatusCode.InternalServerError)
 
@@ -362,12 +308,5 @@ class ConsentCallbackRepositoryImplTest {
         val repo = buildRepo(consentHttpStatus = HttpStatusCode.Unauthorized)
 
         assertIs<ScreenState.Unauthenticated>(repo.pollConsentStatus("cn-1"))
-    }
-
-    private companion object {
-        const val TOKEN_URL = "https://sandbox.test/obie/open-banking/v1.1/oauth2/token"
-        const val REDIRECT_URI = "https://thekalpeshpawar.github.io/obp-callback/callback/"
-        const val TOKEN_JSON =
-            """{"access_token":"tok","expires_in":300,"scope":"accounts","token_type":"Bearer"}"""
     }
 }

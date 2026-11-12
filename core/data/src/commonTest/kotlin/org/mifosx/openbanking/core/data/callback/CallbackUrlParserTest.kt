@@ -52,6 +52,17 @@ class CallbackUrlParserTest {
     }
 
     @Test
+    fun `parses the web return form the relay hands to a web origin`() {
+        val params = parseCallbackUrl(
+            "http://localhost:8080/#mifos-callback?code=abc&id_token=ey.J.sig&state=w0.st-1",
+        )
+
+        assertEquals("abc", params.code)
+        assertEquals("ey.J.sig", params.idToken)
+        assertEquals("w0.st-1", params.state)
+    }
+
+    @Test
     fun `query wins over fragment because it is the deliberately rewritten form`() {
         val params = parseCallbackUrl(
             "org.mifosx.openbanking://callback?code=from-query#code=from-fragment",

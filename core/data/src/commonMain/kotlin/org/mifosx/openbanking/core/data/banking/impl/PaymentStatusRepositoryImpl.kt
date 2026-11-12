@@ -12,34 +12,25 @@ package org.mifosx.openbanking.core.data.banking.impl
 import org.mifosx.openbanking.core.data.banking.PaymentHistoryRepository
 import org.mifosx.openbanking.core.data.banking.PaymentStatusRepository
 import org.mifosx.openbanking.core.model.banking.payment.PaymentReceipt
-import org.mifosx.openbanking.core.network.api.ConsentCreationScope
-import org.mifosx.openbanking.core.network.api.OAuth
 import org.mifosx.openbanking.core.network.api.Pisp
 import template.core.base.network.NetworkError
 import template.core.base.network.NetworkResult
 
 /**
- * Reads a payment back on a client-credentials token.
- *
- * Client credentials rather than the PSU token on purpose: a status read must keep working after the
- * PSU token has expired, which it will, since a customer may open the status screen days later.
+ * Reads a payment back through the Worker, which uses its client-credentials token — so a status read
+ * keeps working after the PSU token has expired, as it will when the customer opens the status screen
+ * days later. Only payments this session submitted can be read (`403 payment_not_in_session`).
  */
 internal class PaymentStatusRepositoryImpl(
     private val pisp: Pisp,
-    private val oauth: OAuth,
     private val paymentHistoryRepository: PaymentHistoryRepository,
 ) : PaymentStatusRepository {
 
-    @Suppress("ReturnCount")
     override suspend fun paymentStatus(paymentId: String): NetworkResult<PaymentReceipt, NetworkError> {
-        val token = when (val result = oauth.clientCredentialsToken(ConsentCreationScope.PAYMENTS)) {
-            is NetworkResult.Success -> result.data.accessToken
-            is NetworkResult.Error -> return result
-        }
         val type = paymentHistoryRepository.consentTypeOf(paymentId)
             ?: return NetworkResult.Error(
                 NetworkError.Client.BadRequest("Unknown consent type — cannot choose an endpoint"),
             )
-        return pisp.readReceipt(token, paymentId, type)
+        return pisp.readReceipt(paymentId, type)
     }
 }

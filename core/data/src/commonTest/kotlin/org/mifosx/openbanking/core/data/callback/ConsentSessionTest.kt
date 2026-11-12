@@ -10,7 +10,7 @@
 package org.mifosx.openbanking.core.data.callback
 
 import com.russhwolf.settings.MapSettings
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.SESSION_KEY
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -20,8 +20,9 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 /**
- * Pins the storage contract [SettingsConsentSession] backs: tokens gate the "signed in" state, and
- * the consent id + expiry round-trip and are wiped alongside the tokens on [ConsentSession.clear].
+ * Pins the storage contract [SettingsConsentSession] backs: the Worker session gates the "signed in"
+ * state, lives under the one key the gateway client reads, and the consent id + expiry round-trip and are
+ * wiped alongside it on [ConsentSession.clear].
  */
 @OptIn(ExperimentalTime::class)
 class ConsentSessionTest {
@@ -29,25 +30,27 @@ class ConsentSessionTest {
     private val settings = MapSettings()
     private val session = SettingsConsentSession(settings)
 
-    private val token = PsuTokenResponse(
-        accesstoken = "psu-access-token",
-        tokentype = "Bearer",
-        expiresin = 300,
-        scope = "openid accounts",
-    )
+    private val token = "worker-session-id"
 
     @Test
-    fun savedTokensMakeTheSessionActiveAndReadBack() {
+    fun aSavedSessionMakesItActiveUnderTheKeyTheGatewayClientReads() {
         session.save(token)
 
         assertTrue(session.isActive())
-        assertEquals(token, session.tokens())
+        assertEquals(token, settings.getStringOrNull(SESSION_KEY))
     }
 
     @Test
     fun anEmptySessionIsNotActive() {
         assertFalse(session.isActive())
-        assertNull(session.tokens())
+    }
+
+    @Test
+    fun noBankTokenIsEverStored() {
+        session.save(token)
+        session.saveConsentMeta("cn-1", "2026-07-01T00:00:00Z")
+
+        assertFalse(settings.keys.any { "token" in it.lowercase() }, "keys: ${settings.keys}")
     }
 
     @Test
@@ -73,13 +76,13 @@ class ConsentSessionTest {
     }
 
     @Test
-    fun clearWipesTokensAndConsentMeta() {
+    fun clearWipesTheSessionAndConsentMeta() {
         session.save(token)
         session.saveConsentMeta("cn-1", "2026-07-01T00:00:00Z")
 
         session.clear()
 
-        assertNull(session.tokens())
+        assertFalse(session.isActive())
         assertNull(session.consentId())
         assertNull(session.consentExpiration())
     }
@@ -91,7 +94,7 @@ class ConsentSessionTest {
 
         session.forgetAll()
 
-        assertNull(session.tokens())
+        assertFalse(session.isActive())
         assertNull(session.consentId())
         assertNull(session.consentExpiration())
         assertTrue(settings.keys.isEmpty(), "forgetAll must leave nothing behind")

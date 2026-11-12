@@ -25,6 +25,21 @@ private const val U000_BODY = """
 
 class ObieErrorCodesTest {
 
+    /**
+     * The bank gateway answers a bank refusal with its own envelope plus HSBC's `Errors[]` (code, path,
+     * message). Before it forwarded `Errors`, every refusal parsed to nothing and the payment screens
+     * showed "Check your connection" for, e.g., a reference HSBC rejected with `U002`.
+     */
+    @Test
+    fun aGatewayBankErrorIsReadLikeTheBank() {
+        val path = "Data.Initiation.RemittanceInformation"
+        val body = """{"error":"bank_error","bankStatus":400,"bankError":"400 ; U002 | $path | Invalid",""" +
+            """"Errors":[{"ErrorCode":"U002","Path":"$path","Message":"Invalid"}]}"""
+        val error = NetworkError.Client.BadRequest(body = body)
+        assertEquals("U002", error.obieErrorCode())
+        assertEquals("Data.Initiation.RemittanceInformation", error.obieErrorPath())
+    }
+
     @Test
     fun aBadRequestCarryingU000IsUnsupported() {
         assertTrue(NetworkError.Client.BadRequest(body = U000_BODY).isUnsupportedForProduct())

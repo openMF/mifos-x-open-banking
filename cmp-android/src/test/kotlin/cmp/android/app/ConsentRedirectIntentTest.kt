@@ -59,6 +59,20 @@ class ConsentRedirectIntentTest {
     }
 
     @Test
+    fun `the verified relay app link is accepted with its fragment intact`() {
+        val appLink = "https://$CONSENT_RELAY_HOST/callback/#code=abc&id_token=ey.J.sig&state=st-1"
+
+        assertEquals(appLink, viewIntent(appLink).consumeConsentRedirectUrl())
+    }
+
+    @Test
+    fun `other https urls on the relay host or elsewhere are ignored`() {
+        assertNull(viewIntent("https://$CONSENT_RELAY_HOST/privacy/").consumeConsentRedirectUrl())
+        assertNull(viewIntent("https://evil.example/callback/#code=abc&state=st-1").consumeConsentRedirectUrl())
+        assertNull(viewIntent("http://$CONSENT_RELAY_HOST/callback/#code=abc").consumeConsentRedirectUrl())
+    }
+
+    @Test
     fun `the url is consumed, so an activity recreate cannot replay it`() {
         val intent = viewIntent(REDIRECT_URL)
 
@@ -103,6 +117,42 @@ class ConsentRedirectIntentTest {
         val https = "https://thekalpeshpawar.github.io/obp-callback/callback/?code=abc"
 
         assertNull(viewIntent(https).consumeConsentRedirectUrl())
+    }
+
+    // ── Several builds on one phone: each owns `<applicationId>://callback`; `a<i>.` in state names the build ──
+
+    @Test
+    fun `a dev build accepts its own scheme and not the store build's`() {
+        val debug = "org.mifosx.openbanking.debug"
+        val own = "$debug://callback?code=abc&state=a1.st-1"
+        assertEquals(own, viewIntent(own).consumeConsentRedirectUrl(debug))
+        assertNull(viewIntent(REDIRECT_URL).consumeConsentRedirectUrl(debug))
+    }
+
+    @Test
+    fun `a callback for a sibling build is forwarded to that build's scheme`() {
+        val link = "https://$CONSENT_RELAY_HOST/callback/#code=abc&id_token=ey.J.sig&state=a1.st-1"
+        assertEquals(
+            "org.mifosx.openbanking.debug://callback?code=abc&id_token=ey.J.sig&state=a1.st-1",
+            siblingRedirectTarget(link, ownApp = "org.mifosx.openbanking"),
+        )
+    }
+
+    @Test
+    fun `a plain state belongs to the store build, so a dev build forwards it there`() {
+        val link = "https://$CONSENT_RELAY_HOST/callback/#code=abc&state=st-1"
+        assertEquals(
+            "org.mifosx.openbanking://callback?code=abc&state=st-1",
+            siblingRedirectTarget(link, ownApp = "org.mifosx.openbanking.demo.debug"),
+        )
+    }
+
+    @Test
+    fun `a callback for this build, or with no state, is not forwarded`() {
+        val debug = "org.mifosx.openbanking.debug"
+        assertNull(siblingRedirectTarget("$debug://callback?code=abc&state=a1.st-1", debug))
+        assertNull(siblingRedirectTarget(REDIRECT_URL, CONSENT_REDIRECT_SCHEME))
+        assertNull(siblingRedirectTarget("https://$CONSENT_RELAY_HOST/callback/#error=access_denied", debug))
     }
 
     private companion object {

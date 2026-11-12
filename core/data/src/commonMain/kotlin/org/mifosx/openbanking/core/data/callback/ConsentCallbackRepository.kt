@@ -10,17 +10,21 @@
 package org.mifosx.openbanking.core.data.callback
 
 import org.mifosx.openbanking.core.model.callback.ConsentStatus
-import org.mifosx.openbanking.core.network.model.oauth.PsuTokenResponse
+import org.mifosx.openbanking.core.network.api.CompletedAuth
 import template.core.base.common.screen.ScreenState
 
 sealed interface ValidationResult {
     /**
-     * The redirect is authentic. Carries the values the caller needs next, so the caller never has
-     * to re-parse the URL or reach into [PendingAuthStore] itself.
+     * The redirect matches the sign-in in flight. Carries everything `/v1/auth/complete` needs, so the
+     * caller never has to re-parse the URL or reach into [PendingAuthStore] itself. The Worker then
+     * verifies the `id_token` in full (signature, iss, aud, exp, nonce, c_hash, s_hash).
      */
     data class Valid(
         val code: String,
         val consentId: String,
+        val idToken: String,
+        val state: String,
+        val flowId: String,
     ) : ValidationResult
 
     data object SecurityError : ValidationResult
@@ -33,19 +37,19 @@ interface ConsentCallbackRepository {
     /**
      * Parses and authenticates HSBC's raw redirect URL.
      *
-     * Takes the URL rather than pre-parsed parts on purpose: the `state`/`nonce` it is checked
-     * against come from [PendingAuthStore], which is this layer's business. If the caller supplied
-     * the expected values, the caller could pass the wrong ones — or, as the previous signature
-     * allowed, an empty nonce that silently skipped replay validation entirely.
+     * Takes the URL rather than pre-parsed parts on purpose: the `state` it is checked against comes
+     * from [PendingAuthStore], which is this layer's business. If the caller supplied the expected
+     * value, the caller could pass the wrong one.
      *
      * Single-use: consumes the stored [PendingAuth], so the same redirect cannot be replayed.
      */
     fun validateCallback(redirectUrl: String): ValidationResult
 
-    suspend fun exchangeCode(
-        code: String,
-        redirectUri: String,
-    ): ScreenState<PsuTokenResponse>
+    /**
+     * Redeems a validated redirect at the Worker (`POST /v1/auth/complete`) for the opaque session.
+     * The Worker reads the consent status first: a rejected consent is an error (409), never a session.
+     */
+    suspend fun exchangeCode(callback: ValidationResult.Valid): ScreenState<CompletedAuth>
 
     suspend fun pollConsentStatus(
         consentId: String,
